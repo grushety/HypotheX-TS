@@ -1,3 +1,5 @@
+import { validateEditableSegments } from "./validateEditableSegments.js";
+
 export const AVAILABLE_SEGMENT_LABELS = ["event", "trend", "anomaly", "other"];
 
 function createError(code, message) {
@@ -9,8 +11,10 @@ function createError(code, message) {
 }
 
 export function updateSegmentLabel(segments, segmentId, nextLabel) {
-  if (!Array.isArray(segments) || segments.length === 0) {
-    return createError("INVALID_SEGMENTS", "A segment list is required.");
+  const validation = validateEditableSegments(segments);
+
+  if (!validation.ok) {
+    return validation;
   }
 
   if (!segmentId) {
@@ -30,6 +34,12 @@ export function updateSegmentLabel(segments, segmentId, nextLabel) {
   const updatedSegments = segments.map((segment, currentIndex) =>
     currentIndex === index ? { ...segment, label: nextLabel } : { ...segment },
   );
+
+  const updatedValidation = validateEditableSegments(updatedSegments);
+
+  if (!updatedValidation.ok) {
+    return updatedValidation;
+  }
 
   return {
     ok: true,

@@ -32,3 +32,17 @@ test("updateSegmentLabel rejects unsupported labels", () => {
 test("available segment labels match the formal semantic vocabulary", () => {
   assert.deepEqual(AVAILABLE_SEGMENT_LABELS, ["event", "trend", "anomaly", "other"]);
 });
+
+test("updateSegmentLabel rejects invalid segment state before applying edits", () => {
+  const result = updateSegmentLabel(
+    [{ id: "seg-001", start: 0, end: 9, label: "invalid" }],
+    "seg-001",
+    "event",
+  );
+
+  assert.deepEqual(result, {
+    ok: false,
+    code: "INVALID_LABEL",
+    message: "Segment label must be one of the supported semantic labels.",
+  });
+});

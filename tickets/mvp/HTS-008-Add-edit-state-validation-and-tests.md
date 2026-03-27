@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-008`  
 **Title:** `Add edit-state validation and tests`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `test`  
 **Depends on:** `HTS-006, HTS-007`  
@@ -86,10 +86,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] tests cover accepted and rejected boundary edits
-- [ ] tests cover label updates and invalid label handling if applicable
-- [ ] no regression is introduced in segment selection or overlay rendering
-- [ ] manual edit flow remains stable after test-backed fixes
+- [x] tests cover accepted and rejected boundary edits
+- [x] tests cover label updates and invalid label handling if applicable
+- [x] no regression is introduced in segment selection or overlay rendering
+- [x] manual edit flow remains stable after test-backed fixes
 
 ---
 
@@ -108,7 +108,9 @@ Brief reason:
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+cd frontend
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -121,13 +123,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -142,22 +144,46 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** 
+- added a shared editable-segment validator for contiguity, coverage, and supported labels
+- hardened boundary and label edit helpers to validate both input and resulting segment state
+- added expanded unit coverage for invalid edit state plus an integration-style manual edit flow test
+- confirmed overlay and selection state remain stable after boundary and label edits
+**Checks run:** `npm test`; `npm run build`; frontend dev server started successfully on `http://127.0.0.1:5173/`  
+**Blockers:** `none`  
+**Next step:** `HTS-009`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Consolidated edit-state validation, expanded the manual-edit test suite, and verified boundary edits, label edits, selection retention, and overlay stability together.`  
+**Tests passed:** `npm test`; `npm run build`  
+**Files changed:** `frontend segment validation/test files and this ticket file`  
+**Follow-up tickets needed:** `none`
 
 ---
 

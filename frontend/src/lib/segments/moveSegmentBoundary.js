@@ -1,3 +1,5 @@
+import { validateEditableSegments } from "./validateEditableSegments.js";
+
 const DEFAULT_MIN_SEGMENT_LENGTH = 1;
 
 function cloneSegments(segments) {
@@ -13,8 +15,10 @@ function createError(code, message) {
 }
 
 export function moveSegmentBoundary(segments, boundaryIndex, nextBoundaryStart, options = {}) {
-  if (!Array.isArray(segments) || segments.length < 2) {
-    return createError("INVALID_SEGMENTS", "At least two ordered segments are required.");
+  const validation = validateEditableSegments(segments, { seriesLength: options.seriesLength });
+
+  if (!validation.ok) {
+    return validation;
   }
 
   if (!Number.isInteger(boundaryIndex) || boundaryIndex < 0 || boundaryIndex >= segments.length - 1) {
@@ -42,6 +46,14 @@ export function moveSegmentBoundary(segments, boundaryIndex, nextBoundaryStart, 
 
   leftSegment.end = nextBoundaryStart - 1;
   rightSegment.start = nextBoundaryStart;
+
+  const updatedValidation = validateEditableSegments(updatedSegments, {
+    seriesLength: options.seriesLength,
+  });
+
+  if (!updatedValidation.ok) {
+    return updatedValidation;
+  }
 
   return {
     ok: true,

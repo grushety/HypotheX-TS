@@ -51,3 +51,20 @@ test("moveSegmentBoundary rejects invalid boundary indexes", () => {
     message: "Boundary index must reference adjacent segments.",
   });
 });
+
+test("moveSegmentBoundary rejects non-contiguous input segment state", () => {
+  const result = moveSegmentBoundary(
+    [
+      { id: "seg-001", start: 0, end: 17, label: "event" },
+      { id: "seg-002", start: 19, end: 43, label: "trend" },
+    ],
+    0,
+    20,
+  );
+
+  assert.deepEqual(result, {
+    ok: false,
+    code: "NON_CONTIGUOUS_SEGMENTS",
+    message: "Segments must remain ordered, contiguous, and non-overlapping.",
+  });
+});
