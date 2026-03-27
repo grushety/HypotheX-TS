@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
+import { executeOperationAction } from "../lib/operations/executeOperationAction";
 import { moveSegmentBoundary } from "../lib/segments/moveSegmentBoundary";
 import { updateSegmentLabel } from "../lib/segments/updateSegmentLabel";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
@@ -13,6 +14,7 @@ const loading = ref(true);
 const error = ref("");
 const selectedSegmentId = ref(null);
 const editFeedback = ref("");
+const operationFeedback = ref("");
 
 const selectedSegment = computed(() =>
   getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
@@ -26,6 +28,7 @@ async function loadSample() {
   try {
     sample.value = await loadBenchmarkSample();
     editFeedback.value = "";
+    operationFeedback.value = "";
   } catch (loadError) {
     sample.value = null;
     error.value =
@@ -37,6 +40,7 @@ async function loadSample() {
 
 function handleSelectSegment(segmentId) {
   selectedSegmentId.value = segmentId;
+  operationFeedback.value = "";
 }
 
 function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
@@ -56,6 +60,7 @@ function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
     segments: result.segments,
   };
   editFeedback.value = "";
+  operationFeedback.value = "";
 }
 
 function handleUpdateSegmentLabel(nextLabel) {
@@ -74,6 +79,21 @@ function handleUpdateSegmentLabel(nextLabel) {
     ...sample.value,
     segments: result.segments,
   };
+  editFeedback.value = "";
+  operationFeedback.value = "";
+}
+
+function handleRunOperation(request) {
+  const result = executeOperationAction(sample.value, selectedSegmentId.value, request);
+
+  if (!result.ok) {
+    operationFeedback.value = result.message;
+    return;
+  }
+
+  sample.value = result.sample;
+  selectedSegmentId.value = result.selectedSegmentId;
+  operationFeedback.value = result.message;
   editFeedback.value = "";
 }
 
@@ -94,11 +114,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-007</p>
-        <h1>Benchmark viewer label editing</h1>
+        <p class="eyebrow">HTS-013</p>
+        <h1>Benchmark viewer operations</h1>
         <p class="hero-copy">
-          The viewer now lets the active segment change semantic label from the side panel while
-          keeping label updates separate from boundary movement logic.
+          The viewer now exposes split, merge, and reclassify as explicit semantic operations while
+          keeping the UI layer thin and delegating state changes to the domain contracts.
         </p>
       </div>
 
@@ -117,9 +137,11 @@ onMounted(() => {
       :selected-segment-id="selectedSegmentId"
       :selected-segment="selectedSegment"
       :edit-feedback="editFeedback"
+      :operation-feedback="operationFeedback"
       @select-segment="handleSelectSegment"
       @move-boundary="handleMoveBoundary"
       @update-segment-label="handleUpdateSegmentLabel"
+      @run-operation="handleRunOperation"
     />
   </main>
 </template>

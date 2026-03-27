@@ -1,4 +1,5 @@
 <script setup>
+import OperationPalette from "../operations/OperationPalette.vue";
 import SegmentationOverlay from "./SegmentationOverlay.vue";
 import TimeSeriesChart from "./TimeSeriesChart.vue";
 import { AVAILABLE_SEGMENT_LABELS } from "../../lib/segments/updateSegmentLabel";
@@ -28,13 +29,17 @@ defineProps({
     type: String,
     default: "",
   },
+  operationFeedback: {
+    type: String,
+    default: "",
+  },
   selectedSegment: {
     type: Object,
     default: null,
   },
 });
 
-const emit = defineEmits(["select-segment", "move-boundary", "update-segment-label"]);
+const emit = defineEmits(["select-segment", "move-boundary", "update-segment-label", "run-operation"]);
 </script>
 
 <template>
@@ -138,6 +143,13 @@ const emit = defineEmits(["select-segment", "move-boundary", "update-segment-lab
             </select>
           </label>
         </div>
+
+        <OperationPalette
+          :selected-segment="selectedSegment"
+          :segments="sample?.segments ?? []"
+          :feedback="operationFeedback"
+          @run-operation="emit('run-operation', $event)"
+        />
 
         <ul class="sidebar-list">
           <li v-for="item in sidebarItems" :key="item.label" class="sidebar-item">
