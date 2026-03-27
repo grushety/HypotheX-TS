@@ -1,4 +1,4 @@
-import { AVAILABLE_SEGMENT_LABELS } from "../segments/updateSegmentLabel.js";
+import { AVAILABLE_SEGMENT_LABELS, updateSegmentLabel } from "../segments/updateSegmentLabel.js";
 import { validateEditableSegments } from "../segments/validateEditableSegments.js";
 
 export const SEMANTIC_OPERATION_TYPES = ["split", "merge", "reclassify"];
@@ -224,12 +224,16 @@ export function requestReclassifyOperation(segments, request) {
     return validation;
   }
 
-  return createFailure(
-    "reclassify",
-    "NOT_IMPLEMENTED",
-    "Reclassify operation behavior will be implemented in HTS-012.",
-    { ...request, type: "reclassify" },
-  );
+  const operationRequest = { ...request, type: "reclassify" };
+  const result = updateSegmentLabel(segments, operationRequest.segmentId, operationRequest.nextLabel);
+
+  if (!result.ok) {
+    return createFailure("reclassify", result.code, result.message, operationRequest);
+  }
+
+  return createSemanticOperationSuccess("reclassify", result.segments, operationRequest, {
+    affectedSegmentIds: [result.updatedSegmentId],
+  });
 }
 
 export function applySemanticOperation(segments, request) {

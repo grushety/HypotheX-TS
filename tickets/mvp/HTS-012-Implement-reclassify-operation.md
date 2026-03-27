@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-012`  
 **Title:** `Implement reclassify operation`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-009`  
@@ -83,10 +83,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] reclassify updates only the intended segment label
-- [ ] the operation follows the shared success/failure contract
-- [ ] direct label editing and operation-based reclassify do not create inconsistent state
-- [ ] tests cover valid and invalid target labels if applicable
+- [x] reclassify updates only the intended segment label
+- [x] the operation follows the shared success/failure contract
+- [x] direct label editing and operation-based reclassify do not create inconsistent state
+- [x] tests cover valid and invalid target labels if applicable
 
 ---
 
@@ -104,7 +104,9 @@ Brief reason:
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+cd frontend
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -116,13 +118,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -136,22 +138,46 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** 
+- implemented the reclassify semantic operation inside the shared operation domain layer
+- reused the existing pure label-update semantics instead of duplicating label dictionaries or update logic
+- returned explicit applied/rejected contracts through the shared operation result shape
+- expanded operation tests to cover valid reclassify behavior and missing-segment failures
+**Checks run:** `npm test`; `npm run build`  
+**Blockers:** `none`  
+**Next step:** `HTS-013`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Implemented reclassify so the operation layer updates exactly one segment label through the shared label semantics and returns explicit success or failure contracts.`  
+**Tests passed:** `npm test`; `npm run build`  
+**Files changed:** `frontend operation-domain files and this ticket file`  
+**Follow-up tickets needed:** `none`
 
 ---
 

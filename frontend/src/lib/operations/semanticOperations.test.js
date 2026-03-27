@@ -121,6 +121,24 @@ test("requestReclassifyOperation validates supported labels", () => {
   });
 });
 
+test("requestReclassifyOperation updates only the intended segment label", () => {
+  const result = requestReclassifyOperation(segments, {
+    segmentId: "seg-003",
+    nextLabel: "event",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.type, "reclassify");
+  assert.deepEqual(result.affectedSegmentIds, ["seg-003"]);
+  assert.deepEqual(result.segments[2], {
+    id: "seg-003",
+    start: 44,
+    end: 67,
+    label: "event",
+  });
+  assert.deepEqual(result.segments[1], segments[1]);
+});
+
 test("applySemanticOperation dispatches through the shared operation entry points", () => {
   const result = applySemanticOperation(segments, {
     type: "split",
@@ -224,6 +242,27 @@ test("requestMergeOperation rejects incompatible labels safely", () => {
       status: "rejected",
       code: "INCOMPATIBLE_SEGMENTS",
       request: { type: "merge", leftSegmentId: "seg-001", rightSegmentId: "seg-002" },
+    },
+  });
+});
+
+test("requestReclassifyOperation rejects unknown segments safely", () => {
+  const result = requestReclassifyOperation(segments, {
+    segmentId: "missing",
+    nextLabel: "event",
+  });
+
+  assert.deepEqual(result, {
+    ok: false,
+    type: "reclassify",
+    code: "SEGMENT_NOT_FOUND",
+    message: "Selected segment was not found.",
+    request: { type: "reclassify", segmentId: "missing", nextLabel: "event" },
+    event: {
+      type: "reclassify",
+      status: "rejected",
+      code: "SEGMENT_NOT_FOUND",
+      request: { type: "reclassify", segmentId: "missing", nextLabel: "event" },
     },
   });
 });
