@@ -1,4 +1,5 @@
 <script setup>
+import SegmentationOverlay from "./SegmentationOverlay.vue";
 import TimeSeriesChart from "./TimeSeriesChart.vue";
 
 defineProps({
@@ -51,11 +52,14 @@ defineProps({
           <span class="surface-tag">{{ sample?.seriesLength ?? "--" }} points</span>
         </div>
 
-        <TimeSeriesChart
-          v-if="sample?.values?.length"
-          :values="sample.values"
-          :title="`${sample.datasetName} sample ${sample.sampleId}`"
-        />
+        <div v-if="sample?.values?.length" class="chart-stack">
+          <TimeSeriesChart :values="sample.values" :title="`${sample.datasetName} sample ${sample.sampleId}`" />
+          <SegmentationOverlay
+            v-if="sample?.segments?.length"
+            :segments="sample.segments"
+            :series-length="sample.seriesLength"
+          />
+        </div>
         <div v-else class="chart-empty-state">Preparing chart data...</div>
 
         <p class="surface-copy">
@@ -67,20 +71,21 @@ defineProps({
         <div class="surface-header">
           <div>
             <p class="section-label">Overlay area</p>
-            <h3>Segmentation band placeholder</h3>
+            <h3>Segment map</h3>
           </div>
-          <span class="surface-tag">Future labels</span>
+          <span class="surface-tag">{{ sample?.segments?.length ?? 0 }} segments</span>
         </div>
 
-        <div class="overlay-placeholder">
-          <div class="segment-chip segment-chip-event">event</div>
-          <div class="segment-chip segment-chip-trend">trend</div>
-          <div class="segment-chip segment-chip-anomaly">anomaly</div>
-          <div class="segment-chip segment-chip-other">other</div>
-        </div>
+        <ul v-if="sample?.segments?.length" class="overlay-segment-list">
+          <li v-for="segment in sample.segments" :key="segment.id" class="overlay-segment-item">
+            <span class="segment-chip" :class="`segment-chip-${segment.label}`">{{ segment.label }}</span>
+            <strong>{{ segment.start }}-{{ segment.end }}</strong>
+          </li>
+        </ul>
+        <div v-else class="overlay-placeholder">Preparing segments...</div>
 
         <p class="surface-copy">
-          Ticket `HTS-003` will replace this scaffold with the rendered segmentation overlay.
+          Segment spans and labels are now aligned to the loaded series and ready for selection work.
         </p>
       </section>
 

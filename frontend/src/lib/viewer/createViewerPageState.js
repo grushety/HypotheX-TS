@@ -11,6 +11,7 @@ export function createViewerPageState(sample) {
         { label: "Task type", value: "--" },
         { label: "Source split", value: "--" },
         { label: "Channels", value: "--" },
+        { label: "Segments", value: "--" },
       ],
     };
   }
@@ -26,6 +27,7 @@ export function createViewerPageState(sample) {
       { label: "Task type", value: sample.taskType },
       { label: "Source split", value: sample.sourceSplit },
       { label: "Channels", value: `${sample.channelCount}` },
+      { label: "Segments", value: `${sample.segments?.length ?? 0}` },
     ],
   };
 }

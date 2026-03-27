@@ -35,11 +35,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-002</p>
-        <h1>Benchmark viewer chart</h1>
+        <p class="eyebrow">HTS-003</p>
+        <h1>Benchmark viewer overlay</h1>
         <p class="hero-copy">
-          The viewer shell now renders the active benchmark sample as a reusable time-series chart
-          while keeping the overlay and side-panel regions stable for the next tickets.
+          The viewer now layers semantic segments and labels on top of the chart while keeping the
+          chart drawing and overlay rendering as separate components.
         </p>
       </div>
 

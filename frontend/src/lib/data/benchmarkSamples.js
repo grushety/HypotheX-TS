@@ -25,6 +25,12 @@ function toPreviewValues(values) {
 
 export async function loadBenchmarkSample() {
   const values = [...ECG200_SAMPLE_VALUES];
+  const segments = [
+    { id: "seg-001", start: 0, end: 17, label: "event" },
+    { id: "seg-002", start: 18, end: 43, label: "trend" },
+    { id: "seg-003", start: 44, end: 67, label: "anomaly" },
+    { id: "seg-004", start: 68, end: 95, label: "other" },
+  ];
 
   return {
     datasetId: "ECG200",
@@ -34,6 +40,7 @@ export async function loadBenchmarkSample() {
     channelCount: 1,
     seriesLength: values.length,
     label: "-1",
+    segments,
     sourceSplit: "train",
     previewValues: toPreviewValues(values),
     values,

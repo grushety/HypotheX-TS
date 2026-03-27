@@ -11,6 +11,7 @@ test("createViewerPageState exposes loading placeholders before sample load", ()
     label: "Benchmark",
     value: "Waiting for sample",
   });
+  assert.deepEqual(pageState.sidebarItems[4], { label: "Segments", value: "--" });
 });
 
 test("createViewerPageState maps loaded sample into viewer shell fields", () => {
@@ -21,8 +22,10 @@ test("createViewerPageState maps loaded sample into viewer shell fields", () => 
     sourceSplit: "train",
     channelCount: 1,
     seriesLength: 96,
+    segments: [{ id: "seg-1" }, { id: "seg-2" }],
   });
 
   assert.deepEqual(pageState.statusItems[1], { label: "Dataset", value: "ECG200" });
   assert.deepEqual(pageState.sidebarItems[2], { label: "Source split", value: "train" });
+  assert.deepEqual(pageState.sidebarItems[4], { label: "Segments", value: "2" });
 });
