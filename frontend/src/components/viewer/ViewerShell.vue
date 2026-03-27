@@ -1,5 +1,6 @@
 <script setup>
 import OperationPalette from "../operations/OperationPalette.vue";
+import WarningPanel from "../warnings/WarningPanel.vue";
 import SegmentationOverlay from "./SegmentationOverlay.vue";
 import TimeSeriesChart from "./TimeSeriesChart.vue";
 import { AVAILABLE_SEGMENT_LABELS } from "../../lib/segments/updateSegmentLabel";
@@ -37,6 +38,10 @@ defineProps({
     type: Object,
     default: null,
   },
+  warningDisplay: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits(["select-segment", "move-boundary", "update-segment-label", "run-operation"]);
@@ -61,6 +66,8 @@ const emit = defineEmits(["select-segment", "move-boundary", "update-segment-lab
         <strong>{{ item.value }}</strong>
       </article>
     </div>
+
+    <WarningPanel :warning="warningDisplay" />
 
     <div class="viewer-grid">
       <section class="surface chart-surface" aria-label="Chart area placeholder">

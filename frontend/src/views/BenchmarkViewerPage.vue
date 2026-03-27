@@ -9,6 +9,7 @@ import {
   executeMoveBoundaryAction,
   executeUpdateSegmentLabelAction,
 } from "../lib/segments/executeSegmentEditAction";
+import { createWarningDisplayModel } from "../lib/viewer/createWarningDisplayModel";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
 import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
 
@@ -25,6 +26,12 @@ const selectedSegment = computed(() =>
   getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
 );
 const pageState = computed(() => createViewerPageState(sample.value, selectedSegment.value));
+const warningDisplay = computed(() =>
+  createWarningDisplayModel(
+    operationConstraintResult.value ?? editConstraintResult.value,
+    operationConstraintResult.value ? operationFeedback.value : editFeedback.value,
+  ),
+);
 
 async function loadSample() {
   loading.value = true;
@@ -59,6 +66,7 @@ function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
   if (!result.ok) {
     editFeedback.value = result.message;
     editConstraintResult.value = null;
+    operationConstraintResult.value = null;
     return;
   }
 
@@ -76,6 +84,7 @@ function handleUpdateSegmentLabel(nextLabel) {
   if (!result.ok) {
     editFeedback.value = result.message;
     editConstraintResult.value = null;
+    operationConstraintResult.value = null;
     return;
   }
 
@@ -93,6 +102,7 @@ function handleRunOperation(request) {
   if (!result.ok) {
     operationFeedback.value = result.message;
     operationConstraintResult.value = null;
+    editConstraintResult.value = null;
     return;
   }
 
@@ -145,6 +155,7 @@ onMounted(() => {
       :selected-segment="selectedSegment"
       :edit-feedback="editFeedback"
       :operation-feedback="operationFeedback"
+      :warning-display="warningDisplay"
       @select-segment="handleSelectSegment"
       @move-boundary="handleMoveBoundary"
       @update-segment-label="handleUpdateSegmentLabel"
