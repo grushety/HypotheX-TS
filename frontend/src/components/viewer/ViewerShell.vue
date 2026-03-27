@@ -49,7 +49,13 @@ defineProps({
   },
 });
 
-const emit = defineEmits(["select-segment", "move-boundary", "update-segment-label", "run-operation"]);
+const emit = defineEmits([
+  "select-segment",
+  "move-boundary",
+  "update-segment-label",
+  "run-operation",
+  "export-log",
+]);
 </script>
 
 <template>
@@ -171,7 +177,7 @@ const emit = defineEmits(["select-segment", "move-boundary", "update-segment-lab
         </ul>
       </aside>
 
-      <HistoryPanel :entries="historyEntries" />
+      <HistoryPanel :entries="historyEntries" @export-log="emit('export-log')" />
     </div>
   </section>
 </template>

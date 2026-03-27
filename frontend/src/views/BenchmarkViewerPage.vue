@@ -6,6 +6,10 @@ import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } fro
 import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
 import { SOFT_CONSTRAINT_STATUS } from "../lib/constraints/evaluateSoftConstraints";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
+import {
+  createInteractionLogExport,
+  downloadInteractionLogExport,
+} from "../lib/export/createInteractionLogExport";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
 import {
   executeMoveBoundaryAction,
@@ -155,6 +159,19 @@ function handleRunOperation(request) {
   editConstraintResult.value = null;
 }
 
+function handleExportLog() {
+  if (!auditEvents.value.length) {
+    return;
+  }
+
+  const exportArtifact = createInteractionLogExport(auditEvents.value, {
+    sampleId: sample.value?.sampleId ?? null,
+    datasetName: sample.value?.datasetName ?? null,
+  });
+
+  downloadInteractionLogExport(exportArtifact);
+}
+
 watch(
   () => sample.value?.segments,
   (segments) => {
@@ -202,6 +219,7 @@ onMounted(() => {
       @move-boundary="handleMoveBoundary"
       @update-segment-label="handleUpdateSegmentLabel"
       @run-operation="handleRunOperation"
+      @export-log="handleExportLog"
     />
   </main>
 </template>

@@ -5,6 +5,8 @@ defineProps({
     default: () => [],
   },
 });
+
+const emit = defineEmits(["export-log"]);
 </script>
 
 <template>
@@ -14,7 +16,12 @@ defineProps({
         <p class="section-label">History</p>
         <h3>Recent interactions</h3>
       </div>
-      <span class="surface-tag">{{ entries.length }} entries</span>
+      <div class="history-header-actions">
+        <span class="surface-tag">{{ entries.length }} entries</span>
+        <button class="history-export-button" type="button" :disabled="entries.length === 0" @click="emit('export-log')">
+          Export Log
+        </button>
+      </div>
     </div>
 
     <p v-if="entries.length === 0" class="history-empty-state">
