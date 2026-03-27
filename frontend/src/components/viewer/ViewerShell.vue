@@ -1,4 +1,5 @@
 <script setup>
+import HistoryPanel from "../history/HistoryPanel.vue";
 import OperationPalette from "../operations/OperationPalette.vue";
 import WarningPanel from "../warnings/WarningPanel.vue";
 import SegmentationOverlay from "./SegmentationOverlay.vue";
@@ -41,6 +42,10 @@ defineProps({
   warningDisplay: {
     type: Object,
     default: null,
+  },
+  historyEntries: {
+    type: Array,
+    default: () => [],
   },
 });
 
@@ -165,6 +170,8 @@ const emit = defineEmits(["select-segment", "move-boundary", "update-segment-lab
           </li>
         </ul>
       </aside>
+
+      <HistoryPanel :entries="historyEntries" />
     </div>
   </section>
 </template>

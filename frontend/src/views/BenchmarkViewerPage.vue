@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } from "../lib/audit/auditEvents";
+import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
 import { SOFT_CONSTRAINT_STATUS } from "../lib/constraints/evaluateSoftConstraints";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
@@ -28,6 +29,7 @@ const selectedSegment = computed(() =>
   getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
 );
 const pageState = computed(() => createViewerPageState(sample.value, selectedSegment.value));
+const historyEntries = computed(() => createHistoryEntries(auditEvents.value));
 const warningDisplay = computed(() =>
   createViewerWarningDisplay({
     editConstraintResult: editConstraintResult.value,
@@ -195,6 +197,7 @@ onMounted(() => {
       :edit-feedback="editFeedback"
       :operation-feedback="operationFeedback"
       :warning-display="warningDisplay"
+      :history-entries="historyEntries"
       @select-segment="handleSelectSegment"
       @move-boundary="handleMoveBoundary"
       @update-segment-label="handleUpdateSegmentLabel"

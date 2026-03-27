@@ -176,6 +176,10 @@ h3 {
   grid-row: 1 / span 2;
 }
 
+.history-surface {
+  grid-column: 1 / span 2;
+}
+
 .surface {
   padding: 22px;
 }
@@ -590,6 +594,76 @@ h3 {
   background: #eef4f7;
 }
 
+.history-empty-state {
+  color: #41526a;
+  margin-bottom: 0;
+}
+
+.history-list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.history-item {
+  padding: 16px;
+  border-radius: 18px;
+  background: #eef4f7;
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.history-summary,
+.history-meta {
+  margin-bottom: 0;
+}
+
+.history-summary {
+  margin-top: 6px;
+  color: #41526a;
+}
+
+.history-meta {
+  margin-top: 8px;
+  color: #6b6f8d;
+  font-size: 0.88rem;
+}
+
+.history-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 78px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.history-status-applied {
+  background: rgba(43, 111, 141, 0.12);
+  color: #1d4f68;
+}
+
+.history-status-warned {
+  background: rgba(184, 101, 26, 0.14);
+  color: #8a4d13;
+}
+
+.history-status-rejected {
+  background: rgba(160, 29, 29, 0.12);
+  color: #8a231d;
+}
+
 @media (max-width: 900px) {
   .hero,
   .viewer-header {
@@ -606,7 +680,8 @@ h3 {
   }
 
   .overlay-surface,
-  .sidebar-surface {
+  .sidebar-surface,
+  .history-surface {
     grid-column: auto;
     grid-row: auto;
   }
