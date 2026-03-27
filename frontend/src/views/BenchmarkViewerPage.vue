@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import ViewerShell from "../components/viewer/ViewerShell.vue";
+import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } from "../lib/audit/auditEvents";
 import { SOFT_CONSTRAINT_STATUS } from "../lib/constraints/evaluateSoftConstraints";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
@@ -21,6 +22,7 @@ const editFeedback = ref("");
 const operationFeedback = ref("");
 const editConstraintResult = ref(null);
 const operationConstraintResult = ref(null);
+const auditEvents = ref([]);
 
 const selectedSegment = computed(() =>
   getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
@@ -45,6 +47,7 @@ async function loadSample() {
     operationFeedback.value = "";
     editConstraintResult.value = null;
     operationConstraintResult.value = null;
+    auditEvents.value = [];
   } catch (loadError) {
     sample.value = null;
     error.value =
@@ -60,10 +63,23 @@ function handleSelectSegment(segmentId) {
 }
 
 function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
+  const request = {
+    type: "move-boundary",
+    boundaryIndex,
+    nextBoundaryStart,
+  };
   const result = executeMoveBoundaryAction(sample.value, {
     boundaryIndex,
     nextBoundaryStart,
   });
+
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createEditAuditEvent(request, result, {
+      sampleId: sample.value?.sampleId ?? null,
+      selectedSegmentId: selectedSegmentId.value,
+    }),
+  );
 
   if (!result.ok) {
     editFeedback.value = result.message;
@@ -81,7 +97,20 @@ function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
 }
 
 function handleUpdateSegmentLabel(nextLabel) {
+  const request = {
+    type: "update-label",
+    segmentId: selectedSegmentId.value,
+    nextLabel,
+  };
   const result = executeUpdateSegmentLabelAction(sample.value, selectedSegmentId.value, nextLabel);
+
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createEditAuditEvent(request, result, {
+      sampleId: sample.value?.sampleId ?? null,
+      selectedSegmentId: selectedSegmentId.value,
+    }),
+  );
 
   if (!result.ok) {
     editFeedback.value = result.message;
@@ -100,6 +129,14 @@ function handleUpdateSegmentLabel(nextLabel) {
 
 function handleRunOperation(request) {
   const result = executeOperationAction(sample.value, selectedSegmentId.value, request);
+
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createOperationAuditEvent(request, result, {
+      sampleId: sample.value?.sampleId ?? null,
+      selectedSegmentId: selectedSegmentId.value,
+    }),
+  );
 
   if (!result.ok) {
     operationFeedback.value = result.message;

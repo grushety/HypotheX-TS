@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-019`  
 **Title:** `Define audit event schema and capture hooks`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-018`  
@@ -85,10 +85,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] meaningful edits and operations generate audit events
-- [ ] warning outcomes are captured when present
-- [ ] event schema is consistent and documented enough for later export
-- [ ] tests cover core event creation paths
+- [x] meaningful edits and operations generate audit events
+- [x] warning outcomes are captured when present
+- [x] event schema is consistent and documented enough for later export
+- [x] tests cover core event creation paths
 
 ---
 
@@ -101,12 +101,13 @@ Brief reason:
 ## 8. Verification Plan
 
 ### Required checks
-- [ ] relevant unit tests
-- [ ] lint or static checks
+- [x] relevant unit tests
+- [x] lint or static checks
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -118,13 +119,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -139,22 +140,42 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** `Added a versioned audit-event schema module, added pure event builders and append logic, wired edit and operation capture hooks into the viewer page, expanded frontend tests to include audit behavior, and documented verification in this ticket.`  
+**Checks run:** `npm test`, `npm run build`, `frontend dev server startup log review`  
+**Blockers:** `none`  
+**Next step:** `Proceed to HTS-020 to render the interaction history panel from the captured audit events.`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Defined the first stable audit event schema and attached capture hooks for edits, operations, warnings, and rejected actions so later history/export work has a consistent event stream to build on.`  
+**Tests passed:** `npm test`, `npm run build`  
+**Files changed:** `frontend/src/lib/audit/auditEvents.js`, `frontend/src/lib/audit/auditEvents.test.js`, `frontend/package.json`, `frontend/src/views/BenchmarkViewerPage.vue`, `tickets/mvp/HTS-019-Define-audit-event-schema-and-capture-hooks.md`  
+**Follow-up tickets needed:** `HTS-020`, `HTS-021`
 
 ---
 
