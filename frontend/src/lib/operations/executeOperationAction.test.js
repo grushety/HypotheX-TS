@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { SOFT_CONSTRAINT_STATUS } from "../constraints/evaluateSoftConstraints.js";
 import { executeOperationAction } from "./executeOperationAction.js";
 
 const sample = {
@@ -23,6 +24,9 @@ test("executeOperationAction applies split and selects the first resulting segme
   assert.equal(result.ok, true);
   assert.equal(result.selectedSegmentId, "seg-002-a");
   assert.equal(result.sample.segments.length, 5);
+  assert.equal(result.constraintStatus, SOFT_CONSTRAINT_STATUS.WARN);
+  assert.equal(result.warnings.length, 2);
+  assert.equal(result.message, "split applied with 2 warnings.");
 });
 
 test("executeOperationAction applies merge and selects the merged segment", () => {
@@ -35,6 +39,9 @@ test("executeOperationAction applies merge and selects the merged segment", () =
   assert.equal(result.ok, true);
   assert.equal(result.selectedSegmentId, "seg-002");
   assert.equal(result.sample.segments.length, 3);
+  assert.equal(result.constraintStatus, SOFT_CONSTRAINT_STATUS.PASS);
+  assert.deepEqual(result.warnings, []);
+  assert.equal(result.message, "merge applied successfully.");
 });
 
 test("executeOperationAction surfaces explicit domain failures", () => {

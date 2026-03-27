@@ -2,10 +2,13 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import ViewerShell from "../components/viewer/ViewerShell.vue";
+import { SOFT_CONSTRAINT_STATUS } from "../lib/constraints/evaluateSoftConstraints";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
-import { moveSegmentBoundary } from "../lib/segments/moveSegmentBoundary";
-import { updateSegmentLabel } from "../lib/segments/updateSegmentLabel";
+import {
+  executeMoveBoundaryAction,
+  executeUpdateSegmentLabelAction,
+} from "../lib/segments/executeSegmentEditAction";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
 import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
 
@@ -15,6 +18,8 @@ const error = ref("");
 const selectedSegmentId = ref(null);
 const editFeedback = ref("");
 const operationFeedback = ref("");
+const editConstraintResult = ref(null);
+const operationConstraintResult = ref(null);
 
 const selectedSegment = computed(() =>
   getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
@@ -29,6 +34,8 @@ async function loadSample() {
     sample.value = await loadBenchmarkSample();
     editFeedback.value = "";
     operationFeedback.value = "";
+    editConstraintResult.value = null;
+    operationConstraintResult.value = null;
   } catch (loadError) {
     sample.value = null;
     error.value =
@@ -44,43 +51,40 @@ function handleSelectSegment(segmentId) {
 }
 
 function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
-  if (!sample.value?.segments?.length) {
-    return;
-  }
-
-  const result = moveSegmentBoundary(sample.value.segments, boundaryIndex, nextBoundaryStart);
+  const result = executeMoveBoundaryAction(sample.value, {
+    boundaryIndex,
+    nextBoundaryStart,
+  });
 
   if (!result.ok) {
     editFeedback.value = result.message;
+    editConstraintResult.value = null;
     return;
   }
 
-  sample.value = {
-    ...sample.value,
-    segments: result.segments,
-  };
-  editFeedback.value = "";
+  sample.value = result.sample;
+  editConstraintResult.value = result.constraintResult;
+  editFeedback.value =
+    result.constraintStatus === SOFT_CONSTRAINT_STATUS.WARN ? result.message : "";
   operationFeedback.value = "";
+  operationConstraintResult.value = null;
 }
 
 function handleUpdateSegmentLabel(nextLabel) {
-  if (!sample.value?.segments?.length || !selectedSegmentId.value) {
-    return;
-  }
-
-  const result = updateSegmentLabel(sample.value.segments, selectedSegmentId.value, nextLabel);
+  const result = executeUpdateSegmentLabelAction(sample.value, selectedSegmentId.value, nextLabel);
 
   if (!result.ok) {
     editFeedback.value = result.message;
+    editConstraintResult.value = null;
     return;
   }
 
-  sample.value = {
-    ...sample.value,
-    segments: result.segments,
-  };
-  editFeedback.value = "";
+  sample.value = result.sample;
+  editConstraintResult.value = result.constraintResult;
+  editFeedback.value =
+    result.constraintStatus === SOFT_CONSTRAINT_STATUS.WARN ? result.message : "";
   operationFeedback.value = "";
+  operationConstraintResult.value = null;
 }
 
 function handleRunOperation(request) {
@@ -88,13 +92,16 @@ function handleRunOperation(request) {
 
   if (!result.ok) {
     operationFeedback.value = result.message;
+    operationConstraintResult.value = null;
     return;
   }
 
   sample.value = result.sample;
   selectedSegmentId.value = result.selectedSegmentId;
   operationFeedback.value = result.message;
+  operationConstraintResult.value = result.constraintResult;
   editFeedback.value = "";
+  editConstraintResult.value = null;
 }
 
 watch(

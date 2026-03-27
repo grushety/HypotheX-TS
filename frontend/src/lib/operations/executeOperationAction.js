@@ -1,3 +1,4 @@
+import { evaluateOperationSoftConstraints } from "../constraints/evaluateSoftConstraints.js";
 import { applySemanticOperation } from "./semanticOperations.js";
 
 function createError(message) {
@@ -36,6 +37,12 @@ export function executeOperationAction(sample, selectedSegmentId, request) {
     nextSelectedSegmentId = result.affectedSegmentIds[0] ?? selectedSegmentId;
   }
 
+  const constraintResult = evaluateOperationSoftConstraints(sample.segments, result.segments, request);
+
+  if (!constraintResult.ok) {
+    return createError(constraintResult.message);
+  }
+
   return {
     ok: true,
     sample: {
@@ -43,7 +50,13 @@ export function executeOperationAction(sample, selectedSegmentId, request) {
       segments: result.segments,
     },
     selectedSegmentId: nextSelectedSegmentId,
-    message: `${result.type} applied successfully.`,
+    message:
+      constraintResult.status === "WARN"
+        ? `${result.type} applied with ${constraintResult.warnings.length} warning${constraintResult.warnings.length === 1 ? "" : "s"}.`
+        : `${result.type} applied successfully.`,
     operationResult: result,
+    constraintResult,
+    constraintStatus: constraintResult.status,
+    warnings: constraintResult.warnings,
   };
 }

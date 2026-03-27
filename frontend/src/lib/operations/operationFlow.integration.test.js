@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { SOFT_CONSTRAINT_STATUS } from "../constraints/evaluateSoftConstraints.js";
 import { executeOperationAction } from "./executeOperationAction.js";
 
 const baseSample = {
@@ -23,6 +24,7 @@ test("operation flow remains stable across split then reclassify", () => {
   assert.equal(splitResult.ok, true);
   assert.equal(splitResult.selectedSegmentId, "seg-002-a");
   assert.equal(splitResult.sample.segments.length, 5);
+  assert.equal(splitResult.constraintStatus, SOFT_CONSTRAINT_STATUS.WARN);
 
   const reclassifyResult = executeOperationAction(splitResult.sample, splitResult.selectedSegmentId, {
     type: "reclassify",
@@ -32,6 +34,8 @@ test("operation flow remains stable across split then reclassify", () => {
 
   assert.equal(reclassifyResult.ok, true);
   assert.equal(reclassifyResult.selectedSegmentId, "seg-002-a");
+  assert.equal(reclassifyResult.constraintStatus, SOFT_CONSTRAINT_STATUS.WARN);
+  assert.equal(reclassifyResult.warnings.length, 2);
   assert.deepEqual(reclassifyResult.sample.segments[1], {
     id: "seg-002-a",
     start: 18,
@@ -50,6 +54,7 @@ test("operation flow remains stable after a successful merge", () => {
   assert.equal(mergeResult.ok, true);
   assert.equal(mergeResult.selectedSegmentId, "seg-002");
   assert.equal(mergeResult.sample.segments.length, 3);
+  assert.equal(mergeResult.constraintStatus, SOFT_CONSTRAINT_STATUS.PASS);
   assert.deepEqual(mergeResult.sample.segments[1], {
     id: "seg-002",
     start: 18,
