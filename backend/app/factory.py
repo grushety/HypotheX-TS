@@ -2,6 +2,7 @@ from flask import Flask
 
 from app.config import Config
 from app.extensions import cors, db
+from app.routes.benchmarks import benchmarks_bp
 from app.routes.health import health_bp
 
 
@@ -22,4 +23,5 @@ def create_app(config_object: type[Config] = Config) -> Flask:
         db.create_all()
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(benchmarks_bp)
     return app
