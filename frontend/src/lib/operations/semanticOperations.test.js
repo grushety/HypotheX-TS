@@ -37,18 +37,20 @@ test("validateSemanticOperationRequest rejects unsupported operations explicitly
 test("requestSplitOperation exposes an explicit not-implemented failure contract", () => {
   const result = requestSplitOperation(segments, { segmentId: "seg-002", splitIndex: 30 });
 
-  assert.deepEqual(result, {
-    ok: false,
-    type: "split",
-    code: "NOT_IMPLEMENTED",
-    message: "Split operation behavior will be implemented in HTS-010.",
-    request: { type: "split", segmentId: "seg-002", splitIndex: 30 },
-    event: {
-      type: "split",
-      status: "rejected",
-      code: "NOT_IMPLEMENTED",
-      request: { type: "split", segmentId: "seg-002", splitIndex: 30 },
-    },
+  assert.equal(result.ok, true);
+  assert.equal(result.type, "split");
+  assert.deepEqual(result.affectedSegmentIds, ["seg-002-a", "seg-002-b"]);
+  assert.deepEqual(result.segments[1], {
+    id: "seg-002-a",
+    start: 18,
+    end: 29,
+    label: "trend",
+  });
+  assert.deepEqual(result.segments[2], {
+    id: "seg-002-b",
+    start: 30,
+    end: 43,
+    label: "trend",
   });
 });
 
@@ -93,14 +95,14 @@ test("requestReclassifyOperation validates supported labels", () => {
 
 test("applySemanticOperation dispatches through the shared operation entry points", () => {
   const result = applySemanticOperation(segments, {
-    type: "merge",
-    leftSegmentId: "seg-001",
-    rightSegmentId: "seg-002",
+    type: "split",
+    segmentId: "seg-002",
+    splitIndex: 30,
   });
 
-  assert.equal(result.ok, false);
-  assert.equal(result.type, "merge");
-  assert.equal(result.code, "NOT_IMPLEMENTED");
+  assert.equal(result.ok, true);
+  assert.equal(result.type, "split");
+  assert.equal(result.segments.length, 4);
 });
 
 test("createSemanticOperationSuccess provides an explicit applied contract shape", () => {
@@ -118,4 +120,40 @@ test("createSemanticOperationSuccess provides an explicit applied contract shape
     request: { type: "reclassify", segmentId: "seg-003", nextLabel: "event" },
   });
   assert.equal(result.ok, true);
+});
+
+test("requestSplitOperation rejects boundary-near split indexes safely", () => {
+  const result = requestSplitOperation(segments, { segmentId: "seg-002", splitIndex: 18 });
+
+  assert.deepEqual(result, {
+    ok: false,
+    type: "split",
+    code: "INVALID_SPLIT_INDEX",
+    message: "Split index must leave at least one valid point on both sides of the segment.",
+    request: { type: "split", segmentId: "seg-002", splitIndex: 18 },
+    event: {
+      type: "split",
+      status: "rejected",
+      code: "INVALID_SPLIT_INDEX",
+      request: { type: "split", segmentId: "seg-002", splitIndex: 18 },
+    },
+  });
+});
+
+test("requestSplitOperation rejects unknown segments safely", () => {
+  const result = requestSplitOperation(segments, { segmentId: "missing", splitIndex: 30 });
+
+  assert.deepEqual(result, {
+    ok: false,
+    type: "split",
+    code: "SEGMENT_NOT_FOUND",
+    message: "Split target segment was not found.",
+    request: { type: "split", segmentId: "missing", splitIndex: 30 },
+    event: {
+      type: "split",
+      status: "rejected",
+      code: "SEGMENT_NOT_FOUND",
+      request: { type: "split", segmentId: "missing", splitIndex: 30 },
+    },
+  });
 });

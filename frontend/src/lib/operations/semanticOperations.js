@@ -2,6 +2,7 @@ import { AVAILABLE_SEGMENT_LABELS } from "../segments/updateSegmentLabel.js";
 import { validateEditableSegments } from "../segments/validateEditableSegments.js";
 
 export const SEMANTIC_OPERATION_TYPES = ["split", "merge", "reclassify"];
+const DEFAULT_MIN_SEGMENT_LENGTH = 1;
 
 function createFailure(type, code, message, request) {
   return {
@@ -98,12 +99,61 @@ export function requestSplitOperation(segments, request) {
     return validation;
   }
 
-  return createFailure(
-    "split",
-    "NOT_IMPLEMENTED",
-    "Split operation behavior will be implemented in HTS-010.",
-    { ...request, type: "split" },
-  );
+  const operationRequest = { ...request, type: "split" };
+  const segmentIndex = segments.findIndex((segment) => segment.id === operationRequest.segmentId);
+
+  if (segmentIndex === -1) {
+    return createFailure(
+      "split",
+      "SEGMENT_NOT_FOUND",
+      "Split target segment was not found.",
+      operationRequest,
+    );
+  }
+
+  const targetSegment = segments[segmentIndex];
+  const minSegmentLength = operationRequest.minSegmentLength ?? DEFAULT_MIN_SEGMENT_LENGTH;
+  const minimumSplitIndex = targetSegment.start + minSegmentLength;
+  const maximumSplitIndex = targetSegment.end - minSegmentLength + 1;
+
+  if (
+    operationRequest.splitIndex < minimumSplitIndex ||
+    operationRequest.splitIndex > maximumSplitIndex
+  ) {
+    return createFailure(
+      "split",
+      "INVALID_SPLIT_INDEX",
+      "Split index must leave at least one valid point on both sides of the segment.",
+      operationRequest,
+    );
+  }
+
+  const leftSegment = {
+    ...targetSegment,
+    id: `${targetSegment.id}-a`,
+    end: operationRequest.splitIndex - 1,
+  };
+  const rightSegment = {
+    ...targetSegment,
+    id: `${targetSegment.id}-b`,
+    start: operationRequest.splitIndex,
+  };
+
+  const updatedSegments = [
+    ...segments.slice(0, segmentIndex),
+    leftSegment,
+    rightSegment,
+    ...segments.slice(segmentIndex + 1),
+  ];
+  const updatedValidation = validateEditableSegments(updatedSegments);
+
+  if (!updatedValidation.ok) {
+    return createFailure("split", updatedValidation.code, updatedValidation.message, operationRequest);
+  }
+
+  return createSemanticOperationSuccess("split", updatedSegments, operationRequest, {
+    affectedSegmentIds: [leftSegment.id, rightSegment.id],
+  });
 }
 
 export function requestMergeOperation(segments, request) {
