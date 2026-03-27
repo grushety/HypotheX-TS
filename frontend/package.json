@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/lib/data/*.test.js src/lib/viewer/*.test.js src/lib/chart/*.test.js src/lib/segments/*.test.js src/lib/operations/*.test.js"
+    "test": "node --test src/lib/data/*.test.js src/lib/viewer/*.test.js src/lib/chart/*.test.js src/lib/segments/*.test.js src/lib/operations/*.test.js src/lib/constraints/*.test.js"
   },
   "dependencies": {
     "vue": "^3.5.13"
