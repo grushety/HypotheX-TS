@@ -122,6 +122,27 @@ MODEL_REPOS = {
     },
 }
 
+MODEL_FAMILIES = {
+    "fcn": {
+        "display_name": "FCN",
+        "repo_key": "dl-4-tsc",
+        "weights_subdir": "fcn",
+        "notes": "Place trained FCN artifacts under models/weights/fcn/<DATASET>/.",
+    },
+    "mlp": {
+        "display_name": "MLP",
+        "repo_key": "dl-4-tsc",
+        "weights_subdir": "mlp",
+        "notes": "Place trained MLP artifacts under models/weights/mlp/<DATASET>/.",
+    },
+    "inceptiontime": {
+        "display_name": "InceptionTime",
+        "repo_key": "InceptionTime",
+        "weights_subdir": "inceptiontime",
+        "notes": "Place trained InceptionTime artifacts under models/weights/inceptiontime/<DATASET>/.",
+    },
+}
+
 
 class SetupError(RuntimeError):
     """Raised when setup cannot continue safely."""
@@ -395,6 +416,21 @@ def write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2) + os.linesep, encoding="utf-8")
 
 
+def read_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def relative_to_root(path: Path, root: Path) -> str:
+    return path.relative_to(root).as_posix()
+
+
+def root_label(root: Path) -> str:
+    try:
+        return root.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return str(root)
+
+
 def dataset_expected_files(dataset_dir: Path) -> list[Path]:
     processed = dataset_dir / "processed"
     return [
@@ -601,28 +637,130 @@ def build_sources_manifest(selected_datasets: list[DatasetConfig], include_repos
     }
 
 
-def build_datasets_manifest(results: list[dict[str, Any]]) -> dict[str, Any]:
+def build_datasets_manifest(root: Path, results: list[dict[str, Any]]) -> dict[str, Any]:
     datasets = []
     for item in results:
-        summary = item["summary"]
+        dataset_config = DATASETS[item["name"]]
+        dataset_dir = Path(item["dataset_dir"])
+        processed_dir = Path(item["processed_dir"])
+        metadata_path = Path(item["metadata_path"])
+        summary = read_json(processed_dir / "summary.json")
+        metadata = read_json(metadata_path)
         datasets.append(
             {
                 "name": item["name"],
                 "status": item["status"],
-                "dataset_dir": item["dataset_dir"],
-                "processed_dir": item["processed_dir"],
-                "metadata_path": item["metadata_path"],
+                "task_type": metadata["task_type"],
+                "series_type": "univariate" if metadata["univariate"] else "multivariate",
+                "dataset_dir": relative_to_root(dataset_dir, root),
+                "raw_dir": relative_to_root(dataset_dir / "raw", root),
+                "processed_dir": relative_to_root(processed_dir, root),
+                "metadata_path": relative_to_root(metadata_path, root),
+                "summary_path": relative_to_root(processed_dir / "summary.json", root),
+                "source_archive": dataset_config.archive_key,
+                "source": metadata["source"],
+                "license": metadata["license"],
+                "notes": metadata["notes"],
+                "n_channels": metadata["n_channels"],
                 "train_shape": summary["train_shape"],
                 "test_shape": summary["test_shape"],
                 "n_classes": summary["n_classes"],
                 "classes": summary["classes"],
+                "export_format": summary["export_format"],
                 "tensor_layout": summary["tensor_layout"],
+                "artifacts": {
+                    "train_series_path": relative_to_root(processed_dir / "X_train.npy", root),
+                    "train_labels_path": relative_to_root(processed_dir / "y_train.npy", root),
+                    "test_series_path": relative_to_root(processed_dir / "X_test.npy", root),
+                    "test_labels_path": relative_to_root(processed_dir / "y_test.npy", root),
+                },
             }
         )
 
     return {
+        "schema_version": "1.0",
         "generated_at": utc_now(),
+        "benchmark_root": root_label(root),
+        "paths": {
+            "datasets_root": "datasets",
+            "raw_root": "raw",
+            "manifests_root": "manifests",
+            "model_repos_root": "models/repos",
+            "model_weights_root": "models/weights",
+        },
+        "supported_datasets": [dataset.name for dataset in DATASETS.values()],
         "datasets": datasets,
+    }
+
+
+def build_models_manifest(root: Path, dataset_results: list[dict[str, Any]]) -> dict[str, Any]:
+    dataset_summaries: dict[str, dict[str, Any]] = {}
+    for item in dataset_results:
+        processed_dir = Path(item["processed_dir"])
+        dataset_summaries[item["name"]] = read_json(processed_dir / "summary.json")
+
+    families = []
+    artifacts = []
+    for family_name, family in MODEL_FAMILIES.items():
+        repo = MODEL_REPOS[family["repo_key"]]
+        families.append(
+            {
+                "family": family_name,
+                "display_name": family["display_name"],
+                "source_repository": family["repo_key"],
+                "source_repository_path": relative_to_root(
+                    root / "models" / "repos" / repo["destination"],
+                    root,
+                ),
+                "weights_root": relative_to_root(
+                    root / "models" / "weights" / family["weights_subdir"],
+                    root,
+                ),
+                "supported_datasets": [dataset.name for dataset in DATASETS.values()],
+                "notes": family["notes"],
+            }
+        )
+
+        for dataset_name, summary in dataset_summaries.items():
+            artifacts.append(
+                {
+                    "artifact_id": f"{family_name}-{dataset_name.lower()}",
+                    "family": family_name,
+                    "display_name": family["display_name"],
+                    "dataset": dataset_name,
+                    "status": "expected",
+                    "artifact_dir": relative_to_root(
+                        root / "models" / "weights" / family["weights_subdir"] / dataset_name,
+                        root,
+                    ),
+                    "source_repository": family["repo_key"],
+                    "source_repository_path": relative_to_root(
+                        root / "models" / "repos" / repo["destination"],
+                        root,
+                    ),
+                    "input_shape": [
+                        int(summary["train_shape"][1]),
+                        int(summary["train_shape"][2]),
+                    ],
+                    "label_space": summary["classes"],
+                    "notes": (
+                        f"Expected placement for a trained {family['display_name']} artifact "
+                        f"compatible with {dataset_name}."
+                    ),
+                }
+            )
+
+    return {
+        "schema_version": "1.0",
+        "generated_at": utc_now(),
+        "benchmark_root": root_label(root),
+        "paths": {
+            "model_repos_root": "models/repos",
+            "model_weights_root": "models/weights",
+        },
+        "supported_model_families": [family["display_name"] for family in MODEL_FAMILIES.values()],
+        "families": families,
+        "artifacts": artifacts,
     }
 
 
@@ -640,21 +778,25 @@ This directory stores benchmark datasets, raw downloads, prepared NumPy exports,
 - `datasets/<DATASET>/raw/`: dataset-specific raw train/test files copied from the archive.
 - `datasets/<DATASET>/processed/`: normalized `.npy` exports for app loading.
 - `models/repos/`: cloned reference repositories.
-- `models/weights/`: reserved output directories for future trained weights.
+- `models/weights/<FAMILY>/<DATASET>/`: canonical location for trained model artifacts.
 - `models/configs/`: reserved location for benchmark config files.
-- `manifests/`: generated manifests and setup report.
+- `manifests/datasets.json`: canonical dataset manifest with repo-relative artifact paths.
+- `manifests/models.json`: canonical model-family and artifact-location manifest.
+- `manifests/`: generated manifest directory and setup report.
 
 ## Included In This Workspace
 
 - Datasets: {dataset_names}
 - Model repos: {repo_text}
+- Supported model families: FCN, MLP, InceptionTime
 
 ## Next Steps
 
 1. Run `python scripts/setup_benchmarks.py --datasets all` to populate this workspace.
-2. Inspect `manifests/datasets.json` and `manifests/setup_report.json`.
+2. Inspect `manifests/datasets.json`, `manifests/models.json`, and `manifests/setup_report.json`.
 3. Use the exported arrays in `datasets/<DATASET>/processed/` for app integration or later training jobs.
-4. Add benchmark-specific training configs under `models/configs/` when training is introduced.
+4. Place trained weights under `models/weights/<FAMILY>/<DATASET>/` so backend loaders can resolve them through the manifest contract.
+5. Add benchmark-specific training configs under `models/configs/` when training is introduced.
 """
     (root / "README.md").write_text(content, encoding="utf-8")
 
@@ -761,12 +903,14 @@ def main() -> int:
         log("Skipping model repository cloning.")
 
     sources_manifest = build_sources_manifest(selected_datasets, include_repos=not args.skip_model_repos)
-    datasets_manifest = build_datasets_manifest(dataset_results)
+    datasets_manifest = build_datasets_manifest(root, dataset_results)
+    models_manifest = build_models_manifest(root, dataset_results)
     setup_report = build_setup_report(root, dataset_results, repo_results, warnings_list, args)
     setup_report["actions"] = setup_actions
 
     write_json(paths["manifests"] / "sources.json", sources_manifest)
     write_json(paths["manifests"] / "datasets.json", datasets_manifest)
+    write_json(paths["manifests"] / "models.json", models_manifest)
     write_json(paths["manifests"] / "setup_report.json", setup_report)
     write_benchmarks_readme(root, selected_datasets, include_repos=not args.skip_model_repos)
 

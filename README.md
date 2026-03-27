@@ -18,7 +18,7 @@ HypotheX-TS currently includes the first interactive MVP for semantic time-serie
 ## Canonical benchmark path
 
 The single source of truth for the benchmark root is [backend/app/core/paths.py](backend/app/core/paths.py).
-It defines `BENCHMARK_ROOT` as `<repo>/benchmarks`, and the backend health response exposes that path for verification.
+It defines `BENCHMARK_ROOT` as `<repo>/benchmarks` plus the canonical dataset, manifest, repo, and weight subpaths. The benchmark manifest contract lives in `benchmarks/manifests/datasets.json` and `benchmarks/manifests/models.json`, and trained model artifacts belong under `benchmarks/models/weights/<family>/<dataset>/`.
 
 ## Backend setup
 

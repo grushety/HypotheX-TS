@@ -1,0 +1,294 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-03-27T00:00:00+00:00",
+  "benchmark_root": "benchmarks",
+  "paths": {
+    "model_repos_root": "models/repos",
+    "model_weights_root": "models/weights"
+  },
+  "supported_model_families": [
+    "FCN",
+    "MLP",
+    "InceptionTime"
+  ],
+  "families": [
+    {
+      "family": "fcn",
+      "display_name": "FCN",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "weights_root": "models/weights/fcn",
+      "supported_datasets": [
+        "GunPoint",
+        "ECG200",
+        "Wafer",
+        "BasicMotions"
+      ],
+      "notes": "Place trained FCN artifacts under models/weights/fcn/<DATASET>/."
+    },
+    {
+      "family": "mlp",
+      "display_name": "MLP",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "weights_root": "models/weights/mlp",
+      "supported_datasets": [
+        "GunPoint",
+        "ECG200",
+        "Wafer",
+        "BasicMotions"
+      ],
+      "notes": "Place trained MLP artifacts under models/weights/mlp/<DATASET>/."
+    },
+    {
+      "family": "inceptiontime",
+      "display_name": "InceptionTime",
+      "source_repository": "InceptionTime",
+      "source_repository_path": "models/repos/InceptionTime",
+      "weights_root": "models/weights/inceptiontime",
+      "supported_datasets": [
+        "GunPoint",
+        "ECG200",
+        "Wafer",
+        "BasicMotions"
+      ],
+      "notes": "Place trained InceptionTime artifacts under models/weights/inceptiontime/<DATASET>/."
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "fcn-gunpoint",
+      "family": "fcn",
+      "display_name": "FCN",
+      "dataset": "GunPoint",
+      "status": "expected",
+      "artifact_dir": "models/weights/fcn/GunPoint",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        1,
+        150
+      ],
+      "label_space": [
+        "2",
+        "1"
+      ],
+      "notes": "Expected placement for a trained FCN artifact compatible with GunPoint."
+    },
+    {
+      "artifact_id": "fcn-ecg200",
+      "family": "fcn",
+      "display_name": "FCN",
+      "dataset": "ECG200",
+      "status": "expected",
+      "artifact_dir": "models/weights/fcn/ECG200",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        1,
+        96
+      ],
+      "label_space": [
+        "-1",
+        "1"
+      ],
+      "notes": "Expected placement for a trained FCN artifact compatible with ECG200."
+    },
+    {
+      "artifact_id": "fcn-wafer",
+      "family": "fcn",
+      "display_name": "FCN",
+      "dataset": "Wafer",
+      "status": "expected",
+      "artifact_dir": "models/weights/fcn/Wafer",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        1,
+        152
+      ],
+      "label_space": [
+        "1",
+        "-1"
+      ],
+      "notes": "Expected placement for a trained FCN artifact compatible with Wafer."
+    },
+    {
+      "artifact_id": "fcn-basicmotions",
+      "family": "fcn",
+      "display_name": "FCN",
+      "dataset": "BasicMotions",
+      "status": "expected",
+      "artifact_dir": "models/weights/fcn/BasicMotions",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        6,
+        100
+      ],
+      "label_space": [
+        "Standing",
+        "Running",
+        "Walking",
+        "Badminton"
+      ],
+      "notes": "Expected placement for a trained FCN artifact compatible with BasicMotions."
+    },
+    {
+      "artifact_id": "mlp-gunpoint",
+      "family": "mlp",
+      "display_name": "MLP",
+      "dataset": "GunPoint",
+      "status": "expected",
+      "artifact_dir": "models/weights/mlp/GunPoint",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        1,
+        150
+      ],
+      "label_space": [
+        "2",
+        "1"
+      ],
+      "notes": "Expected placement for a trained MLP artifact compatible with GunPoint."
+    },
+    {
+      "artifact_id": "mlp-ecg200",
+      "family": "mlp",
+      "display_name": "MLP",
+      "dataset": "ECG200",
+      "status": "expected",
+      "artifact_dir": "models/weights/mlp/ECG200",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        1,
+        96
+      ],
+      "label_space": [
+        "-1",
+        "1"
+      ],
+      "notes": "Expected placement for a trained MLP artifact compatible with ECG200."
+    },
+    {
+      "artifact_id": "mlp-wafer",
+      "family": "mlp",
+      "display_name": "MLP",
+      "dataset": "Wafer",
+      "status": "expected",
+      "artifact_dir": "models/weights/mlp/Wafer",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        1,
+        152
+      ],
+      "label_space": [
+        "1",
+        "-1"
+      ],
+      "notes": "Expected placement for a trained MLP artifact compatible with Wafer."
+    },
+    {
+      "artifact_id": "mlp-basicmotions",
+      "family": "mlp",
+      "display_name": "MLP",
+      "dataset": "BasicMotions",
+      "status": "expected",
+      "artifact_dir": "models/weights/mlp/BasicMotions",
+      "source_repository": "dl-4-tsc",
+      "source_repository_path": "models/repos/dl-4-tsc",
+      "input_shape": [
+        6,
+        100
+      ],
+      "label_space": [
+        "Standing",
+        "Running",
+        "Walking",
+        "Badminton"
+      ],
+      "notes": "Expected placement for a trained MLP artifact compatible with BasicMotions."
+    },
+    {
+      "artifact_id": "inceptiontime-gunpoint",
+      "family": "inceptiontime",
+      "display_name": "InceptionTime",
+      "dataset": "GunPoint",
+      "status": "expected",
+      "artifact_dir": "models/weights/inceptiontime/GunPoint",
+      "source_repository": "InceptionTime",
+      "source_repository_path": "models/repos/InceptionTime",
+      "input_shape": [
+        1,
+        150
+      ],
+      "label_space": [
+        "2",
+        "1"
+      ],
+      "notes": "Expected placement for a trained InceptionTime artifact compatible with GunPoint."
+    },
+    {
+      "artifact_id": "inceptiontime-ecg200",
+      "family": "inceptiontime",
+      "display_name": "InceptionTime",
+      "dataset": "ECG200",
+      "status": "expected",
+      "artifact_dir": "models/weights/inceptiontime/ECG200",
+      "source_repository": "InceptionTime",
+      "source_repository_path": "models/repos/InceptionTime",
+      "input_shape": [
+        1,
+        96
+      ],
+      "label_space": [
+        "-1",
+        "1"
+      ],
+      "notes": "Expected placement for a trained InceptionTime artifact compatible with ECG200."
+    },
+    {
+      "artifact_id": "inceptiontime-wafer",
+      "family": "inceptiontime",
+      "display_name": "InceptionTime",
+      "dataset": "Wafer",
+      "status": "expected",
+      "artifact_dir": "models/weights/inceptiontime/Wafer",
+      "source_repository": "InceptionTime",
+      "source_repository_path": "models/repos/InceptionTime",
+      "input_shape": [
+        1,
+        152
+      ],
+      "label_space": [
+        "1",
+        "-1"
+      ],
+      "notes": "Expected placement for a trained InceptionTime artifact compatible with Wafer."
+    },
+    {
+      "artifact_id": "inceptiontime-basicmotions",
+      "family": "inceptiontime",
+      "display_name": "InceptionTime",
+      "dataset": "BasicMotions",
+      "status": "expected",
+      "artifact_dir": "models/weights/inceptiontime/BasicMotions",
+      "source_repository": "InceptionTime",
+      "source_repository_path": "models/repos/InceptionTime",
+      "input_shape": [
+        6,
+        100
+      ],
+      "label_space": [
+        "Standing",
+        "Running",
+        "Walking",
+        "Badminton"
+      ],
+      "notes": "Expected placement for a trained InceptionTime artifact compatible with BasicMotions."
+    }
+  ]
+}
