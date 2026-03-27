@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-001`  
 **Title:** `Scaffold benchmark viewer page`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `none`  
@@ -89,10 +89,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] viewer page opens without runtime errors
-- [ ] a benchmark sample loads into the page state
-- [ ] chart area, overlay area, and side panel placeholders are visible
-- [ ] component structure is ready for follow-up tickets
+- [x] viewer page opens without runtime errors
+- [x] a benchmark sample loads into the page state
+- [x] chart area, overlay area, and side panel placeholders are visible
+- [x] component structure is ready for follow-up tickets
 
 ---
 
@@ -113,7 +113,9 @@ Brief reason:
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+cd frontend
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -127,13 +129,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -149,22 +151,46 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** 
+- replaced the HTS-000 connectivity screen with a benchmark viewer page scaffold
+- added a benchmark sample loader adapter backed by an ECG200 sample
+- added viewer shell components for chart, overlay, and side panel placeholders
+- added frontend unit tests for the loader and viewer page state mapping
+**Checks run:** `npm test`; `npm run build`; frontend dev server started successfully on `http://127.0.0.1:5173/`  
+**Blockers:** `none`  
+**Next step:** `HTS-002`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Implemented the initial benchmark viewer shell, loaded an ECG200 sample into page state, and added frontend verification for the loader and scaffold state.`  
+**Tests passed:** `npm test`; `npm run build`  
+**Files changed:** `frontend app shell, viewer components, benchmark sample adapter, frontend tests, and this ticket file`  
+**Follow-up tickets needed:** `none`
 
 ---
 

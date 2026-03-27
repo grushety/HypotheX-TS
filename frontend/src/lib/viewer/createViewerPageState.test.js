@@ -1,0 +1,28 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { createViewerPageState } from "./createViewerPageState.js";
+
+test("createViewerPageState exposes loading placeholders before sample load", () => {
+  const pageState = createViewerPageState(null);
+
+  assert.deepEqual(pageState.statusItems[0], { label: "Load state", value: "Loading" });
+  assert.deepEqual(pageState.sidebarItems[0], {
+    label: "Benchmark",
+    value: "Waiting for sample",
+  });
+});
+
+test("createViewerPageState maps loaded sample into viewer shell fields", () => {
+  const pageState = createViewerPageState({
+    datasetId: "ECG200",
+    datasetName: "ECG200",
+    taskType: "classification",
+    sourceSplit: "train",
+    channelCount: 1,
+    seriesLength: 96,
+  });
+
+  assert.deepEqual(pageState.statusItems[1], { label: "Dataset", value: "ECG200" });
+  assert.deepEqual(pageState.sidebarItems[2], { label: "Source split", value: "train" });
+});
