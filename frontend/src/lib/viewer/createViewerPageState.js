@@ -1,4 +1,4 @@
-export function createViewerPageState(sample) {
+export function createViewerPageState(sample, selectedSegment = null) {
   if (!sample) {
     return {
       statusItems: [
@@ -12,6 +12,8 @@ export function createViewerPageState(sample) {
         { label: "Source split", value: "--" },
         { label: "Channels", value: "--" },
         { label: "Segments", value: "--" },
+        { label: "Active segment", value: "--" },
+        { label: "Active range", value: "--" },
       ],
     };
   }
@@ -28,6 +30,14 @@ export function createViewerPageState(sample) {
       { label: "Source split", value: sample.sourceSplit },
       { label: "Channels", value: `${sample.channelCount}` },
       { label: "Segments", value: `${sample.segments?.length ?? 0}` },
+      {
+        label: "Active segment",
+        value: selectedSegment ? `${selectedSegment.label} (${selectedSegment.id})` : "None",
+      },
+      {
+        label: "Active range",
+        value: selectedSegment ? `${selectedSegment.start}-${selectedSegment.end}` : "--",
+      },
     ],
   };
 }

@@ -301,6 +301,12 @@ h3 {
   justify-content: center;
   padding-top: 8px;
   overflow: hidden;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    opacity 120ms ease;
 }
 
 .segment-label-pill {
@@ -313,6 +319,12 @@ h3 {
   letter-spacing: 0.08em;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.segment-span-active {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(18, 32, 51, 0.18);
+  border-color: rgba(18, 32, 51, 0.28);
 }
 
 .segment-boundary {
@@ -389,6 +401,21 @@ h3 {
   padding: 14px 16px;
   border-radius: 18px;
   background: #eaf1f5;
+}
+
+.overlay-segment-item-active {
+  outline: 2px solid rgba(43, 111, 141, 0.5);
+  background: #dfeef5;
+}
+
+.segment-select-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #122033;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .sidebar-list {

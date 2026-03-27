@@ -12,7 +12,13 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  selectedSegmentId: {
+    type: String,
+    default: null,
+  },
 });
+
+const emit = defineEmits(["select-segment"]);
 
 const overlayModel = computed(() =>
   createSegmentationOverlayModel(props.segments, props.seriesLength),
@@ -26,8 +32,17 @@ const overlayModel = computed(() =>
         v-for="segment in overlayModel.spans"
         :key="segment.id"
         class="segment-span"
-        :class="`segment-span-${segment.label}`"
+        :class="[
+          `segment-span-${segment.label}`,
+          { 'segment-span-active': segment.id === selectedSegmentId },
+        ]"
         :style="{ left: segment.left, width: segment.width }"
+        role="button"
+        tabindex="0"
+        :aria-pressed="segment.id === selectedSegmentId"
+        @click="emit('select-segment', segment.id)"
+        @keydown.enter.prevent="emit('select-segment', segment.id)"
+        @keydown.space.prevent="emit('select-segment', segment.id)"
       >
         <span class="segment-label-pill">{{ segment.label }}</span>
       </div>

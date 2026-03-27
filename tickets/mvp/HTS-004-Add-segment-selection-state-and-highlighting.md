@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-004`  
 **Title:** `Add segment selection state and highlighting`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-003`  
@@ -85,10 +85,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] clicking a segment updates selected state predictably
-- [ ] only one segment is active at a time unless a later ticket changes this rule
-- [ ] the active segment is visually highlighted
-- [ ] selection state survives harmless rerenders
+- [x] clicking a segment updates selected state predictably
+- [x] only one segment is active at a time unless a later ticket changes this rule
+- [x] the active segment is visually highlighted
+- [x] selection state survives harmless rerenders
 
 ---
 
@@ -107,7 +107,9 @@ Brief reason:
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+cd frontend
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -121,13 +123,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -142,22 +144,46 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** 
+- added explicit selected-segment state reconciliation helpers for stable rerenders
+- wired segment selection from the overlay and segment list into one active-segment state
+- added visual highlighting for the active segment in both overlay and side list
+- surfaced active segment metadata in the side panel
+**Checks run:** `npm test`; `npm run build`; frontend dev server started successfully on `http://127.0.0.1:5176/` after `5173` through `5175` were already in use  
+**Blockers:** `none`  
+**Next step:** `HTS-005`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Added single-segment selection state, active highlighting, and side-panel metadata that remain stable across harmless rerenders.`  
+**Tests passed:** `npm test`; `npm run build`  
+**Files changed:** `frontend viewer/state files and this ticket file`  
+**Follow-up tickets needed:** `none`
 
 ---
 

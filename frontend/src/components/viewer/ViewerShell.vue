@@ -19,7 +19,13 @@ defineProps({
     type: Array,
     default: () => [],
   },
+  selectedSegmentId: {
+    type: String,
+    default: null,
+  },
 });
+
+const emit = defineEmits(["select-segment"]);
 </script>
 
 <template>
@@ -58,6 +64,8 @@ defineProps({
             v-if="sample?.segments?.length"
             :segments="sample.segments"
             :series-length="sample.seriesLength"
+            :selected-segment-id="selectedSegmentId"
+            @select-segment="emit('select-segment', $event)"
           />
         </div>
         <div v-else class="chart-empty-state">Preparing chart data...</div>
@@ -77,9 +85,16 @@ defineProps({
         </div>
 
         <ul v-if="sample?.segments?.length" class="overlay-segment-list">
-          <li v-for="segment in sample.segments" :key="segment.id" class="overlay-segment-item">
+          <li
+            v-for="segment in sample.segments"
+            :key="segment.id"
+            class="overlay-segment-item"
+            :class="{ 'overlay-segment-item-active': segment.id === selectedSegmentId }"
+          >
             <span class="segment-chip" :class="`segment-chip-${segment.label}`">{{ segment.label }}</span>
-            <strong>{{ segment.start }}-{{ segment.end }}</strong>
+            <button class="segment-select-button" type="button" @click="emit('select-segment', segment.id)">
+              {{ segment.start }}-{{ segment.end }}
+            </button>
           </li>
         </ul>
         <div v-else class="overlay-placeholder">Preparing segments...</div>
@@ -95,7 +110,7 @@ defineProps({
             <p class="section-label">Side panel</p>
             <h3>Viewer context</h3>
           </div>
-          <span class="surface-tag">Read-only</span>
+          <span class="surface-tag">{{ selectedSegmentId ? "Active segment" : "No selection" }}</span>
         </div>
 
         <ul class="sidebar-list">

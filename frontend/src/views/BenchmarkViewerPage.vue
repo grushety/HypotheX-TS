@@ -1,15 +1,20 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
+import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
 
 const sample = ref(null);
 const loading = ref(true);
 const error = ref("");
+const selectedSegmentId = ref(null);
 
-const pageState = computed(() => createViewerPageState(sample.value));
+const selectedSegment = computed(() =>
+  getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
+);
+const pageState = computed(() => createViewerPageState(sample.value, selectedSegment.value));
 
 async function loadSample() {
   loading.value = true;
@@ -26,6 +31,18 @@ async function loadSample() {
   }
 }
 
+function handleSelectSegment(segmentId) {
+  selectedSegmentId.value = segmentId;
+}
+
+watch(
+  () => sample.value?.segments,
+  (segments) => {
+    selectedSegmentId.value = reconcileSelectedSegmentId(segments ?? [], selectedSegmentId.value);
+  },
+  { immediate: true },
+);
+
 onMounted(() => {
   loadSample();
 });
@@ -35,11 +52,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-003</p>
-        <h1>Benchmark viewer overlay</h1>
+        <p class="eyebrow">HTS-004</p>
+        <h1>Benchmark viewer selection</h1>
         <p class="hero-copy">
-          The viewer now layers semantic segments and labels on top of the chart while keeping the
-          chart drawing and overlay rendering as separate components.
+          The viewer now keeps one explicit active segment in state so highlighting and side-panel
+          metadata stay synchronized across rerenders.
         </p>
       </div>
 
@@ -55,6 +72,8 @@ onMounted(() => {
       :loading="loading"
       :status-items="pageState.statusItems"
       :sidebar-items="pageState.sidebarItems"
+      :selected-segment-id="selectedSegmentId"
+      @select-segment="handleSelectSegment"
     />
   </main>
 </template>
