@@ -9,7 +9,7 @@ import {
   executeMoveBoundaryAction,
   executeUpdateSegmentLabelAction,
 } from "../lib/segments/executeSegmentEditAction";
-import { createWarningDisplayModel } from "../lib/viewer/createWarningDisplayModel";
+import { createViewerWarningDisplay } from "../lib/viewer/createViewerWarningDisplay";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
 import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
 
@@ -27,10 +27,12 @@ const selectedSegment = computed(() =>
 );
 const pageState = computed(() => createViewerPageState(sample.value, selectedSegment.value));
 const warningDisplay = computed(() =>
-  createWarningDisplayModel(
-    operationConstraintResult.value ?? editConstraintResult.value,
-    operationConstraintResult.value ? operationFeedback.value : editFeedback.value,
-  ),
+  createViewerWarningDisplay({
+    editConstraintResult: editConstraintResult.value,
+    editFeedback: editFeedback.value,
+    operationConstraintResult: operationConstraintResult.value,
+    operationFeedback: operationFeedback.value,
+  }),
 );
 
 async function loadSample() {

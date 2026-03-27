@@ -91,3 +91,16 @@ test("failed operation attempts do not mutate sample state or selection", () => 
     label: "trend",
   });
 });
+
+test("warned operation feedback remains tied to the latest warned operation context", () => {
+  const splitResult = executeOperationAction(baseSample, "seg-002", {
+    type: "split",
+    segmentId: "seg-002",
+    splitIndex: 30,
+  });
+
+  assert.equal(splitResult.ok, true);
+  assert.equal(splitResult.constraintStatus, SOFT_CONSTRAINT_STATUS.WARN);
+  assert.equal(splitResult.operationResult.type, "split");
+  assert.equal(splitResult.warnings[0].actionType, "split");
+});

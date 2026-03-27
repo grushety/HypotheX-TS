@@ -93,3 +93,36 @@ test("evaluateEditSoftConstraints returns WARN for label edits that create adjac
   assert.equal(result.warnings[0].actionType, "update-label");
   assert.deepEqual(result.warnings[0].segmentIds, ["seg-002", "seg-003"]);
 });
+
+test("evaluateOperationSoftConstraints returns one warning per adjacent same-label pair", () => {
+  const previousSegments = [
+    { id: "seg-001", start: 0, end: 17, label: "event" },
+    { id: "seg-002", start: 18, end: 43, label: "trend" },
+    { id: "seg-003", start: 44, end: 67, label: "trend" },
+    { id: "seg-004", start: 68, end: 95, label: "other" },
+  ];
+  const nextSegments = [
+    previousSegments[0],
+    { id: "seg-002-a", start: 18, end: 29, label: "event" },
+    { id: "seg-002-b", start: 30, end: 43, label: "trend" },
+    { id: "seg-003", start: 44, end: 67, label: "trend" },
+    previousSegments[3],
+  ];
+
+  const result = evaluateOperationSoftConstraints(previousSegments, nextSegments, {
+    type: "reclassify",
+    segmentId: "seg-002-a",
+    nextLabel: "event",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.status, SOFT_CONSTRAINT_STATUS.WARN);
+  assert.equal(result.warnings.length, 2);
+  assert.deepEqual(
+    result.warnings.map((warning) => warning.segmentIds),
+    [
+      ["seg-001", "seg-002-a"],
+      ["seg-002-b", "seg-003"],
+    ],
+  );
+});

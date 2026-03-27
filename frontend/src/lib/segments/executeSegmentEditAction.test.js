@@ -40,3 +40,11 @@ test("executeUpdateSegmentLabelAction applies warned edits without blocking the 
   assert.equal(result.message, "Label updated with 1 warning.");
   assert.equal(result.sample.segments[2].label, "trend");
 });
+
+test("executeUpdateSegmentLabelAction keeps warning context attached to the edit action", () => {
+  const result = executeUpdateSegmentLabelAction(sample, "seg-003", "trend");
+
+  assert.equal(result.ok, true);
+  assert.equal(result.constraintResult.action.type, "update-label");
+  assert.equal(result.warnings[0].actionType, "update-label");
+});
