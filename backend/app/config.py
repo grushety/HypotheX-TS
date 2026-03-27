@@ -1,0 +1,19 @@
+from pathlib import Path
+
+from app.core.paths import BENCHMARK_ROOT, INSTANCE_DIR, PROJECT_ROOT
+
+
+class Config:
+    SECRET_KEY = "dev"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    INSTANCE_DIR = INSTANCE_DIR
+    PROJECT_ROOT = PROJECT_ROOT
+    DATABASE_PATH = INSTANCE_DIR / "hypothex_ts.db"
+    SQLALCHEMY_DATABASE_URI = f"sqlite:///{DATABASE_PATH.as_posix()}"
+    BENCHMARK_ROOT = BENCHMARK_ROOT
+    FRONTEND_ORIGIN = "http://127.0.0.1:5173"
+
+
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"

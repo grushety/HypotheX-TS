@@ -1,0 +1,47 @@
+{
+  "name": "ECG200",
+  "export_format": "npy",
+  "tensor_layout": "n_samples x n_channels x series_length",
+  "raw_train_shape": [
+    100,
+    1,
+    96
+  ],
+  "raw_test_shape": [
+    100,
+    1,
+    96
+  ],
+  "train_shape": [
+    100,
+    1,
+    96
+  ],
+  "test_shape": [
+    100,
+    1,
+    96
+  ],
+  "n_classes": 2,
+  "classes": [
+    "-1",
+    "1"
+  ],
+  "label_mapping": {
+    "-1": 0,
+    "1": 1
+  },
+  "normalization": {
+    "mean": [
+      3.9736430812453705e-10
+    ],
+    "std": [
+      0.994778037071228
+    ],
+    "applied_to": "per-channel train-set z-normalization"
+  },
+  "raw_files": [
+    "ECG200_TEST.ts",
+    "ECG200_TRAIN.ts"
+  ]
+}

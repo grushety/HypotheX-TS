@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+backend/.venv/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Local app runtime data
+backend/instance/
+*.sqlite3
+*.db
+
+# Benchmarks and model artifacts
+benchmarks/raw/downloads/
+benchmarks/raw/archives/
+benchmarks/models/repos/
+benchmarks/models/weights/
+
+# Misc
+.DS_Store
+Thumbs.db

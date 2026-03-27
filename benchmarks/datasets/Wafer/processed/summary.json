@@ -1,0 +1,47 @@
+{
+  "name": "Wafer",
+  "export_format": "npy",
+  "tensor_layout": "n_samples x n_channels x series_length",
+  "raw_train_shape": [
+    1000,
+    1,
+    152
+  ],
+  "raw_test_shape": [
+    6164,
+    1,
+    152
+  ],
+  "train_shape": [
+    1000,
+    1,
+    152
+  ],
+  "test_shape": [
+    6164,
+    1,
+    152
+  ],
+  "n_classes": 2,
+  "classes": [
+    "1",
+    "-1"
+  ],
+  "label_mapping": {
+    "1": 0,
+    "-1": 1
+  },
+  "normalization": {
+    "mean": [
+      6.274173403042482e-10
+    ],
+    "std": [
+      0.9967051148414612
+    ],
+    "applied_to": "per-channel train-set z-normalization"
+  },
+  "raw_files": [
+    "Wafer_TEST.ts",
+    "Wafer_TRAIN.ts"
+  ]
+}

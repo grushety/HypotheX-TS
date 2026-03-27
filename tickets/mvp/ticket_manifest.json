@@ -1,0 +1,134 @@
+[
+  {
+    "id": "HTS-001",
+    "title": "Scaffold benchmark viewer page",
+    "depends_on": "none",
+    "path": "tickets/mvp/HTS-001-Scaffold-benchmark-viewer-page.md"
+  },
+  {
+    "id": "HTS-002",
+    "title": "Render time-series chart",
+    "depends_on": "HTS-001",
+    "path": "tickets/mvp/HTS-002-Render-time-series-chart.md"
+  },
+  {
+    "id": "HTS-003",
+    "title": "Render segmentation overlay and labels",
+    "depends_on": "HTS-002",
+    "path": "tickets/mvp/HTS-003-Render-segmentation-overlay-and-labels.md"
+  },
+  {
+    "id": "HTS-004",
+    "title": "Add segment selection state and highlighting",
+    "depends_on": "HTS-003",
+    "path": "tickets/mvp/HTS-004-Add-segment-selection-state-and-highlighting.md"
+  },
+  {
+    "id": "HTS-005",
+    "title": "Implement segment boundary edit domain logic",
+    "depends_on": "HTS-004",
+    "path": "tickets/mvp/HTS-005-Implement-segment-boundary-edit-domain-logic.md"
+  },
+  {
+    "id": "HTS-006",
+    "title": "Add boundary drag interaction in the viewer",
+    "depends_on": "HTS-005",
+    "path": "tickets/mvp/HTS-006-Add-boundary-drag-interaction-in-the-viewer.md"
+  },
+  {
+    "id": "HTS-007",
+    "title": "Add segment label editing UI",
+    "depends_on": "HTS-004",
+    "path": "tickets/mvp/HTS-007-Add-segment-label-editing-UI.md"
+  },
+  {
+    "id": "HTS-008",
+    "title": "Add edit-state validation and tests",
+    "depends_on": "HTS-006, HTS-007",
+    "path": "tickets/mvp/HTS-008-Add-edit-state-validation-and-tests.md"
+  },
+  {
+    "id": "HTS-009",
+    "title": "Create semantic operation domain layer",
+    "depends_on": "HTS-008",
+    "path": "tickets/mvp/HTS-009-Create-semantic-operation-domain-layer.md"
+  },
+  {
+    "id": "HTS-010",
+    "title": "Implement split operation",
+    "depends_on": "HTS-009",
+    "path": "tickets/mvp/HTS-010-Implement-split-operation.md"
+  },
+  {
+    "id": "HTS-011",
+    "title": "Implement merge operation",
+    "depends_on": "HTS-010",
+    "path": "tickets/mvp/HTS-011-Implement-merge-operation.md"
+  },
+  {
+    "id": "HTS-012",
+    "title": "Implement reclassify operation",
+    "depends_on": "HTS-009",
+    "path": "tickets/mvp/HTS-012-Implement-reclassify-operation.md"
+  },
+  {
+    "id": "HTS-013",
+    "title": "Add operation palette and UI triggers",
+    "depends_on": "HTS-010, HTS-011, HTS-012",
+    "path": "tickets/mvp/HTS-013-Add-operation-palette-and-UI-triggers.md"
+  },
+  {
+    "id": "HTS-014",
+    "title": "Stabilize semantic operations with tests",
+    "depends_on": "HTS-013",
+    "path": "tickets/mvp/HTS-014-Stabilize-semantic-operations-with-tests.md"
+  },
+  {
+    "id": "HTS-015",
+    "title": "Build soft-constraint evaluation layer",
+    "depends_on": "HTS-014",
+    "path": "tickets/mvp/HTS-015-Build-soft-constraint-evaluation-layer.md"
+  },
+  {
+    "id": "HTS-016",
+    "title": "Wire warnings into edit and operation flows",
+    "depends_on": "HTS-015",
+    "path": "tickets/mvp/HTS-016-Wire-warnings-into-edit-and-operation-flows.md"
+  },
+  {
+    "id": "HTS-017",
+    "title": "Add warning UI and explanations",
+    "depends_on": "HTS-016",
+    "path": "tickets/mvp/HTS-017-Add-warning-UI-and-explanations.md"
+  },
+  {
+    "id": "HTS-018",
+    "title": "Stabilize soft-constraint behavior with tests",
+    "depends_on": "HTS-017",
+    "path": "tickets/mvp/HTS-018-Stabilize-soft-constraint-behavior-with-tests.md"
+  },
+  {
+    "id": "HTS-019",
+    "title": "Define audit event schema and capture hooks",
+    "depends_on": "HTS-018",
+    "path": "tickets/mvp/HTS-019-Define-audit-event-schema-and-capture-hooks.md"
+  },
+  {
+    "id": "HTS-020",
+    "title": "Add interaction history panel",
+    "depends_on": "HTS-019",
+    "path": "tickets/mvp/HTS-020-Add-interaction-history-panel.md"
+  },
+  {
+    "id": "HTS-021",
+    "title": "Export interaction log",
+    "depends_on": "HTS-020",
+    "path": "tickets/mvp/HTS-021-Export-interaction-log.md"
+  },
+  {
+    "id": "HTS-022",
+    "title": "Run MVP smoke pass and docs cleanup",
+    "depends_on": "HTS-021",
+    "path": "tickets/mvp/HTS-022-Run-MVP-smoke-pass-and-docs-cleanup.md"
+  }
+]

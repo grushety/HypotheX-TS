@@ -1,0 +1,11 @@
+{
+  "name": "BasicMotions",
+  "task_type": "classification",
+  "univariate": false,
+  "n_channels": 6,
+  "train_split_present": true,
+  "test_split_present": true,
+  "source": "https://www.timeseriesclassification.com/description.php?Dataset=BasicMotions",
+  "license": null,
+  "notes": "Smartwatch accelerometer and gyroscope benchmark from the UEA archive."
+}

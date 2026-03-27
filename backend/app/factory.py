@@ -1,0 +1,25 @@
+from flask import Flask
+
+from app.config import Config
+from app.extensions import cors, db
+from app.routes.health import health_bp
+
+
+def create_app(config_object: type[Config] = Config) -> Flask:
+    app = Flask(__name__, instance_relative_config=True)
+    app.config.from_object(config_object)
+
+    app.instance_path = str(app.config["INSTANCE_DIR"])
+    app.config["INSTANCE_DIR"].mkdir(parents=True, exist_ok=True)
+
+    cors.init_app(
+        app,
+        resources={r"/api/*": {"origins": [app.config["FRONTEND_ORIGIN"]]}},
+    )
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
+
+    app.register_blueprint(health_bp)
+    return app

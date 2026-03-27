@@ -1,0 +1,47 @@
+{
+  "name": "GunPoint",
+  "export_format": "npy",
+  "tensor_layout": "n_samples x n_channels x series_length",
+  "raw_train_shape": [
+    50,
+    1,
+    150
+  ],
+  "raw_test_shape": [
+    150,
+    1,
+    150
+  ],
+  "train_shape": [
+    50,
+    1,
+    150
+  ],
+  "test_shape": [
+    150,
+    1,
+    150
+  ],
+  "n_classes": 2,
+  "classes": [
+    "2",
+    "1"
+  ],
+  "label_mapping": {
+    "2": 0,
+    "1": 1
+  },
+  "normalization": {
+    "mean": [
+      1.780192104838818e-09
+    ],
+    "std": [
+      0.9966610670089722
+    ],
+    "applied_to": "per-channel train-set z-normalization"
+  },
+  "raw_files": [
+    "GunPoint_TEST.ts",
+    "GunPoint_TRAIN.ts"
+  ]
+}

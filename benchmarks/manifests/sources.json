@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-03-26T21:12:09+00:00",
+  "archives": [
+    {
+      "name": "multivariate_ts",
+      "kind": "dataset_archive",
+      "url": "https://www.timeseriesclassification.com/aeon-toolkit/Archives/Multivariate2018_ts.zip",
+      "description": "Official UCR/UEA multivariate aeon-format archive"
+    },
+    {
+      "name": "univariate_ts",
+      "kind": "dataset_archive",
+      "url": "https://www.timeseriesclassification.com/aeon-toolkit/Archives/Univariate2018_ts.zip",
+      "description": "Official UCR/UEA univariate aeon-format archive"
+    }
+  ],
+  "datasets": [
+    {
+      "name": "GunPoint",
+      "kind": "dataset_description",
+      "url": "https://www.timeseriesclassification.com/description.php?Dataset=GunPoint",
+      "archive_key": "univariate_ts",
+      "source": "UCR/UEA Time Series Classification Archive"
+    },
+    {
+      "name": "ECG200",
+      "kind": "dataset_description",
+      "url": "https://www.timeseriesclassification.com/description.php?Dataset=ECG200",
+      "archive_key": "univariate_ts",
+      "source": "UCR/UEA Time Series Classification Archive"
+    },
+    {
+      "name": "Wafer",
+      "kind": "dataset_description",
+      "url": "https://www.timeseriesclassification.com/description.php?Dataset=Wafer",
+      "archive_key": "univariate_ts",
+      "source": "UCR/UEA Time Series Classification Archive"
+    },
+    {
+      "name": "BasicMotions",
+      "kind": "dataset_description",
+      "url": "https://www.timeseriesclassification.com/description.php?Dataset=BasicMotions",
+      "archive_key": "multivariate_ts",
+      "source": "UEA Multivariate Time Series Classification Archive"
+    }
+  ],
+  "models": [
+    {
+      "name": "dl-4-tsc",
+      "kind": "model_repository",
+      "url": "https://github.com/hfawaz/dl-4-tsc.git",
+      "license": "GPL-3.0",
+      "models": [
+        "fcn",
+        "mlp"
+      ]
+    },
+    {
+      "name": "InceptionTime",
+      "kind": "model_repository",
+      "url": "https://github.com/hfawaz/InceptionTime.git",
+      "license": "GPL-3.0",
+      "models": [
+        "inceptiontime"
+      ]
+    }
+  ],
+  "notes": [
+    "Timeseriesclassification.com description pages are recorded as canonical dataset pages.",
+    "Official aeon-format archive ZIPs are recorded as the stable download sources."
+  ]
+}

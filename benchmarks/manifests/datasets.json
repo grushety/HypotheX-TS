@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-03-26T21:12:09+00:00",
+  "datasets": [
+    {
+      "name": "GunPoint",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\GunPoint",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\GunPoint\\processed",
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\GunPoint\\metadata.json",
+      "train_shape": [
+        50,
+        1,
+        150
+      ],
+      "test_shape": [
+        150,
+        1,
+        150
+      ],
+      "n_classes": 2,
+      "classes": [
+        "2",
+        "1"
+      ],
+      "tensor_layout": "n_samples x n_channels x series_length"
+    },
+    {
+      "name": "ECG200",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\ECG200",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\ECG200\\processed",
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\ECG200\\metadata.json",
+      "train_shape": [
+        100,
+        1,
+        96
+      ],
+      "test_shape": [
+        100,
+        1,
+        96
+      ],
+      "n_classes": 2,
+      "classes": [
+        "-1",
+        "1"
+      ],
+      "tensor_layout": "n_samples x n_channels x series_length"
+    },
+    {
+      "name": "Wafer",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\Wafer",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\Wafer\\processed",
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\Wafer\\metadata.json",
+      "train_shape": [
+        1000,
+        1,
+        152
+      ],
+      "test_shape": [
+        6164,
+        1,
+        152
+      ],
+      "n_classes": 2,
+      "classes": [
+        "1",
+        "-1"
+      ],
+      "tensor_layout": "n_samples x n_channels x series_length"
+    },
+    {
+      "name": "BasicMotions",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\BasicMotions",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\BasicMotions\\processed",
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\BasicMotions\\metadata.json",
+      "train_shape": [
+        40,
+        6,
+        100
+      ],
+      "test_shape": [
+        40,
+        6,
+        100
+      ],
+      "n_classes": 4,
+      "classes": [
+        "Standing",
+        "Running",
+        "Walking",
+        "Badminton"
+      ],
+      "tensor_layout": "n_samples x n_channels x series_length"
+    }
+  ]
+}

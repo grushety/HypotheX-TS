@@ -1,0 +1,11 @@
+{
+  "name": "GunPoint",
+  "task_type": "classification",
+  "univariate": true,
+  "n_channels": 1,
+  "train_split_present": true,
+  "test_split_present": true,
+  "source": "https://www.timeseriesclassification.com/description.php?Dataset=GunPoint",
+  "license": null,
+  "notes": "Canonical source is the Time Series Classification archive description page."
+}

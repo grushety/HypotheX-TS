@@ -1,0 +1,397 @@
+{
+  "generated_at": "2026-03-26T21:12:09+00:00",
+  "root": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks",
+  "arguments": {
+    "root": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks",
+    "datasets": "all",
+    "skip_model_repos": false,
+    "force_redownload": false,
+    "export_format": "npy"
+  },
+  "aeon_available": false,
+  "dataset_results": [
+    {
+      "name": "GunPoint",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\GunPoint",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\GunPoint\\processed",
+      "summary": {
+        "name": "GunPoint",
+        "export_format": "npy",
+        "tensor_layout": "n_samples x n_channels x series_length",
+        "raw_train_shape": [
+          50,
+          1,
+          150
+        ],
+        "raw_test_shape": [
+          150,
+          1,
+          150
+        ],
+        "train_shape": [
+          50,
+          1,
+          150
+        ],
+        "test_shape": [
+          150,
+          1,
+          150
+        ],
+        "n_classes": 2,
+        "classes": [
+          "2",
+          "1"
+        ],
+        "label_mapping": {
+          "2": 0,
+          "1": 1
+        },
+        "normalization": {
+          "mean": [
+            1.780192104838818e-09
+          ],
+          "std": [
+            0.9966610670089722
+          ],
+          "applied_to": "per-channel train-set z-normalization"
+        },
+        "raw_files": [
+          "GunPoint_TEST.ts",
+          "GunPoint_TRAIN.ts"
+        ]
+      },
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\GunPoint\\metadata.json",
+      "archive_source": "univariate_ts",
+      "train_meta": {
+        "problem_name": "GunPoint",
+        "timestamps": false,
+        "univariate": true,
+        "class_label": true,
+        "class_values": [
+          "1",
+          "2"
+        ],
+        "n_cases": 50,
+        "n_channels": 1,
+        "series_length": 150
+      },
+      "test_meta": {
+        "problem_name": "GunPoint",
+        "timestamps": false,
+        "univariate": true,
+        "class_label": true,
+        "class_values": [
+          "1",
+          "2"
+        ],
+        "n_cases": 150,
+        "n_channels": 1,
+        "series_length": 150
+      }
+    },
+    {
+      "name": "ECG200",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\ECG200",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\ECG200\\processed",
+      "summary": {
+        "name": "ECG200",
+        "export_format": "npy",
+        "tensor_layout": "n_samples x n_channels x series_length",
+        "raw_train_shape": [
+          100,
+          1,
+          96
+        ],
+        "raw_test_shape": [
+          100,
+          1,
+          96
+        ],
+        "train_shape": [
+          100,
+          1,
+          96
+        ],
+        "test_shape": [
+          100,
+          1,
+          96
+        ],
+        "n_classes": 2,
+        "classes": [
+          "-1",
+          "1"
+        ],
+        "label_mapping": {
+          "-1": 0,
+          "1": 1
+        },
+        "normalization": {
+          "mean": [
+            3.9736430812453705e-10
+          ],
+          "std": [
+            0.994778037071228
+          ],
+          "applied_to": "per-channel train-set z-normalization"
+        },
+        "raw_files": [
+          "ECG200_TEST.ts",
+          "ECG200_TRAIN.ts"
+        ]
+      },
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\ECG200\\metadata.json",
+      "archive_source": "univariate_ts",
+      "train_meta": {
+        "problem_name": "ECG200",
+        "timestamps": false,
+        "univariate": true,
+        "class_label": true,
+        "class_values": [
+          "-1",
+          "1"
+        ],
+        "n_cases": 100,
+        "n_channels": 1,
+        "series_length": 96
+      },
+      "test_meta": {
+        "problem_name": "ECG200",
+        "timestamps": false,
+        "univariate": true,
+        "class_label": true,
+        "class_values": [
+          "-1",
+          "1"
+        ],
+        "n_cases": 100,
+        "n_channels": 1,
+        "series_length": 96
+      }
+    },
+    {
+      "name": "Wafer",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\Wafer",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\Wafer\\processed",
+      "summary": {
+        "name": "Wafer",
+        "export_format": "npy",
+        "tensor_layout": "n_samples x n_channels x series_length",
+        "raw_train_shape": [
+          1000,
+          1,
+          152
+        ],
+        "raw_test_shape": [
+          6164,
+          1,
+          152
+        ],
+        "train_shape": [
+          1000,
+          1,
+          152
+        ],
+        "test_shape": [
+          6164,
+          1,
+          152
+        ],
+        "n_classes": 2,
+        "classes": [
+          "1",
+          "-1"
+        ],
+        "label_mapping": {
+          "1": 0,
+          "-1": 1
+        },
+        "normalization": {
+          "mean": [
+            6.274173403042482e-10
+          ],
+          "std": [
+            0.9967051148414612
+          ],
+          "applied_to": "per-channel train-set z-normalization"
+        },
+        "raw_files": [
+          "Wafer_TEST.ts",
+          "Wafer_TRAIN.ts"
+        ]
+      },
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\Wafer\\metadata.json",
+      "archive_source": "univariate_ts",
+      "train_meta": {
+        "problem_name": "Wafer",
+        "timestamps": false,
+        "univariate": true,
+        "class_label": true,
+        "class_values": [
+          "-1",
+          "1"
+        ],
+        "n_cases": 1000,
+        "n_channels": 1,
+        "series_length": 152
+      },
+      "test_meta": {
+        "problem_name": "Wafer",
+        "timestamps": false,
+        "univariate": true,
+        "class_label": true,
+        "class_values": [
+          "-1",
+          "1"
+        ],
+        "n_cases": 6164,
+        "n_channels": 1,
+        "series_length": 152
+      }
+    },
+    {
+      "name": "BasicMotions",
+      "status": "prepared",
+      "dataset_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\BasicMotions",
+      "processed_dir": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\BasicMotions\\processed",
+      "summary": {
+        "name": "BasicMotions",
+        "export_format": "npy",
+        "tensor_layout": "n_samples x n_channels x series_length",
+        "raw_train_shape": [
+          40,
+          6,
+          100
+        ],
+        "raw_test_shape": [
+          40,
+          6,
+          100
+        ],
+        "train_shape": [
+          40,
+          6,
+          100
+        ],
+        "test_shape": [
+          40,
+          6,
+          100
+        ],
+        "n_classes": 4,
+        "classes": [
+          "Standing",
+          "Running",
+          "Walking",
+          "Badminton"
+        ],
+        "label_mapping": {
+          "Standing": 0,
+          "Running": 1,
+          "Walking": 2,
+          "Badminton": 3
+        },
+        "normalization": {
+          "mean": [
+            2.5527594089508057,
+            -1.3039368391036987,
+            -1.0265804529190063,
+            0.019051099196076393,
+            -0.023957695811986923,
+            -0.055789683014154434
+          ],
+          "std": [
+            7.072306156158447,
+            6.7940874099731445,
+            3.5463736057281494,
+            2.111920118331909,
+            1.8207507133483887,
+            3.5165858268737793
+          ],
+          "applied_to": "per-channel train-set z-normalization"
+        },
+        "raw_files": [
+          "BasicMotions_TEST.ts",
+          "BasicMotions_TRAIN.ts"
+        ]
+      },
+      "metadata_path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\datasets\\BasicMotions\\metadata.json",
+      "archive_source": "multivariate_ts",
+      "train_meta": {
+        "problem_name": "BasicMotions",
+        "timestamps": false,
+        "univariate": false,
+        "class_label": true,
+        "class_values": [
+          "Standing",
+          "Running",
+          "Walking",
+          "Badminton"
+        ],
+        "n_cases": 40,
+        "n_channels": 6,
+        "series_length": 100
+      },
+      "test_meta": {
+        "problem_name": "BasicMotions",
+        "timestamps": false,
+        "univariate": false,
+        "class_label": true,
+        "class_values": [
+          "Standing",
+          "Running",
+          "Walking",
+          "Badminton"
+        ],
+        "n_cases": 40,
+        "n_channels": 6,
+        "series_length": 100
+      }
+    }
+  ],
+  "repo_results": [
+    {
+      "name": "dl-4-tsc",
+      "status": "cloned",
+      "path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\models\\repos\\dl-4-tsc",
+      "url": "https://github.com/hfawaz/dl-4-tsc.git"
+    },
+    {
+      "name": "InceptionTime",
+      "status": "cloned",
+      "path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\models\\repos\\InceptionTime",
+      "url": "https://github.com/hfawaz/InceptionTime.git"
+    }
+  ],
+  "warnings": [
+    "aeon is not installed. Falling back to direct official archive downloads and built-in TS parsing. Install aeon later with 'pip install aeon' if you want the toolkit available for manual inspection."
+  ],
+  "actions": {
+    "downloads": [
+      {
+        "path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\raw\\downloads\\Multivariate2018_ts.zip",
+        "downloaded": false,
+        "url": "https://www.timeseriesclassification.com/aeon-toolkit/Archives/Multivariate2018_ts.zip"
+      },
+      {
+        "path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\raw\\downloads\\Univariate2018_ts.zip",
+        "downloaded": false,
+        "url": "https://www.timeseriesclassification.com/aeon-toolkit/Archives/Univariate2018_ts.zip"
+      }
+    ],
+    "extractions": [
+      {
+        "path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\raw\\archives\\ucr_uea\\multivariate_ts",
+        "extracted": false
+      },
+      {
+        "path": "C:\\Users\\yulia\\PycharmProjects\\HypotheX-TS\\benchmarks\\raw\\archives\\ucr_uea\\univariate_ts",
+        "extracted": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "name": "BasicMotions",
+  "export_format": "npy",
+  "tensor_layout": "n_samples x n_channels x series_length",
+  "raw_train_shape": [
+    40,
+    6,
+    100
+  ],
+  "raw_test_shape": [
+    40,
+    6,
+    100
+  ],
+  "train_shape": [
+    40,
+    6,
+    100
+  ],
+  "test_shape": [
+    40,
+    6,
+    100
+  ],
+  "n_classes": 4,
+  "classes": [
+    "Standing",
+    "Running",
+    "Walking",
+    "Badminton"
+  ],
+  "label_mapping": {
+    "Standing": 0,
+    "Running": 1,
+    "Walking": 2,
+    "Badminton": 3
+  },
+  "normalization": {
+    "mean": [
+      2.5527594089508057,
+      -1.3039368391036987,
+      -1.0265804529190063,
+      0.019051099196076393,
+      -0.023957695811986923,
+      -0.055789683014154434
+    ],
+    "std": [
+      7.072306156158447,
+      6.7940874099731445,
+      3.5463736057281494,
+      2.111920118331909,
+      1.8207507133483887,
+      3.5165858268737793
+    ],
+    "applied_to": "per-channel train-set z-normalization"
+  },
+  "raw_files": [
+    "BasicMotions_TEST.ts",
+    "BasicMotions_TRAIN.ts"
+  ]
+}
