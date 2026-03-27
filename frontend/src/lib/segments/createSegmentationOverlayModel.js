@@ -31,6 +31,7 @@ export function createSegmentationOverlayModel(segments, seriesLength) {
 
   const boundaries = segments.slice(0, -1).map((segment) => ({
     id: `${segment.id}-boundary`,
+    boundaryIndex: segments.indexOf(segment),
     left: toPercent((((segment.end + 1) / denominator) * 100)),
   }));
 

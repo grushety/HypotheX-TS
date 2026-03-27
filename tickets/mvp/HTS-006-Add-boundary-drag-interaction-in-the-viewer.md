@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-006`  
 **Title:** `Add boundary drag interaction in the viewer`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-005`  
@@ -85,10 +85,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] a user can drag a valid shared boundary and see the overlay update
-- [ ] invalid moves are rejected cleanly and leave state consistent
-- [ ] only adjacent segments change after a valid move
-- [ ] the interaction is covered by frontend or integration tests where feasible
+- [x] a user can drag a valid shared boundary and see the overlay update
+- [x] invalid moves are rejected cleanly and leave state consistent
+- [x] only adjacent segments change after a valid move
+- [x] the interaction is covered by frontend or integration tests where feasible
 
 ---
 
@@ -108,7 +108,9 @@ Brief reason:
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+cd frontend
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -122,13 +124,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -143,22 +145,46 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** 
+- added draggable shared-boundary handles to the segmentation overlay
+- wired boundary drag events to the pure `moveSegmentBoundary` domain logic from `HTS-005`
+- applied valid boundary edits live in viewer state and surfaced invalid-move feedback explicitly
+- added pointer-to-boundary helper tests and extended overlay model tests for drag metadata
+**Checks run:** `npm test`; `npm run build`; frontend dev server started successfully on `http://127.0.0.1:5173/`  
+**Blockers:** `none`  
+**Next step:** `HTS-007`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Connected draggable shared boundaries in the overlay to the existing boundary-edit domain logic so valid edits update immediately and invalid moves surface clean feedback.`  
+**Tests passed:** `npm test`; `npm run build`  
+**Files changed:** `frontend viewer/segment interaction files and this ticket file`  
+**Follow-up tickets needed:** `none`
 
 ---
 

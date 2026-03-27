@@ -32,5 +32,6 @@ test("createSegmentationOverlayModel creates one boundary per segment edge", () 
 
   assert.equal(model.boundaries.length, 3);
   assert.equal(model.boundaries[0].left, "12.50%");
+  assert.equal(model.boundaries[0].boundaryIndex, 0);
   assert.equal(model.boundaries[2].left, "66.67%");
 });

@@ -23,9 +23,13 @@ defineProps({
     type: String,
     default: null,
   },
+  editFeedback: {
+    type: String,
+    default: "",
+  },
 });
 
-const emit = defineEmits(["select-segment"]);
+const emit = defineEmits(["select-segment", "move-boundary"]);
 </script>
 
 <template>
@@ -66,12 +70,14 @@ const emit = defineEmits(["select-segment"]);
             :series-length="sample.seriesLength"
             :selected-segment-id="selectedSegmentId"
             @select-segment="emit('select-segment', $event)"
+            @move-boundary="emit('move-boundary', $event)"
           />
         </div>
         <div v-else class="chart-empty-state">Preparing chart data...</div>
 
+        <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
         <p class="surface-copy">
-          This chart component is the base visualization layer for later overlay and editing work.
+          Drag a boundary handle to update adjacent segments through the shared boundary logic.
         </p>
       </section>
 
