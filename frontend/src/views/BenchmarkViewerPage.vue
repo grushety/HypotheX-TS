@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
 import { moveSegmentBoundary } from "../lib/segments/moveSegmentBoundary";
+import { updateSegmentLabel } from "../lib/segments/updateSegmentLabel";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
 import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
 
@@ -57,6 +58,25 @@ function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
   editFeedback.value = "";
 }
 
+function handleUpdateSegmentLabel(nextLabel) {
+  if (!sample.value?.segments?.length || !selectedSegmentId.value) {
+    return;
+  }
+
+  const result = updateSegmentLabel(sample.value.segments, selectedSegmentId.value, nextLabel);
+
+  if (!result.ok) {
+    editFeedback.value = result.message;
+    return;
+  }
+
+  sample.value = {
+    ...sample.value,
+    segments: result.segments,
+  };
+  editFeedback.value = "";
+}
+
 watch(
   () => sample.value?.segments,
   (segments) => {
@@ -74,11 +94,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-006</p>
-        <h1>Benchmark viewer boundary drag</h1>
+        <p class="eyebrow">HTS-007</p>
+        <h1>Benchmark viewer label editing</h1>
         <p class="hero-copy">
-          The viewer now connects draggable shared boundaries to the pure boundary-edit logic so
-          valid edits update immediately and invalid moves surface clean feedback.
+          The viewer now lets the active segment change semantic label from the side panel while
+          keeping label updates separate from boundary movement logic.
         </p>
       </div>
 
@@ -95,9 +115,11 @@ onMounted(() => {
       :status-items="pageState.statusItems"
       :sidebar-items="pageState.sidebarItems"
       :selected-segment-id="selectedSegmentId"
+      :selected-segment="selectedSegment"
       :edit-feedback="editFeedback"
       @select-segment="handleSelectSegment"
       @move-boundary="handleMoveBoundary"
+      @update-segment-label="handleUpdateSegmentLabel"
     />
   </main>
 </template>

@@ -443,6 +443,28 @@ h3 {
   font-weight: 600;
 }
 
+.label-editor {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #eef4f7;
+}
+
+.label-editor-field {
+  display: grid;
+  gap: 8px;
+}
+
+.label-editor-select {
+  width: 100%;
+  border: 1px solid rgba(18, 32, 51, 0.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #122033;
+  font: inherit;
+}
+
 .sidebar-list {
   display: grid;
   gap: 14px;

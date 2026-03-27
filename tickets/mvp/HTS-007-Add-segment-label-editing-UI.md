@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-007`  
 **Title:** `Add segment label editing UI`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-004`  
@@ -84,10 +84,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] the selected segment label can be changed from the UI
-- [ ] the new label appears in both overlay and detail view
-- [ ] changing a label does not alter segment boundaries
-- [ ] invalid label values are rejected or unavailable by design
+- [x] the selected segment label can be changed from the UI
+- [x] the new label appears in both overlay and detail view
+- [x] changing a label does not alter segment boundaries
+- [x] invalid label values are rejected or unavailable by design
 
 ---
 
@@ -106,7 +106,9 @@ Brief reason:
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+cd frontend
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -120,13 +122,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -141,22 +143,46 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** 
+- added a pure segment-label update helper with the formal semantic label set
+- added a side-panel label editor for the active segment
+- wired label changes into shared viewer state so the overlay and detail view update immediately
+- extended viewer state tests to show active label metadata
+**Checks run:** `npm test`; `npm run build`; frontend dev server started successfully on `http://127.0.0.1:5173/`  
+**Blockers:** `none`  
+**Next step:** `HTS-008`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Added side-panel semantic label editing for the active segment with pure label-update logic and immediate overlay/detail synchronization.`  
+**Tests passed:** `npm test`; `npm run build`  
+**Files changed:** `frontend label-editor/viewer state files and this ticket file`  
+**Follow-up tickets needed:** `none`
 
 ---
 

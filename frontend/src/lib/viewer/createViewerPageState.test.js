@@ -13,6 +13,7 @@ test("createViewerPageState exposes loading placeholders before sample load", ()
   });
   assert.deepEqual(pageState.sidebarItems[4], { label: "Segments", value: "--" });
   assert.deepEqual(pageState.sidebarItems[5], { label: "Active segment", value: "--" });
+  assert.deepEqual(pageState.sidebarItems[6], { label: "Active label", value: "--" });
 });
 
 test("createViewerPageState maps loaded sample into viewer shell fields", () => {
@@ -38,5 +39,6 @@ test("createViewerPageState maps loaded sample into viewer shell fields", () => 
     label: "Active segment",
     value: "trend (seg-2)",
   });
-  assert.deepEqual(pageState.sidebarItems[6], { label: "Active range", value: "12-47" });
+  assert.deepEqual(pageState.sidebarItems[6], { label: "Active label", value: "trend" });
+  assert.deepEqual(pageState.sidebarItems[7], { label: "Active range", value: "12-47" });
 });

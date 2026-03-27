@@ -1,6 +1,7 @@
 <script setup>
 import SegmentationOverlay from "./SegmentationOverlay.vue";
 import TimeSeriesChart from "./TimeSeriesChart.vue";
+import { AVAILABLE_SEGMENT_LABELS } from "../../lib/segments/updateSegmentLabel";
 
 defineProps({
   loading: {
@@ -27,9 +28,13 @@ defineProps({
     type: String,
     default: "",
   },
+  selectedSegment: {
+    type: Object,
+    default: null,
+  },
 });
 
-const emit = defineEmits(["select-segment", "move-boundary"]);
+const emit = defineEmits(["select-segment", "move-boundary", "update-segment-label"]);
 </script>
 
 <template>
@@ -117,6 +122,21 @@ const emit = defineEmits(["select-segment", "move-boundary"]);
             <h3>Viewer context</h3>
           </div>
           <span class="surface-tag">{{ selectedSegmentId ? "Active segment" : "No selection" }}</span>
+        </div>
+
+        <div v-if="selectedSegment" class="label-editor">
+          <label class="label-editor-field">
+            <span class="sidebar-label">Segment label</span>
+            <select
+              class="label-editor-select"
+              :value="selectedSegment.label"
+              @change="emit('update-segment-label', $event.target.value)"
+            >
+              <option v-for="label in AVAILABLE_SEGMENT_LABELS" :key="label" :value="label">
+                {{ label }}
+              </option>
+            </select>
+          </label>
         </div>
 
         <ul class="sidebar-list">

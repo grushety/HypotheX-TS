@@ -13,6 +13,7 @@ export function createViewerPageState(sample, selectedSegment = null) {
         { label: "Channels", value: "--" },
         { label: "Segments", value: "--" },
         { label: "Active segment", value: "--" },
+        { label: "Active label", value: "--" },
         { label: "Active range", value: "--" },
       ],
     };
@@ -33,6 +34,10 @@ export function createViewerPageState(sample, selectedSegment = null) {
       {
         label: "Active segment",
         value: selectedSegment ? `${selectedSegment.label} (${selectedSegment.id})` : "None",
+      },
+      {
+        label: "Active label",
+        value: selectedSegment ? selectedSegment.label : "--",
       },
       {
         label: "Active range",
