@@ -97,6 +97,12 @@ class ModelRegistry:
     def list_artifacts(self) -> list[ModelArtifactDescriptor]:
         return list(self._artifacts.values())
 
+    def get_family_descriptor(self, family_name: str) -> ModelFamilyDescriptor:
+        try:
+            return self._families[family_name]
+        except KeyError as exc:
+            raise ModelRegistryError(f"Model family '{family_name}' is not declared in the benchmark manifest.") from exc
+
     def get_artifact_descriptor(self, artifact_id: str) -> ModelArtifactDescriptor:
         try:
             return self._artifacts[artifact_id]
