@@ -163,12 +163,58 @@ export function requestMergeOperation(segments, request) {
     return validation;
   }
 
-  return createFailure(
-    "merge",
-    "NOT_IMPLEMENTED",
-    "Merge operation behavior will be implemented in HTS-011.",
-    { ...request, type: "merge" },
-  );
+  const operationRequest = { ...request, type: "merge" };
+  const leftIndex = segments.findIndex((segment) => segment.id === operationRequest.leftSegmentId);
+  const rightIndex = segments.findIndex((segment) => segment.id === operationRequest.rightSegmentId);
+
+  if (leftIndex === -1 || rightIndex === -1) {
+    return createFailure(
+      "merge",
+      "SEGMENT_NOT_FOUND",
+      "Merge target segments were not found.",
+      operationRequest,
+    );
+  }
+
+  if (rightIndex !== leftIndex + 1) {
+    return createFailure(
+      "merge",
+      "NON_ADJACENT_SEGMENTS",
+      "Merge requires two adjacent segments in left-to-right order.",
+      operationRequest,
+    );
+  }
+
+  const leftSegment = segments[leftIndex];
+  const rightSegment = segments[rightIndex];
+
+  if (leftSegment.label !== rightSegment.label) {
+    return createFailure(
+      "merge",
+      "INCOMPATIBLE_SEGMENTS",
+      "Merge currently requires adjacent segments with the same label.",
+      operationRequest,
+    );
+  }
+
+  const mergedSegment = {
+    ...leftSegment,
+    end: rightSegment.end,
+  };
+  const updatedSegments = [
+    ...segments.slice(0, leftIndex),
+    mergedSegment,
+    ...segments.slice(rightIndex + 1),
+  ];
+  const updatedValidation = validateEditableSegments(updatedSegments);
+
+  if (!updatedValidation.ok) {
+    return createFailure("merge", updatedValidation.code, updatedValidation.message, operationRequest);
+  }
+
+  return createSemanticOperationSuccess("merge", updatedSegments, operationRequest, {
+    affectedSegmentIds: [mergedSegment.id],
+  });
 }
 
 export function requestReclassifyOperation(segments, request) {
