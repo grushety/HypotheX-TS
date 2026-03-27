@@ -1,10 +1,10 @@
 # HypotheX-TS
 
-HypotheX-TS now includes the initial MVP scaffold requested by `HTS-000`:
+HypotheX-TS currently includes the first interactive MVP for semantic time-series editing:
 
-- `frontend/` contains a Vue + Vite client
-- `backend/` contains a Flask + SQLAlchemy server using SQLite for local development
-- `benchmarks/` remains the canonical benchmark/data root
+- a Vue + Vite benchmark viewer in `frontend/`
+- a Flask + SQLAlchemy backend scaffold in `backend/`
+- canonical benchmark assets rooted in `benchmarks/`
 
 ## Project layout
 
@@ -40,9 +40,39 @@ npm install
 npm run dev
 ```
 
-The frontend dev server runs on `http://127.0.0.1:5173` and proxies `/api/*` requests to the Flask backend.
+The frontend dev server runs on `http://127.0.0.1:5173` by default and may move to the next free port if that port is already occupied.
+
+## Frontend MVP workflow
+
+The current frontend MVP supports:
+
+- time-series rendering with segmentation overlay
+- segment selection and highlighting
+- boundary dragging
+- label editing
+- split, merge, and reclassify operations
+- soft-constraint warnings
+- interaction history
+- JSON interaction-log export
+
+## Frontend manual smoke flow
+
+1. Start the frontend with `npm run dev`.
+2. Load the benchmark viewer and confirm the ECG200 sample appears.
+3. Select a segment and change its label.
+4. Drag a boundary handle to update adjacent segments.
+5. Run `split`, `merge`, and `reclassify` from the operation palette.
+6. Trigger at least one warned action and confirm the warning panel updates.
+7. Confirm the interaction history records recent actions in newest-first order.
+8. Use `Export Log` in the history panel and inspect the downloaded JSON.
 
 ## Tests
+
+```bash
+cd frontend
+npm test
+npm run build
+```
 
 ```bash
 cd backend
@@ -51,6 +81,5 @@ pytest
 
 ## Manual verification
 
-1. Start the backend and confirm `http://127.0.0.1:5000/api/health` returns JSON with `status: "ok"`.
-2. Start the frontend and open `http://127.0.0.1:5173`.
-3. Confirm the page shows `Backend reachable` and renders the health payload.
+1. Start the frontend and walk through the frontend MVP smoke flow above.
+2. Start the backend and confirm `http://127.0.0.1:5000/api/health` returns JSON with `status: "ok"`.

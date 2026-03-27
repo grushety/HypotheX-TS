@@ -189,11 +189,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-013</p>
-        <h1>Benchmark viewer operations</h1>
+        <p class="eyebrow">HTS-022 MVP</p>
+        <h1>Benchmark viewer workflow</h1>
         <p class="hero-copy">
-          The viewer now exposes split, merge, and reclassify as explicit semantic operations while
-          keeping the UI layer thin and delegating state changes to the domain contracts.
+          The MVP viewer supports segment editing, semantic operations, soft warnings, interaction
+          history, and JSON log export on top of the benchmark sample workflow.
         </p>
       </div>
 

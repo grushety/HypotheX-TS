@@ -18,7 +18,12 @@ const emit = defineEmits(["export-log"]);
       </div>
       <div class="history-header-actions">
         <span class="surface-tag">{{ entries.length }} entries</span>
-        <button class="history-export-button" type="button" :disabled="entries.length === 0" @click="emit('export-log')">
+        <button
+          class="history-export-button"
+          type="button"
+          :disabled="entries.length === 0"
+          @click="emit('export-log')"
+        >
           Export Log
         </button>
       </div>
@@ -41,7 +46,7 @@ const emit = defineEmits(["export-log"]);
         </div>
 
         <p class="history-meta">
-          Entry {{ entry.sequence }}<span v-if="entry.warningCount"> · {{ entry.warningCount }} warning(s)</span>
+          Entry {{ entry.sequence }}<span v-if="entry.warningCount"> | {{ entry.warningCount }} warning(s)</span>
         </p>
 
         <p v-if="entry.affectedSegmentIds.length" class="history-meta">
