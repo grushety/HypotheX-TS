@@ -1,4 +1,6 @@
 <script setup>
+import TimeSeriesChart from "./TimeSeriesChart.vue";
+
 defineProps({
   loading: {
     type: Boolean,
@@ -44,22 +46,20 @@ defineProps({
         <div class="surface-header">
           <div>
             <p class="section-label">Chart area</p>
-            <h3>Time-series canvas placeholder</h3>
+            <h3>Time-series plot</h3>
           </div>
           <span class="surface-tag">{{ sample?.seriesLength ?? "--" }} points</span>
         </div>
 
-        <div class="chart-placeholder" role="img" aria-label="Benchmark chart placeholder">
-          <div
-            v-for="(point, index) in sample?.previewValues ?? []"
-            :key="`${index}-${point}`"
-            class="chart-bar"
-            :style="{ height: `${point}%` }"
-          />
-        </div>
+        <TimeSeriesChart
+          v-if="sample?.values?.length"
+          :values="sample.values"
+          :title="`${sample.datasetName} sample ${sample.sampleId}`"
+        />
+        <div v-else class="chart-empty-state">Preparing chart data...</div>
 
         <p class="surface-copy">
-          This region is reserved for the interactive chart in `HTS-002`.
+          This chart component is the base visualization layer for later overlay and editing work.
         </p>
       </section>
 

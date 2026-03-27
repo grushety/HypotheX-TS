@@ -35,11 +35,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-001</p>
-        <h1>Benchmark viewer scaffold</h1>
+        <p class="eyebrow">HTS-002</p>
+        <h1>Benchmark viewer chart</h1>
         <p class="hero-copy">
-          The viewer shell loads a benchmark sample into page state and reserves stable regions for
-          the chart, segmentation overlay, and side-panel workflow.
+          The viewer shell now renders the active benchmark sample as a reusable time-series chart
+          while keeping the overlay and side-panel regions stable for the next tickets.
         </p>
       </div>
 

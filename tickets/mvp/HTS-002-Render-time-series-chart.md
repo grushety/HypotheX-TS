@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-002`  
 **Title:** `Render time-series chart`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-001`  
@@ -85,10 +85,10 @@ Brief reason:
 
 ## 6. Acceptance Criteria
 
-- [ ] the current sample is rendered as a visible time-series plot
-- [ ] the chart renders correctly for at least one short and one longer series
-- [ ] the chart component accepts data through props/state rather than hidden globals
-- [ ] the page remains stable after rerender or resize
+- [x] the current sample is rendered as a visible time-series plot
+- [x] the chart renders correctly for at least one short and one longer series
+- [x] the chart component accepts data through props/state rather than hidden globals
+- [x] the page remains stable after rerender or resize
 
 ---
 
@@ -108,7 +108,9 @@ Brief reason:
 
 ### Commands
 ```bash
-# fill with repo-specific commands
+cd frontend
+npm test
+npm run build
 ```
 
 ### Manual verification
@@ -122,13 +124,13 @@ If a check cannot run, Codex must record why.
 
 ## 9. Definition of Done
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -143,22 +145,46 @@ If a check cannot run, Codex must record why.
 ## 11. Review Checklist
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
+
+---
+
+## 13. Status Update Block
+
+**Current status:** `done`  
+**What changed:** 
+- added a reusable SVG `TimeSeriesChart` component that renders a single sample series
+- added chart-geometry helpers in `src/lib/chart/` for path and tick generation
+- integrated the chart into the viewer shell without mixing in overlay or selection logic
+- added chart tests that cover both short and longer series inputs
+**Checks run:** `npm test`; `npm run build`; frontend dev server started successfully on `http://127.0.0.1:5174/` after `5173` was already in use  
+**Blockers:** `none`  
+**Next step:** `HTS-003`
+
+---
+
+## 14. Completion Note
+
+**Completed on:** `2026-03-27`  
+**Summary:** `Rendered the benchmark sample as a reusable responsive time-series chart and added chart geometry tests for both short and long series.`  
+**Tests passed:** `npm test`; `npm run build`  
+**Files changed:** `frontend viewer/chart files, frontend package test script, and this ticket file`  
+**Follow-up tickets needed:** `none`
 
 ---
 
