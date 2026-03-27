@@ -1,9 +1,12 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 
+import BenchmarkSelectorPanel from "../components/benchmarks/BenchmarkSelectorPanel.vue";
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } from "../lib/audit/auditEvents";
 import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
+import { createBenchmarkSelectorState } from "../lib/benchmarks/createBenchmarkSelectorState";
+import { reconcileBenchmarkSelection } from "../lib/benchmarks/reconcileBenchmarkSelection";
 import { SOFT_CONSTRAINT_STATUS } from "../lib/constraints/evaluateSoftConstraints";
 import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
 import {
@@ -18,16 +21,33 @@ import {
 import { createViewerWarningDisplay } from "../lib/viewer/createViewerWarningDisplay";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
 import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
+import {
+  fetchBenchmarkCompatibility,
+  fetchBenchmarkDatasets,
+  fetchBenchmarkModels,
+} from "../services/api/benchmarkApi";
 
 const sample = ref(null);
 const loading = ref(true);
 const error = ref("");
+const benchmarkDatasets = ref([]);
+const benchmarkArtifacts = ref([]);
+const selectorLoading = ref(true);
+const selectorError = ref("");
+const compatibilityLoading = ref(false);
+const compatibilityError = ref("");
+const compatibilityResult = ref(null);
+const selectedDatasetName = ref("");
+const selectedArtifactId = ref("");
+const selectedSplit = ref("train");
+const selectedSampleIndex = ref(0);
 const selectedSegmentId = ref(null);
 const editFeedback = ref("");
 const operationFeedback = ref("");
 const editConstraintResult = ref(null);
 const operationConstraintResult = ref(null);
 const auditEvents = ref([]);
+let compatibilityRequestId = 0;
 
 const selectedSegment = computed(() =>
   getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
@@ -40,6 +60,21 @@ const warningDisplay = computed(() =>
     editFeedback: editFeedback.value,
     operationConstraintResult: operationConstraintResult.value,
     operationFeedback: operationFeedback.value,
+  }),
+);
+const selectorState = computed(() =>
+  createBenchmarkSelectorState({
+    datasets: benchmarkDatasets.value,
+    artifacts: benchmarkArtifacts.value,
+    selectedDatasetName: selectedDatasetName.value,
+    selectedArtifactId: selectedArtifactId.value,
+    selectedSplit: selectedSplit.value,
+    sampleIndex: selectedSampleIndex.value,
+    loading: selectorLoading.value,
+    error: selectorError.value,
+    compatibility: compatibilityResult.value,
+    compatibilityLoading: compatibilityLoading.value,
+    compatibilityError: compatibilityError.value,
   }),
 );
 
@@ -61,6 +96,102 @@ async function loadSample() {
   } finally {
     loading.value = false;
   }
+}
+
+function applySelection(nextSelection) {
+  selectedDatasetName.value = nextSelection.selectedDatasetName;
+  selectedArtifactId.value = nextSelection.selectedArtifactId;
+  selectedSplit.value = nextSelection.selectedSplit;
+  selectedSampleIndex.value = nextSelection.sampleIndex;
+}
+
+function reconcileSelectionState() {
+  applySelection(
+    reconcileBenchmarkSelection({
+      datasets: benchmarkDatasets.value,
+      artifacts: benchmarkArtifacts.value,
+      selectedDatasetName: selectedDatasetName.value,
+      selectedArtifactId: selectedArtifactId.value,
+      selectedSplit: selectedSplit.value,
+      sampleIndex: selectedSampleIndex.value,
+    }),
+  );
+}
+
+async function loadBenchmarkOptions() {
+  selectorLoading.value = true;
+  selectorError.value = "";
+
+  try {
+    const [datasets, modelPayload] = await Promise.all([
+      fetchBenchmarkDatasets(),
+      fetchBenchmarkModels(),
+    ]);
+    benchmarkDatasets.value = datasets;
+    benchmarkArtifacts.value = modelPayload.artifacts;
+    reconcileSelectionState();
+  } catch (loadError) {
+    benchmarkDatasets.value = [];
+    benchmarkArtifacts.value = [];
+    selectorError.value =
+      loadError instanceof Error ? loadError.message : "Failed to load benchmark options.";
+  } finally {
+    selectorLoading.value = false;
+  }
+}
+
+async function refreshCompatibility() {
+  if (!selectedDatasetName.value || !selectedArtifactId.value || selectorError.value) {
+    compatibilityResult.value = null;
+    compatibilityError.value = "";
+    compatibilityLoading.value = false;
+    return;
+  }
+
+  const requestId = compatibilityRequestId + 1;
+  compatibilityRequestId = requestId;
+  compatibilityLoading.value = true;
+  compatibilityError.value = "";
+
+  try {
+    const result = await fetchBenchmarkCompatibility(selectedDatasetName.value, selectedArtifactId.value);
+    if (compatibilityRequestId !== requestId) {
+      return;
+    }
+    compatibilityResult.value = result;
+  } catch (requestError) {
+    if (compatibilityRequestId !== requestId) {
+      return;
+    }
+    compatibilityResult.value = null;
+    compatibilityError.value =
+      requestError instanceof Error ? requestError.message : "Failed to validate benchmark selection.";
+  } finally {
+    if (compatibilityRequestId === requestId) {
+      compatibilityLoading.value = false;
+    }
+  }
+}
+
+function handleUpdateDataset(datasetName) {
+  selectedDatasetName.value = datasetName;
+  reconcileSelectionState();
+}
+
+function handleUpdateArtifact(artifactId) {
+  selectedArtifactId.value = artifactId;
+  reconcileSelectionState();
+}
+
+function handleUpdateSplit(split) {
+  selectedSplit.value = split;
+  reconcileSelectionState();
+}
+
+function handleUpdateSampleIndex(nextValue) {
+  const parsedValue = Number.parseInt(nextValue, 10);
+  selectedSampleIndex.value = Number.isNaN(parsedValue) ? 0 : parsedValue;
+  reconcileSelectionState();
 }
 
 function handleSelectSegment(segmentId) {
@@ -180,8 +311,17 @@ watch(
   { immediate: true },
 );
 
+watch(
+  [selectedDatasetName, selectedArtifactId],
+  () => {
+    refreshCompatibility();
+  },
+  { immediate: true },
+);
+
 onMounted(() => {
   loadSample();
+  loadBenchmarkOptions();
 });
 </script>
 
@@ -203,6 +343,15 @@ onMounted(() => {
     </section>
 
     <p v-if="error" class="banner-error">{{ error }}</p>
+
+    <BenchmarkSelectorPanel
+      :state="selectorState"
+      @reload="loadBenchmarkOptions"
+      @update-dataset="handleUpdateDataset"
+      @update-artifact="handleUpdateArtifact"
+      @update-split="handleUpdateSplit"
+      @update-sample-index="handleUpdateSampleIndex"
+    />
 
     <ViewerShell
       :sample="sample"

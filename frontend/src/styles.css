@@ -105,6 +105,115 @@ h3 {
   font-weight: 600;
 }
 
+.selector-panel {
+  margin-bottom: 20px;
+  padding: 24px;
+  border: 1px solid rgba(18, 32, 51, 0.08);
+  border-radius: 28px;
+  background: rgba(252, 252, 249, 0.72);
+  box-shadow: 0 18px 54px rgba(30, 51, 72, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.selector-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.selector-banner {
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-weight: 600;
+  color: #41526a;
+  background: rgba(208, 220, 231, 0.52);
+}
+
+.selector-banner-loading {
+  color: #24435f;
+  background: rgba(181, 210, 229, 0.5);
+}
+
+.selector-banner-ok {
+  color: #22543d;
+  background: rgba(196, 236, 214, 0.72);
+}
+
+.selector-banner-warn {
+  color: #8a4d13;
+  background: rgba(255, 231, 193, 0.88);
+}
+
+.selector-banner-error {
+  color: #7f1d1d;
+  background: rgba(160, 29, 29, 0.12);
+}
+
+.selector-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.selector-field {
+  display: grid;
+  gap: 8px;
+}
+
+.selector-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6b6f8d;
+}
+
+.selector-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(18, 32, 51, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #122033;
+}
+
+.selector-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.selector-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.selector-summary div {
+  padding: 14px 16px;
+  border: 1px solid rgba(18, 32, 51, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.selector-summary dt {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6b6f8d;
+}
+
+.selector-summary dd {
+  margin: 0;
+  font-weight: 700;
+  color: #122033;
+}
+
 .viewer-shell {
   padding: 28px;
   border: 1px solid rgba(18, 32, 51, 0.08);
@@ -688,7 +797,8 @@ h3 {
 
 @media (max-width: 900px) {
   .hero,
-  .viewer-header {
+  .viewer-header,
+  .selector-panel-header {
     flex-direction: column;
   }
 
@@ -696,6 +806,8 @@ h3 {
     text-align: left;
   }
 
+  .selector-grid,
+  .selector-summary,
   .status-strip,
   .viewer-grid {
     grid-template-columns: 1fr;
@@ -715,6 +827,7 @@ h3 {
     padding-top: 24px;
   }
 
+  .selector-panel,
   .viewer-shell,
   .surface {
     padding: 18px;
