@@ -21,6 +21,19 @@ This directory stores benchmark datasets, raw downloads, prepared NumPy exports,
 - Model repos: included
 - Supported model families: FCN, MLP, InceptionTime
 
+## Smoke Test Readiness
+
+- A repeatable univariate smoke artifact is included at `models/weights/fcn/GunPoint/`.
+- This GunPoint artifact is a prototype-based system-readiness fixture for the backend smoke path, not a quality benchmark.
+- The current smoke path exercises these stages in order: dataset registry, model registry, compatibility validation, sample load, prediction.
+- The current multivariate prediction smoke is intentionally deferred. `BasicMotions` data is present and compatibility resolves, but no runnable artifact is shipped yet under `models/weights/fcn/BasicMotions/`, so the expected failure stage is `prediction`.
+
+## Smoke Commands
+
+1. Create a runnable backend Python environment with the dependencies from `backend/requirements.txt`.
+2. Run `pytest -q backend/tests/test_real_benchmark_smoke.py`.
+3. For the frontend shell, run `npm test -- --runInBand` and `npm run build` from `frontend/` if the local Node environment supports the test runner.
+
 ## Next Steps
 
 1. Run `python scripts/setup_benchmarks.py --datasets all` to populate this workspace.

@@ -20,6 +20,11 @@ benchmarks/raw/downloads/
 benchmarks/raw/archives/
 benchmarks/models/repos/
 benchmarks/models/weights/
+!benchmarks/models/weights/
+!benchmarks/models/weights/fcn/
+!benchmarks/models/weights/fcn/GunPoint/
+!benchmarks/models/weights/fcn/GunPoint/best_model.keras
+!benchmarks/models/weights/fcn/GunPoint/metadata.json
 
 # Misc
 .DS_Store
