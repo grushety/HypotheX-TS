@@ -25,6 +25,7 @@ class SegmentStatistics:
     residualToLine: float
     contextContrast: float
     peakScore: float
+    periodicityScore: float
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -73,6 +74,7 @@ def compute_segment_statistics(
             context_window=context_window,
         ),
         peakScore=compute_peak_score(segment, window_size=peak_window),
+        periodicityScore=compute_periodicity_score(segment),
     )
 
 
@@ -170,6 +172,45 @@ def compute_peak_score(segment: Any, *, window_size: int = 3, epsilon: float = 1
         peak_scores.append(float(np.max(z_scores)))
 
     return float(np.max(peak_scores))
+
+
+def compute_periodicity_score(segment: Any, *, max_lag: int | None = None) -> float:
+    normalized = _normalize_segment(segment, minimum_length=3)
+    periodicity_scores = []
+
+    for channel_index in range(normalized.shape[1]):
+        channel = normalized[:, channel_index]
+        centered = channel - np.mean(channel)
+        total_energy = float(np.sum(centered**2))
+        if total_energy == 0.0:
+            periodicity_scores.append(0.0)
+            continue
+
+        channel_max_lag = normalized.shape[0] // 2
+        if max_lag is None:
+            lag_limit = channel_max_lag
+        else:
+            if max_lag < 1:
+                raise SegmentStatisticsError("Periodicity max_lag must be at least 1.")
+            lag_limit = min(max_lag, channel_max_lag)
+
+        if lag_limit < 1:
+            periodicity_scores.append(0.0)
+            continue
+
+        autocorrelation_scores = []
+        for lag in range(1, lag_limit + 1):
+            left = centered[:-lag]
+            right = centered[lag:]
+            denominator = float(np.sqrt(np.sum(left**2) * np.sum(right**2)))
+            if denominator == 0.0:
+                autocorrelation_scores.append(0.0)
+                continue
+            autocorrelation_scores.append(abs(float(np.sum(left * right) / denominator)))
+
+        periodicity_scores.append(max(autocorrelation_scores, default=0.0))
+
+    return float(np.mean(periodicity_scores))
 
 
 def _normalize_series(series: Any) -> np.ndarray:

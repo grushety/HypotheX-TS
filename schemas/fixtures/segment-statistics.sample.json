@@ -11,5 +11,6 @@
   "signConsistency": 1.0,
   "residualToLine": 0.0125,
   "contextContrast": 0.45,
-  "peakScore": 2.8
+  "peakScore": 2.8,
+  "periodicityScore": 0.12
 }

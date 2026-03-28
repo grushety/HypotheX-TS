@@ -18,7 +18,8 @@
     "signConsistency",
     "residualToLine",
     "contextContrast",
-    "peakScore"
+    "peakScore",
+    "periodicityScore"
   ],
   "properties": {
     "schemaVersion": {
@@ -71,6 +72,11 @@
     "peakScore": {
       "type": "number",
       "minimum": 0
+    },
+    "periodicityScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
     }
   }
 }

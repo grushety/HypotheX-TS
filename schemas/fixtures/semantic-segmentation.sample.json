@@ -31,7 +31,7 @@
       "segmentId": "segment-003",
       "startIndex": 6,
       "endIndex": 7,
-      "label": "other",
+      "label": "plateau",
       "confidence": 0.77,
       "boundaryUncertainty": {
         "start": 0.2,

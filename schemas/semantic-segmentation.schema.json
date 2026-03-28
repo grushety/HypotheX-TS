@@ -52,7 +52,7 @@
           },
           "label": {
             "type": "string",
-            "enum": ["event", "trend", "anomaly", "other"]
+            "enum": ["trend", "plateau", "spike", "event", "transition", "periodic"]
           },
           "confidence": {
             "type": "number",

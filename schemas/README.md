@@ -15,4 +15,6 @@ The shared schema layer also includes the machine-readable domain configuration 
 
 Reusable segment statistic bundles should align with `segment-statistics.schema.json` so later chunk-scoring, constraint, and evaluation modules can share one field vocabulary.
 
+The shared semantic segmentation schema now reflects the MVP six-label ontology from the domain config so score-based chunk assignment can emit canonical segment payloads without inventing a parallel label contract.
+
 If a later ticket needs a new contract, extend this directory instead of inventing an ad hoc payload in a module-local file.

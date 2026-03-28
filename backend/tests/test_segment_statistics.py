@@ -5,6 +5,7 @@ from app.domain.stats import (
     SegmentStatisticsError,
     compute_context_contrast,
     compute_peak_score,
+    compute_periodicity_score,
     compute_residual_to_line,
     compute_segment_statistics,
     compute_sign_consistency,
@@ -38,6 +39,7 @@ def test_compute_segment_statistics_returns_expected_bundle_for_trend_segment():
     assert stats.residualToLine == pytest.approx(0.0)
     assert stats.contextContrast > 0
     assert stats.peakScore >= 0
+    assert stats.periodicityScore >= 0
     assert stats.to_dict()["schemaVersion"] == "1.0.0"
 
 
@@ -72,6 +74,14 @@ def test_context_contrast_uses_neighboring_windows_when_available():
     contrast = compute_context_contrast(series, 2, 3, context_window=2)
 
     assert contrast == pytest.approx(0.5)
+
+
+def test_periodicity_score_detects_repeating_segment():
+    segment = np.asarray([0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0], dtype=np.float64)
+
+    score = compute_periodicity_score(segment)
+
+    assert score > 0.7
 
 
 def test_segment_statistics_fail_explicitly_on_invalid_interval():
