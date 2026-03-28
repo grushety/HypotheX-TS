@@ -5,6 +5,7 @@ import {
   fetchBenchmarkCompatibility,
   fetchBenchmarkDatasets,
   fetchBenchmarkModels,
+  fetchBenchmarkPrediction,
 } from "./benchmarkApi.js";
 
 test("fetchBenchmarkDatasets returns dataset array from backend payload", async () => {
@@ -42,5 +43,34 @@ test("fetchBenchmarkCompatibility surfaces backend errors", async () => {
         },
       })),
     /pair is invalid/,
+  );
+});
+
+test("fetchBenchmarkPrediction returns normalized prediction payload", async () => {
+  const prediction = await fetchBenchmarkPrediction("GunPoint", "fcn-gunpoint", "test", 2, async () => ({
+    ok: true,
+    async json() {
+      return {
+        predicted_label: "class-1",
+        true_label: "class-0",
+        scores: [{ label: "class-1", score: 2.5, probability: 0.81 }],
+      };
+    },
+  }));
+
+  assert.equal(prediction.predicted_label, "class-1");
+  assert.equal(prediction.scores.length, 1);
+});
+
+test("fetchBenchmarkPrediction rejects malformed payloads", async () => {
+  await assert.rejects(
+    () =>
+      fetchBenchmarkPrediction("GunPoint", "fcn-gunpoint", "test", 2, async () => ({
+        ok: true,
+        async json() {
+          return { scores: [] };
+        },
+      })),
+    /predicted_label and scores/,
   );
 });

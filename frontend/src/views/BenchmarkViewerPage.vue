@@ -2,9 +2,11 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import BenchmarkSelectorPanel from "../components/benchmarks/BenchmarkSelectorPanel.vue";
+import PredictionPanel from "../components/benchmarks/PredictionPanel.vue";
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } from "../lib/audit/auditEvents";
 import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
+import { createPredictionPanelState } from "../lib/benchmarks/createPredictionPanelState";
 import { createViewerSampleFromApi } from "../lib/benchmarks/createViewerSampleFromApi";
 import { createBenchmarkSelectorState } from "../lib/benchmarks/createBenchmarkSelectorState";
 import { reconcileBenchmarkSelection } from "../lib/benchmarks/reconcileBenchmarkSelection";
@@ -25,6 +27,7 @@ import {
   fetchBenchmarkCompatibility,
   fetchBenchmarkDatasets,
   fetchBenchmarkModels,
+  fetchBenchmarkPrediction,
   fetchBenchmarkSample,
 } from "../services/api/benchmarkApi";
 
@@ -48,6 +51,9 @@ const operationFeedback = ref("");
 const editConstraintResult = ref(null);
 const operationConstraintResult = ref(null);
 const auditEvents = ref([]);
+const predictionLoading = ref(false);
+const predictionError = ref("");
+const predictionResult = ref(null);
 let compatibilityRequestId = 0;
 
 const selectedSegment = computed(() =>
@@ -78,10 +84,29 @@ const selectorState = computed(() =>
     compatibilityError: compatibilityError.value,
   }),
 );
+const predictionPanelState = computed(() =>
+  createPredictionPanelState({
+    prediction: predictionResult.value,
+    loading: predictionLoading.value,
+    error: predictionError.value,
+    sample: sample.value,
+    selectedArtifact: selectorState.value.selectedArtifact,
+    compatibility: compatibilityResult.value,
+    compatibilityLoading: compatibilityLoading.value,
+    selectorError: selectorError.value,
+  }),
+);
+
+function clearPredictionState() {
+  predictionLoading.value = false;
+  predictionError.value = "";
+  predictionResult.value = null;
+}
 
 async function loadSample() {
   loading.value = true;
   error.value = "";
+  clearPredictionState();
 
   try {
     const payload = await fetchBenchmarkSample(
@@ -200,6 +225,30 @@ function handleUpdateSampleIndex(nextValue) {
   const parsedValue = Number.parseInt(nextValue, 10);
   selectedSampleIndex.value = Number.isNaN(parsedValue) ? 0 : parsedValue;
   reconcileSelectionState();
+}
+
+async function handleRequestPrediction() {
+  if (!predictionPanelState.value.canRequest || !selectorState.value.selectedArtifact || !sample.value) {
+    return;
+  }
+
+  predictionLoading.value = true;
+  predictionError.value = "";
+
+  try {
+    predictionResult.value = await fetchBenchmarkPrediction(
+      selectedDatasetName.value,
+      selectorState.value.selectedArtifact.artifact_id,
+      selectedSplit.value,
+      selectedSampleIndex.value,
+    );
+  } catch (requestError) {
+    predictionResult.value = null;
+    predictionError.value =
+      requestError instanceof Error ? requestError.message : "Failed to fetch benchmark prediction.";
+  } finally {
+    predictionLoading.value = false;
+  }
 }
 
 function handleSelectSegment(segmentId) {
@@ -322,6 +371,7 @@ watch(
 watch(
   [selectedDatasetName, selectedArtifactId],
   () => {
+    clearPredictionState();
     refreshCompatibility();
   },
   { immediate: true },
@@ -331,6 +381,7 @@ watch(
   [selectedDatasetName, selectedSplit, selectedSampleIndex],
   ([datasetName]) => {
     if (!datasetName || selectorError.value) {
+      clearPredictionState();
       return;
     }
     loadSample();
@@ -370,6 +421,8 @@ onMounted(() => {
       @update-split="handleUpdateSplit"
       @update-sample-index="handleUpdateSampleIndex"
     />
+
+    <PredictionPanel :state="predictionPanelState" @request-prediction="handleRequestPrediction" />
 
     <ViewerShell
       :sample="sample"
