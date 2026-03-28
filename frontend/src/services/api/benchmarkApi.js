@@ -61,3 +61,23 @@ export async function fetchBenchmarkCompatibility(datasetName, artifactId, fetch
 
   return payload;
 }
+
+export async function fetchBenchmarkSample(datasetName, split, sampleIndex, fetchImpl = fetch) {
+  const params = new URLSearchParams({
+    dataset: datasetName,
+    split,
+    sample_index: String(sampleIndex),
+  });
+  const response = await fetchImpl(`/api/benchmarks/sample?${params.toString()}`);
+  const payload = await readJsonResponse(response, "Benchmark sample");
+
+  if (
+    !Array.isArray(payload.values) ||
+    typeof payload.series_length !== "number" ||
+    typeof payload.channel_count !== "number"
+  ) {
+    throw new Error("Benchmark sample response must include values, series_length, and channel_count.");
+  }
+
+  return payload;
+}

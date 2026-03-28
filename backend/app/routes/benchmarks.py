@@ -1,7 +1,12 @@
 from flask import Blueprint, current_app, jsonify, request
 
 from app.services.compatibility import CompatibilityValidator
-from app.services.datasets import DatasetNotFoundError, DatasetRegistry, DatasetRegistryError
+from app.services.datasets import (
+    DatasetNotFoundError,
+    DatasetRegistry,
+    DatasetRegistryError,
+    DatasetSampleSelectionError,
+)
 from app.services.inference import InferenceAdapterError, InferenceServiceError, PredictionService, SampleSelectionError
 from app.services.models import ModelArtifactNotFoundError, ModelRegistry, ModelRegistryError
 
@@ -130,6 +135,39 @@ def predict_sample():
             ],
         }
     )
+
+
+@benchmarks_bp.get("/api/benchmarks/sample")
+def fetch_sample():
+    dataset_name = request.args.get("dataset")
+    split = request.args.get("split")
+    sample_index_raw = request.args.get("sample_index")
+
+    if not dataset_name or not split or sample_index_raw is None:
+        return (
+            jsonify(
+                {
+                    "error": "Query parameters 'dataset', 'split', and 'sample_index' are required."
+                }
+            ),
+            400,
+        )
+
+    try:
+        sample_index = int(sample_index_raw)
+    except ValueError:
+        return jsonify({"error": "Query parameter 'sample_index' must be an integer."}), 400
+
+    try:
+        sample = _get_dataset_registry().load_sample(dataset_name, split, sample_index)
+    except DatasetNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except DatasetSampleSelectionError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except DatasetRegistryError as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify(sample)
 
 
 def _serialize_dataset_summary(summary):

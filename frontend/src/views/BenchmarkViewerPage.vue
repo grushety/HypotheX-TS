@@ -5,10 +5,10 @@ import BenchmarkSelectorPanel from "../components/benchmarks/BenchmarkSelectorPa
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } from "../lib/audit/auditEvents";
 import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
+import { createViewerSampleFromApi } from "../lib/benchmarks/createViewerSampleFromApi";
 import { createBenchmarkSelectorState } from "../lib/benchmarks/createBenchmarkSelectorState";
 import { reconcileBenchmarkSelection } from "../lib/benchmarks/reconcileBenchmarkSelection";
 import { SOFT_CONSTRAINT_STATUS } from "../lib/constraints/evaluateSoftConstraints";
-import { loadBenchmarkSample } from "../lib/data/benchmarkSamples";
 import {
   createInteractionLogExport,
   downloadInteractionLogExport,
@@ -25,6 +25,7 @@ import {
   fetchBenchmarkCompatibility,
   fetchBenchmarkDatasets,
   fetchBenchmarkModels,
+  fetchBenchmarkSample,
 } from "../services/api/benchmarkApi";
 
 const sample = ref(null);
@@ -83,7 +84,12 @@ async function loadSample() {
   error.value = "";
 
   try {
-    sample.value = await loadBenchmarkSample();
+    const payload = await fetchBenchmarkSample(
+      selectedDatasetName.value,
+      selectedSplit.value,
+      selectedSampleIndex.value,
+    );
+    sample.value = createViewerSampleFromApi(payload);
     editFeedback.value = "";
     operationFeedback.value = "";
     editConstraintResult.value = null;
@@ -133,6 +139,8 @@ async function loadBenchmarkOptions() {
   } catch (loadError) {
     benchmarkDatasets.value = [];
     benchmarkArtifacts.value = [];
+    sample.value = null;
+    loading.value = false;
     selectorError.value =
       loadError instanceof Error ? loadError.message : "Failed to load benchmark options.";
   } finally {
@@ -319,8 +327,18 @@ watch(
   { immediate: true },
 );
 
+watch(
+  [selectedDatasetName, selectedSplit, selectedSampleIndex],
+  ([datasetName]) => {
+    if (!datasetName || selectorError.value) {
+      return;
+    }
+    loadSample();
+  },
+  { immediate: false },
+);
+
 onMounted(() => {
-  loadSample();
   loadBenchmarkOptions();
 });
 </script>
@@ -337,8 +355,8 @@ onMounted(() => {
         </p>
       </div>
 
-      <button class="ghost-button" type="button" @click="loadSample">
-        Reload sample
+      <button class="ghost-button" type="button" @click="loadSample" :disabled="!selectedDatasetName">
+        Reload selected sample
       </button>
     </section>
 

@@ -225,3 +225,23 @@ def test_prediction_endpoint_returns_normalized_prediction_schema(tmp_path):
     assert payload["predicted_label"] == "class-0"
     assert payload["true_label"] == "class-0"
     assert len(payload["scores"]) == 2
+
+
+def test_sample_endpoint_returns_real_sample_payload(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get("/api/benchmarks/sample?dataset=GunPoint&split=test&sample_index=1")
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "dataset_name": "GunPoint",
+        "dataset_id": "GunPoint",
+        "split": "test",
+        "sample_index": 1,
+        "task_type": "classification",
+        "series_type": "univariate",
+        "channel_count": 1,
+        "series_length": 3,
+        "label": "class-1",
+        "values": [[0.8999999761581421, 1.0, 0.800000011920929]],
+    }

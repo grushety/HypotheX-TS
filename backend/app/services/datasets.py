@@ -20,6 +20,10 @@ class DatasetArtifactError(DatasetRegistryError):
     """Raised when dataset artifacts are missing or malformed."""
 
 
+class DatasetSampleSelectionError(DatasetRegistryError):
+    """Raised when a requested split or sample index is invalid."""
+
+
 class DatasetRegistry:
     def __init__(self, manifest: Mapping[str, Any] | None = None):
         try:
@@ -66,6 +70,36 @@ class DatasetRegistry:
             test_series=test_series,
             test_labels=test_labels,
         )
+
+    def load_sample(self, dataset_name: str, split: str, sample_index: int) -> dict[str, Any]:
+        dataset = self.load_dataset(dataset_name)
+        series, labels = self._select_split(dataset, split)
+
+        if sample_index < 0:
+            raise DatasetSampleSelectionError(f"Sample index must be non-negative; received {sample_index}.")
+        if sample_index >= series.shape[0]:
+            raise DatasetSampleSelectionError(
+                f"Sample index {sample_index} is out of range for split '{split}' with {series.shape[0]} samples."
+            )
+
+        label_index = int(labels[sample_index])
+        label = None
+        if 0 <= label_index < len(dataset.summary.classes):
+            label = dataset.summary.classes[label_index]
+
+        values = series[sample_index]
+        return {
+            "dataset_name": dataset.summary.name,
+            "dataset_id": dataset.summary.name,
+            "split": split,
+            "sample_index": sample_index,
+            "task_type": dataset.summary.task_type,
+            "series_type": dataset.summary.series_type,
+            "channel_count": dataset.summary.n_channels,
+            "series_length": int(values.shape[-1]),
+            "label": label,
+            "values": values.tolist(),
+        }
 
     def _build_index(self, entries: list[Any]) -> dict[str, DatasetSummary]:
         datasets: dict[str, DatasetSummary] = {}
@@ -140,3 +174,10 @@ class DatasetRegistry:
             )
 
         return array
+
+    def _select_split(self, dataset: LoadedDataset, split: str) -> tuple[np.ndarray, np.ndarray]:
+        if split == "train":
+            return dataset.train_series, dataset.train_labels
+        if split == "test":
+            return dataset.test_series, dataset.test_labels
+        raise DatasetSampleSelectionError(f"Split must be 'train' or 'test'; received '{split}'.")
