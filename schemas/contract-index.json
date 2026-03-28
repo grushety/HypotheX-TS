@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "contracts": [
+    {
+      "name": "time-series",
+      "schemaPath": "schemas/time-series.schema.json",
+      "fixturePath": "schemas/fixtures/time-series.sample.json"
+    },
+    {
+      "name": "semantic-segmentation",
+      "schemaPath": "schemas/semantic-segmentation.schema.json",
+      "fixturePath": "schemas/fixtures/semantic-segmentation.sample.json"
+    },
+    {
+      "name": "typed-operation",
+      "schemaPath": "schemas/typed-operation.schema.json",
+      "fixturePath": "schemas/fixtures/typed-operation.sample.json"
+    },
+    {
+      "name": "constraint-evaluation",
+      "schemaPath": "schemas/constraint-evaluation.schema.json",
+      "fixturePath": "schemas/fixtures/constraint-evaluation.sample.json"
+    },
+    {
+      "name": "session-log",
+      "schemaPath": "schemas/session-log.schema.json",
+      "fixturePath": "schemas/fixtures/session-log.sample.json"
+    }
+  ]
+}

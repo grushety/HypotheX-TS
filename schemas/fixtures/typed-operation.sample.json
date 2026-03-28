@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0.0",
+  "operationId": "operation-001",
+  "operationType": "reclassify",
+  "seriesId": "gunpoint-test-0",
+  "segmentationId": "seg-gunpoint-test-0",
+  "targetSegmentIds": ["segment-003"],
+  "parameters": {
+    "nextLabel": "anomaly"
+  },
+  "requestedBy": "user"
+}

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/semantic-segmentation.schema.json",
+  "title": "HypotheXTS Semantic Segmentation",
+  "description": "Canonical shared contract for a semantic segmentation over a time series.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "segmentationId",
+    "seriesId",
+    "segments"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "segmentationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seriesId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "segments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "segmentId",
+          "startIndex",
+          "endIndex",
+          "label",
+          "provenance"
+        ],
+        "properties": {
+          "segmentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string",
+            "enum": ["event", "trend", "anomaly", "other"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "boundaryUncertainty": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "start": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "provenance": {
+            "type": "string",
+            "enum": ["user", "model", "imported"]
+          }
+        }
+      }
+    }
+  }
+}

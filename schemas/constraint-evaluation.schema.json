@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/constraint-evaluation.schema.json",
+  "title": "HypotheXTS Constraint Evaluation",
+  "description": "Canonical shared contract for constraint feedback after an operation proposal.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "evaluationId",
+    "operationId",
+    "constraintMode",
+    "status",
+    "violations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "evaluationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraintMode": {
+      "type": "string",
+      "enum": ["soft", "hard"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL", "PROJECTED"]
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "constraintId",
+          "severity",
+          "message"
+        ],
+        "properties": {
+          "constraintId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["soft", "hard"]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "affectedSegmentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

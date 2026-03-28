@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "segmentationId": "seg-gunpoint-test-0",
+  "seriesId": "gunpoint-test-0",
+  "segments": [
+    {
+      "segmentId": "segment-001",
+      "startIndex": 0,
+      "endIndex": 2,
+      "label": "trend",
+      "confidence": 0.81,
+      "boundaryUncertainty": {
+        "start": 0.0,
+        "end": 0.2
+      },
+      "provenance": "model"
+    },
+    {
+      "segmentId": "segment-002",
+      "startIndex": 3,
+      "endIndex": 5,
+      "label": "event",
+      "confidence": 0.92,
+      "boundaryUncertainty": {
+        "start": 0.1,
+        "end": 0.1
+      },
+      "provenance": "user"
+    },
+    {
+      "segmentId": "segment-003",
+      "startIndex": 6,
+      "endIndex": 7,
+      "label": "other",
+      "confidence": 0.77,
+      "boundaryUncertainty": {
+        "start": 0.2,
+        "end": 0.0
+      },
+      "provenance": "user"
+    }
+  ]
+}

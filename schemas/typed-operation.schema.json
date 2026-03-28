@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/typed-operation.schema.json",
+  "title": "HypotheXTS Typed Operation",
+  "description": "Canonical shared contract for an operation request or recorded operation on semantic segments.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "operationId",
+    "operationType",
+    "seriesId",
+    "segmentationId",
+    "targetSegmentIds",
+    "parameters"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "operationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operationType": {
+      "type": "string",
+      "enum": [
+        "edit_boundary",
+        "split",
+        "merge",
+        "reclassify",
+        "align",
+        "aggregate",
+        "enforce_conservation",
+        "simulate_intervention",
+        "synthesize_counterfactual"
+      ]
+    },
+    "seriesId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "segmentationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetSegmentIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Opaque operation-specific parameters. Domain logic belongs outside the schema layer."
+    },
+    "requestedBy": {
+      "type": "string",
+      "enum": ["user", "model", "system"]
+    }
+  }
+}

@@ -22,6 +22,8 @@ It defines `BENCHMARK_ROOT` as `<repo>/benchmarks` plus the canonical dataset, m
 
 For the full operator workflow for real datasets and model artifacts, see [docs/real-asset-runbook.md](docs/real-asset-runbook.md).
 
+The shared cross-module payload contracts for future frontend, backend, model, and evaluation work live under `schemas/`. See [schemas/README.md](schemas/README.md) and [docs/shared-contracts-note.md](docs/shared-contracts-note.md).
+
 ## Backend setup
 
 ```bash

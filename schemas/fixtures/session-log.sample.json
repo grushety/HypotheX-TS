@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0.0",
+  "sessionId": "session-001",
+  "seriesId": "gunpoint-test-0",
+  "segmentationId": "seg-gunpoint-test-0",
+  "startedAt": "2026-03-28T10:00:00Z",
+  "endedAt": "2026-03-28T10:05:00Z",
+  "events": [
+    {
+      "eventId": "event-001",
+      "timestamp": "2026-03-28T10:02:00Z",
+      "eventType": "operation_applied",
+      "operation": {
+        "schemaVersion": "1.0.0",
+        "operationId": "operation-001",
+        "operationType": "reclassify",
+        "seriesId": "gunpoint-test-0",
+        "segmentationId": "seg-gunpoint-test-0",
+        "targetSegmentIds": ["segment-003"],
+        "parameters": {
+          "nextLabel": "anomaly"
+        },
+        "requestedBy": "user"
+      },
+      "constraintEvaluation": {
+        "schemaVersion": "1.0.0",
+        "evaluationId": "constraint-eval-001",
+        "operationId": "operation-001",
+        "constraintMode": "soft",
+        "status": "WARN",
+        "violations": [
+          {
+            "constraintId": "minimum-segment-duration",
+            "severity": "soft",
+            "message": "The target segment is close to the minimum preferred duration.",
+            "affectedSegmentIds": ["segment-003"]
+          }
+        ]
+      }
+    }
+  ]
+}

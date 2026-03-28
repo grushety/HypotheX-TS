@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/time-series.schema.json",
+  "title": "HypotheXTS Time Series",
+  "description": "Canonical shared contract for a univariate or multivariate time-series input.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "seriesId",
+    "taskType",
+    "seriesType",
+    "channelCount",
+    "seriesLength",
+    "values"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "seriesId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datasetName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskType": {
+      "type": "string",
+      "enum": ["classification", "forecasting", "anomaly_detection"]
+    },
+    "seriesType": {
+      "type": "string",
+      "enum": ["univariate", "multivariate"]
+    },
+    "channelCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "seriesLength": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "channelNames": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "values": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "number"
+        }
+      }
+    },
+    "timestamps": {
+      "type": "array",
+      "items": {
+        "type": ["number", "string"]
+      }
+    }
+  }
+}

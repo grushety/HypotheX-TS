@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "evaluationId": "constraint-eval-001",
+  "operationId": "operation-001",
+  "constraintMode": "soft",
+  "status": "WARN",
+  "violations": [
+    {
+      "constraintId": "minimum-segment-duration",
+      "severity": "soft",
+      "message": "The target segment is close to the minimum preferred duration.",
+      "affectedSegmentIds": ["segment-003"]
+    }
+  ]
+}

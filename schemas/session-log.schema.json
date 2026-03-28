@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/session-log.schema.json",
+  "title": "HypotheXTS Session Log",
+  "description": "Canonical shared contract for exported interaction sessions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sessionId",
+    "seriesId",
+    "segmentationId",
+    "startedAt",
+    "events"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seriesId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "segmentationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "startedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "endedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "timestamp",
+          "eventType",
+          "operation",
+          "constraintEvaluation"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timestamp": {
+            "type": "string",
+            "minLength": 1
+          },
+          "eventType": {
+            "type": "string",
+            "enum": ["operation_applied", "operation_rejected", "projection_applied"]
+          },
+          "operation": {
+            "$ref": "typed-operation.schema.json"
+          },
+          "constraintEvaluation": {
+            "$ref": "constraint-evaluation.schema.json"
+          }
+        }
+      }
+    }
+  }
+}
