@@ -8,6 +8,7 @@ _EXPORTS = {
     "PredictionService": ("app.services.inference", "PredictionService"),
     "SegmentationStateService": ("app.services.segmentation_state", "SegmentationStateService"),
     "StructuralOperationsService": ("app.services.operations.structural", "StructuralOperationsService"),
+    "ValueOperationsService": ("app.services.operations.value_ops", "ValueOperationsService"),
 }
 
 
