@@ -26,6 +26,8 @@ The shared cross-module payload contracts for future frontend, backend, model, a
 
 The MVP domain ontology and threshold defaults are configured in [backend/config/mvp-domain-config.json](backend/config/mvp-domain-config.json). The backend loading note lives in [docs/domain-config-note.md](docs/domain-config-note.md).
 
+Reusable segment-statistics primitives for semantic chunking now live under `backend/app/domain/` and align with the shared `schemas/segment-statistics.schema.json` contract.
+
 ## Backend setup
 
 ```bash

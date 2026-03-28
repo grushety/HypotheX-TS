@@ -3,6 +3,11 @@
   "schemaVersion": "1.0.0",
   "contracts": [
     {
+      "name": "segment-statistics",
+      "schemaPath": "schemas/segment-statistics.schema.json",
+      "fixturePath": "schemas/fixtures/segment-statistics.sample.json"
+    },
+    {
       "name": "domain-config",
       "schemaPath": "schemas/domain-config.schema.json",
       "fixturePath": "schemas/fixtures/domain-config.sample.json"

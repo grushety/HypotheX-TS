@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/segment-statistics.schema.json",
+  "title": "HypotheXTS Segment Statistics",
+  "description": "Canonical shared contract for reusable per-segment statistics used by semantic chunk scoring.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "seriesLength",
+    "startIndex",
+    "endIndex",
+    "segmentLength",
+    "channelCount",
+    "mean",
+    "variance",
+    "slope",
+    "signConsistency",
+    "residualToLine",
+    "contextContrast",
+    "peakScore"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "seriesLength": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "startIndex": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "endIndex": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "segmentLength": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "channelCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mean": {
+      "type": "array",
+      "items": { "type": "number" }
+    },
+    "variance": {
+      "type": "number"
+    },
+    "slope": {
+      "type": "number"
+    },
+    "signConsistency": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "residualToLine": {
+      "type": "number",
+      "minimum": 0
+    },
+    "contextContrast": {
+      "type": "number",
+      "minimum": 0
+    },
+    "peakScore": {
+      "type": "number",
+      "minimum": 0
+    }
+  }
+}

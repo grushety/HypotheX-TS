@@ -13,4 +13,6 @@ Schema files live at the top of this directory. Example fixtures live in `schema
 
 The shared schema layer also includes the machine-readable domain configuration contract in `domain-config.schema.json`, which matches the backend MVP config file under `backend/config/`.
 
+Reusable segment statistic bundles should align with `segment-statistics.schema.json` so later chunk-scoring, constraint, and evaluation modules can share one field vocabulary.
+
 If a later ticket needs a new contract, extend this directory instead of inventing an ad hoc payload in a module-local file.

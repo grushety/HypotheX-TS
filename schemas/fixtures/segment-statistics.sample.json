@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "seriesLength": 8,
+  "startIndex": 2,
+  "endIndex": 5,
+  "segmentLength": 4,
+  "channelCount": 1,
+  "mean": [0.7],
+  "variance": 0.0675,
+  "slope": 0.15,
+  "signConsistency": 1.0,
+  "residualToLine": 0.0125,
+  "contextContrast": 0.45,
+  "peakScore": 2.8
+}
