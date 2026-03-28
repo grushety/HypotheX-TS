@@ -19,4 +19,6 @@ The shared semantic segmentation schema now reflects the MVP six-label ontology 
 
 Operation legality responses should align with `operation-legality.schema.json` so future API endpoints and the operation palette can share the same allow/deny reason vocabulary.
 
+Constraint feedback should align with `constraint-evaluation.schema.json`, including optional repair-hint metadata when the backend can suggest a minimal next action.
+
 If a later ticket needs a new contract, extend this directory instead of inventing an ad hoc payload in a module-local file.

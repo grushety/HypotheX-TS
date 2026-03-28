@@ -6,10 +6,13 @@
   "status": "WARN",
   "violations": [
     {
-      "constraintId": "minimum-segment-duration",
+      "constraintId": "minimum_segment_duration",
       "severity": "soft",
       "message": "The target segment is close to the minimum preferred duration.",
-      "affectedSegmentIds": ["segment-003"]
+      "affectedSegmentIds": ["segment-003"],
+      "repairHint": {
+        "suggestedAction": "extend_or_merge"
+      }
     }
   ]
 }

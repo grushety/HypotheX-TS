@@ -41,6 +41,10 @@
       "defaultMode": "soft",
       "description": "Plateau segments should remain low-variance and near-flat."
     },
+    "label_compatibility": {
+      "defaultMode": "soft",
+      "description": "Adjacent event segments should usually be merged or separated by a transition."
+    },
     "periodicity_preservation": {
       "defaultMode": "soft",
       "description": "Periodic edits should preserve recognizable repetition."

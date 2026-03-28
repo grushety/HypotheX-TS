@@ -1,5 +1,6 @@
 from app.domain.chunk_assignment import ChunkAssignment, assign_chunk_type
 from app.domain.chunk_scoring import ChunkScores, ChunkScoringError, compute_chunk_scores
+from app.domain.constraints import ConstraintTargetSegment, ConstraintViolation, evaluate_constraints
 from app.domain.operations_registry import (
     OperationRegistryCatalog,
     build_operation_registry_catalog,
@@ -25,6 +26,8 @@ __all__ = [
     "ChunkAssignment",
     "ChunkScores",
     "ChunkScoringError",
+    "ConstraintTargetSegment",
+    "ConstraintViolation",
     "OperationLegalityResult",
     "OperationRegistryCatalog",
     "assign_chunk_type",
@@ -38,6 +41,7 @@ __all__ = [
     "compute_sign_consistency",
     "compute_slope",
     "compute_variance",
+    "evaluate_constraints",
     "get_legal_operations_for_chunk",
     "validate_operation_legality",
 ]
