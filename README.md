@@ -20,6 +20,8 @@ HypotheX-TS currently includes the first interactive MVP for semantic time-serie
 The single source of truth for the benchmark root is [backend/app/core/paths.py](backend/app/core/paths.py).
 It defines `BENCHMARK_ROOT` as `<repo>/benchmarks` plus the canonical dataset, manifest, repo, and weight subpaths. The benchmark manifest contract lives in `benchmarks/manifests/datasets.json` and `benchmarks/manifests/models.json`, and trained model artifacts belong under `benchmarks/models/weights/<family>/<dataset>/`.
 
+For the full operator workflow for real datasets and model artifacts, see [docs/real-asset-runbook.md](docs/real-asset-runbook.md).
+
 ## Backend setup
 
 ```bash
@@ -78,6 +80,8 @@ npm run build
 cd backend
 pytest
 ```
+
+For the real benchmark readiness path, run `pytest -q backend/tests/test_real_benchmark_smoke.py` after placing assets or using the shipped GunPoint smoke artifact.
 
 ## Manual verification
 

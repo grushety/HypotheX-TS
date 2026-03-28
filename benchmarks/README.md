@@ -34,6 +34,8 @@ This directory stores benchmark datasets, raw downloads, prepared NumPy exports,
 2. Run `pytest -q backend/tests/test_real_benchmark_smoke.py`.
 3. For the frontend shell, run `npm test -- --runInBand` and `npm run build` from `frontend/` if the local Node environment supports the test runner.
 
+For the full placement, validation, and failure-handling workflow, see `docs/real-asset-runbook.md`.
+
 ## Next Steps
 
 1. Run `python scripts/setup_benchmarks.py --datasets all` to populate this workspace.
