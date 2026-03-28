@@ -24,6 +24,8 @@ For the full operator workflow for real datasets and model artifacts, see [docs/
 
 The shared cross-module payload contracts for future frontend, backend, model, and evaluation work live under `schemas/`. See [schemas/README.md](schemas/README.md) and [docs/shared-contracts-note.md](docs/shared-contracts-note.md).
 
+The MVP domain ontology and threshold defaults are configured in [backend/config/mvp-domain-config.json](backend/config/mvp-domain-config.json). The backend loading note lives in [docs/domain-config-note.md](docs/domain-config-note.md).
+
 ## Backend setup
 
 ```bash

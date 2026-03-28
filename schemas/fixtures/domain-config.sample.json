@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0.0",
+  "ontologyName": "mvp-core",
+  "activeChunkTypes": ["trend", "plateau", "spike", "event", "transition", "periodic"],
+  "thresholds": {
+    "slopeAbsMin": 0.1,
+    "signConsistencyMin": 0.8,
+    "residualToLineMax": 0.05,
+    "varianceMax": 0.02,
+    "peakScoreMin": 2.5,
+    "contextContrastMin": 0.4,
+    "periodicityScoreMin": 0.7,
+    "ambiguityMarginMin": 0.1
+  },
+  "durationLimits": {
+    "minimumSegmentLength": 2,
+    "spikeMaxLength": 8,
+    "eventMinLength": 3,
+    "eventMaxLength": 40,
+    "transitionMinLength": 2,
+    "periodicMinLength": 6
+  },
+  "legalOperationsByChunk": {
+    "trend": ["change_slope", "reverse_trend", "shift_in_time", "extend", "shorten", "split", "merge"],
+    "plateau": ["shift_level", "add_noise", "extend", "shorten", "merge", "split"],
+    "spike": ["scale", "dampen", "suppress", "move", "widen", "narrow"],
+    "event": ["shift_in_time", "change_duration", "change_intensity", "remove", "duplicate", "split", "merge"],
+    "transition": ["change_slope", "accelerate", "decelerate", "shift_onset", "reverse"],
+    "periodic": ["change_amplitude", "change_frequency", "phase_shift", "duplicate_cycle", "remove_cycle", "split"]
+  },
+  "constraintDefaults": {
+    "minimum_segment_duration": {
+      "defaultMode": "hard",
+      "description": "Segments must satisfy the configured minimum duration."
+    },
+    "monotonic_trend_consistency": {
+      "defaultMode": "soft",
+      "description": "Trend segments should keep sign-consistent slope."
+    },
+    "plateau_stability": {
+      "defaultMode": "soft",
+      "description": "Plateau segments should remain low-variance and near-flat."
+    },
+    "periodicity_preservation": {
+      "defaultMode": "soft",
+      "description": "Periodic edits should preserve recognizable repetition."
+    },
+    "causal_ordering": {
+      "defaultMode": "hard",
+      "description": "Causally ordered phases cannot be inverted."
+    }
+  }
+}

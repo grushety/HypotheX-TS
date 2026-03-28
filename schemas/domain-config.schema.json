@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/domain-config.schema.json",
+  "title": "HypotheXTS Domain Config",
+  "description": "Canonical shared contract for MVP chunk ontology, thresholds, legal operations, and constraint defaults.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "ontologyName",
+    "activeChunkTypes",
+    "thresholds",
+    "durationLimits",
+    "legalOperationsByChunk",
+    "constraintDefaults"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "ontologyName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "activeChunkTypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": ["trend", "plateau", "spike", "event", "transition", "periodic"]
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "durationLimits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "legalOperationsByChunk": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "constraintDefaults": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "defaultMode",
+          "description"
+        ],
+        "properties": {
+          "defaultMode": {
+            "type": "string",
+            "enum": ["soft", "hard"]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

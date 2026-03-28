@@ -3,6 +3,11 @@
   "schemaVersion": "1.0.0",
   "contracts": [
     {
+      "name": "domain-config",
+      "schemaPath": "schemas/domain-config.schema.json",
+      "fixturePath": "schemas/fixtures/domain-config.sample.json"
+    },
+    {
       "name": "time-series",
       "schemaPath": "schemas/time-series.schema.json",
       "fixturePath": "schemas/fixtures/time-series.sample.json"
