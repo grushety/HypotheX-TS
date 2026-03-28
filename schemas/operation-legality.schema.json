@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/operation-legality.schema.json",
+  "title": "HypotheXTS Operation Legality",
+  "description": "Canonical shared contract for validating whether a typed operation is legal for a semantic chunk type.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "ontologyName",
+    "chunkType",
+    "requestedOperation",
+    "status",
+    "reasonCode",
+    "message",
+    "validOperations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "ontologyName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "chunkType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requestedOperation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ALLOW", "DENY"]
+    },
+    "reasonCode": {
+      "type": "string",
+      "enum": ["LEGAL", "UNKNOWN_CHUNK_TYPE", "OPERATION_NOT_ALLOWED"]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validOperations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

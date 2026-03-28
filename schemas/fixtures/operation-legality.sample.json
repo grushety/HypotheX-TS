@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "ontologyName": "mvp-core",
+  "chunkType": "spike",
+  "requestedOperation": "merge",
+  "status": "DENY",
+  "reasonCode": "OPERATION_NOT_ALLOWED",
+  "message": "Operation 'merge' is not legal for chunk type 'spike'.",
+  "validOperations": ["scale", "dampen", "suppress", "move", "widen", "narrow"]
+}

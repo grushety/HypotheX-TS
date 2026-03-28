@@ -3,6 +3,11 @@
   "schemaVersion": "1.0.0",
   "contracts": [
     {
+      "name": "operation-legality",
+      "schemaPath": "schemas/operation-legality.schema.json",
+      "fixturePath": "schemas/fixtures/operation-legality.sample.json"
+    },
+    {
       "name": "segment-statistics",
       "schemaPath": "schemas/segment-statistics.schema.json",
       "fixturePath": "schemas/fixtures/segment-statistics.sample.json"

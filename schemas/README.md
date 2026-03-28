@@ -17,4 +17,6 @@ Reusable segment statistic bundles should align with `segment-statistics.schema.
 
 The shared semantic segmentation schema now reflects the MVP six-label ontology from the domain config so score-based chunk assignment can emit canonical segment payloads without inventing a parallel label contract.
 
+Operation legality responses should align with `operation-legality.schema.json` so future API endpoints and the operation palette can share the same allow/deny reason vocabulary.
+
 If a later ticket needs a new contract, extend this directory instead of inventing an ad hoc payload in a module-local file.
