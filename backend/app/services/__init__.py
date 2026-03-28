@@ -1,17 +1,23 @@
-"""Backend service layer."""
+from importlib import import_module
 
-from app.services.compatibility import CompatibilityValidator
-from app.services.constraint_engine import ConstraintEngine
-from app.services.datasets import DatasetRegistry
-from app.services.inference import PredictionService
-from app.services.models import ModelRegistry
-from app.services.segmentation_state import SegmentationStateService
+_EXPORTS = {
+    "CompatibilityValidator": ("app.services.compatibility", "CompatibilityValidator"),
+    "ConstraintEngine": ("app.services.constraint_engine", "ConstraintEngine"),
+    "DatasetRegistry": ("app.services.datasets", "DatasetRegistry"),
+    "ModelRegistry": ("app.services.models", "ModelRegistry"),
+    "PredictionService": ("app.services.inference", "PredictionService"),
+    "SegmentationStateService": ("app.services.segmentation_state", "SegmentationStateService"),
+    "StructuralOperationsService": ("app.services.operations.structural", "StructuralOperationsService"),
+}
 
-__all__ = [
-    "CompatibilityValidator",
-    "ConstraintEngine",
-    "DatasetRegistry",
-    "ModelRegistry",
-    "PredictionService",
-    "SegmentationStateService",
-]
+
+def __getattr__(name):
+    if name not in _EXPORTS:
+        raise AttributeError(f"module 'app.services' has no attribute '{name}'")
+
+    module_name, attribute_name = _EXPORTS[name]
+    module = import_module(module_name)
+    return getattr(module, attribute_name)
+
+
+__all__ = list(_EXPORTS)
