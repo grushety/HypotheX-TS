@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
-import { AVAILABLE_SEGMENT_LABELS } from "../../lib/segments/updateSegmentLabel";
+import { createManualEditingState } from "../../lib/viewer/createManualEditingState";
 
 const props = defineProps({
   selectedSegment: {
@@ -21,24 +21,22 @@ const props = defineProps({
 const emit = defineEmits(["run-operation"]);
 
 const splitIndexInput = ref("");
-const nextLabel = ref("event");
+const nextLabel = ref("");
+const editingState = computed(() =>
+  createManualEditingState(props.segments, props.selectedSegment),
+);
 
-const selectedIndex = computed(() =>
-  props.selectedSegment ? props.segments.findIndex((segment) => segment.id === props.selectedSegment.id) : -1,
+watch(
+  () => props.selectedSegment?.id,
+  () => {
+    splitIndexInput.value = editingState.value.suggestedSplitIndex;
+    nextLabel.value = props.selectedSegment?.label ?? editingState.value.relabelOptions[0] ?? "";
+  },
+  { immediate: true },
 );
-const leftNeighbor = computed(() =>
-  selectedIndex.value > 0 ? props.segments[selectedIndex.value - 1] : null,
-);
-const rightNeighbor = computed(() =>
-  selectedIndex.value >= 0 && selectedIndex.value < props.segments.length - 1
-    ? props.segments[selectedIndex.value + 1]
-    : null,
-);
-const mergeLeftDisabled = computed(() => !props.selectedSegment || !leftNeighbor.value);
-const mergeRightDisabled = computed(() => !props.selectedSegment || !rightNeighbor.value);
 
 function runSplit() {
-  if (!props.selectedSegment || !splitIndexInput.value) {
+  if (!props.selectedSegment || !splitIndexInput.value || !editingState.value.canSplit) {
     return;
   }
 
@@ -54,19 +52,19 @@ function runMerge(direction) {
     return;
   }
 
-  if (direction === "left" && leftNeighbor.value) {
+  if (direction === "left" && editingState.value.leftMergeTarget) {
     emit("run-operation", {
       type: "merge",
-      leftSegmentId: leftNeighbor.value.id,
+      leftSegmentId: editingState.value.leftMergeTarget.id,
       rightSegmentId: props.selectedSegment.id,
     });
   }
 
-  if (direction === "right" && rightNeighbor.value) {
+  if (direction === "right" && editingState.value.rightMergeTarget) {
     emit("run-operation", {
       type: "merge",
       leftSegmentId: props.selectedSegment.id,
-      rightSegmentId: rightNeighbor.value.id,
+      rightSegmentId: editingState.value.rightMergeTarget.id,
     });
   }
 }
@@ -88,13 +86,14 @@ function runReclassify() {
   <section class="operation-palette">
     <div class="surface-header">
       <div>
-        <p class="section-label">Operations</p>
-        <h3>Semantic operation palette</h3>
+        <p class="section-label">Manual editing</p>
+        <h3>Split, merge, and relabel</h3>
       </div>
-      <span class="surface-tag">{{ selectedSegment ? selectedSegment.id : "Select a segment" }}</span>
+      <span class="surface-tag">{{ editingState.selectedSegmentId ?? "Select a segment" }}</span>
     </div>
 
     <p v-if="feedback" class="operation-feedback">{{ feedback }}</p>
+    <p class="operation-helper-text">{{ editingState.splitHint }}</p>
 
     <div class="operation-group">
       <label class="operation-field">
@@ -103,35 +102,36 @@ function runReclassify() {
           v-model="splitIndexInput"
           class="operation-input"
           type="number"
-          min="1"
-          :disabled="!selectedSegment"
+          :min="editingState.splitMin ?? undefined"
+          :max="editingState.splitMax ?? undefined"
+          :disabled="!editingState.canSplit"
         />
       </label>
-      <button class="operation-button" type="button" :disabled="!selectedSegment" @click="runSplit">
+      <button class="operation-button" type="button" :disabled="!editingState.canSplit" @click="runSplit">
         Split
       </button>
     </div>
 
     <div class="operation-group">
-      <button class="operation-button" type="button" :disabled="mergeLeftDisabled" @click="runMerge('left')">
-        Merge Left
+      <button class="operation-button" type="button" :disabled="!editingState.canMergeLeft" @click="runMerge('left')">
+        {{ editingState.leftMergeTarget ? `Merge ${editingState.leftMergeTarget.id}` : "Merge Left" }}
       </button>
-      <button class="operation-button" type="button" :disabled="mergeRightDisabled" @click="runMerge('right')">
-        Merge Right
+      <button class="operation-button" type="button" :disabled="!editingState.canMergeRight" @click="runMerge('right')">
+        {{ editingState.rightMergeTarget ? `Merge ${editingState.rightMergeTarget.id}` : "Merge Right" }}
       </button>
     </div>
 
     <div class="operation-group">
       <label class="operation-field">
-        <span class="sidebar-label">Reclassify to</span>
+        <span class="sidebar-label">Relabel to</span>
         <select v-model="nextLabel" class="label-editor-select" :disabled="!selectedSegment">
-          <option v-for="label in AVAILABLE_SEGMENT_LABELS" :key="label" :value="label">
+          <option v-for="label in editingState.relabelOptions" :key="label" :value="label">
             {{ label }}
           </option>
         </select>
       </label>
       <button class="operation-button" type="button" :disabled="!selectedSegment" @click="runReclassify">
-        Reclassify
+        Relabel
       </button>
     </div>
   </section>

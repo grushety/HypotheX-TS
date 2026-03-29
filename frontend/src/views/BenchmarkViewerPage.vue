@@ -253,6 +253,7 @@ async function handleRequestPrediction() {
 
 function handleSelectSegment(segmentId) {
   selectedSegmentId.value = segmentId;
+  editFeedback.value = "";
   operationFeedback.value = "";
 }
 

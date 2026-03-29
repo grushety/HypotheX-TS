@@ -7,6 +7,19 @@ import {
   createEditAuditEvent,
   createOperationAuditEvent,
 } from "./auditEvents.js";
+import { executeMoveBoundaryAction } from "../segments/executeSegmentEditAction.js";
+import { executeOperationAction } from "../operations/executeOperationAction.js";
+
+const sample = {
+  sampleId: "ECG200-001",
+  seriesLength: 96,
+  segments: [
+    { id: "seg-001", start: 0, end: 17, label: "event" },
+    { id: "seg-002", start: 18, end: 43, label: "trend" },
+    { id: "seg-003", start: 44, end: 67, label: "trend" },
+    { id: "seg-004", start: 68, end: 95, label: "other" },
+  ],
+};
 
 test("createEditAuditEvent captures warned label edits in a stable schema", () => {
   const event = createEditAuditEvent(
@@ -154,4 +167,46 @@ test("appendAuditEvent stamps timestamp and stable sequence order", () => {
   assert.equal(events.length, 1);
   assert.equal(events[0].sequence, 1);
   assert.equal(events[0].timestamp, "2026-03-27T10:00:00.000Z");
+});
+
+test("manual edit actions remain audit-ready across boundary moves and merges", () => {
+  const editResult = executeMoveBoundaryAction(sample, {
+    boundaryIndex: 1,
+    nextBoundaryStart: 40,
+  });
+  const editEvent = createEditAuditEvent(
+    {
+      type: "move-boundary",
+      boundaryIndex: 1,
+      nextBoundaryStart: 40,
+    },
+    editResult,
+    {
+      sampleId: sample.sampleId,
+      selectedSegmentId: "seg-002",
+    },
+  );
+  const mergeResult = executeOperationAction(sample, "seg-002", {
+    type: "merge",
+    leftSegmentId: "seg-002",
+    rightSegmentId: "seg-003",
+  });
+  const mergeEvent = createOperationAuditEvent(
+    {
+      type: "merge",
+      leftSegmentId: "seg-002",
+      rightSegmentId: "seg-003",
+    },
+    mergeResult,
+    {
+      sampleId: sample.sampleId,
+      selectedSegmentId: "seg-002",
+    },
+  );
+
+  assert.equal(editEvent.actionType, "move-boundary");
+  assert.deepEqual(editEvent.affectedSegmentIds, ["seg-002", "seg-003"]);
+  assert.equal(mergeEvent.actionType, "merge");
+  assert.deepEqual(mergeEvent.affectedSegmentIds, ["seg-002"]);
+  assert.equal(mergeEvent.actionStatus, "applied");
 });

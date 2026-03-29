@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-402`  
 **Title:** `Add manual segmentation editing in the timeline`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P0`  
 **Type:** `feature`  
 **Depends on:** `HTS-302, HTS-401`  
@@ -89,11 +89,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] Dragging a boundary updates only the two adjacent segments.
-- [ ] Split, merge, and relabel actions update the overlay without reloading the page.
-- [ ] Invalid edits show visible feedback and do not corrupt UI state.
-- [ ] Segment labels remain unchanged after boundary edits unless explicitly relabeled.
-- [ ] Manual edits are compatible with backend audit logging.
+- [x] Dragging a boundary updates only the two adjacent segments.
+- [x] Split, merge, and relabel actions update the overlay without reloading the page.
+- [x] Invalid edits show visible feedback and do not corrupt UI state.
+- [x] Segment labels remain unchanged after boundary edits unless explicitly relabeled.
+- [x] Manual edits are compatible with backend audit logging.
 
 ---
 
@@ -114,9 +114,9 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] frontend interaction tests
-- [ ] lint
-- [ ] manual UI verification
+- [x] frontend interaction tests
+- [x] lint
+- [x] manual UI verification
 
 ### Commands
 ```bash
@@ -139,13 +139,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -193,18 +193,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added derived manual-editing state for split, merge, and relabel actions; reset stale selection-driven form state; and extended audit-focused tests so manual edits remain compatible with interaction logging.`  
+**Checks run:** `npm test -- --runInBand; npm run lint; npm run build; frontend dev-server smoke check`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `HTS-403`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-29`  
+**Summary:** `Stabilized the manual timeline editing loop by deriving split and merge affordances from the selected segment, clearing stale edit state on selection changes, and verifying that manual edits still produce audit-ready events.`  
+**Tests passed:** `npm test -- --runInBand; npm run lint; npm run build`  
+**Files changed:** `frontend/src/components/operations/OperationPalette.vue; frontend/src/lib/viewer/createManualEditingState.js; frontend/src/lib/viewer/createManualEditingState.test.js; frontend/src/lib/audit/auditEvents.test.js; frontend/src/views/BenchmarkViewerPage.vue; frontend/src/styles.css`  
+**Follow-up tickets needed:** `none`
