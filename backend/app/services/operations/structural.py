@@ -1,9 +1,9 @@
-from dataclasses import dataclass
 from typing import Any
 
 from app.core.domain_config import DomainConfig, load_domain_config
 from app.domain.state_models import SegmentationState, StateSegment
 from app.domain.validation import OperationLegalityResult, validate_operation_legality
+from app.schemas.operation_results import OperationResultEnvelope
 from app.services.constraint_engine import ConstraintEngine, ConstraintEvaluationResult
 from app.services.segmentation_state import SegmentationStateService
 
@@ -12,32 +12,7 @@ class StructuralOperationError(RuntimeError):
     """Raised when a structural operation request is malformed."""
 
 
-@dataclass(frozen=True)
-class StructuralOperationResult:
-    schemaVersion: str
-    operationType: str
-    status: str
-    reasonCode: str
-    message: str
-    state: SegmentationState
-    constraintEvaluation: ConstraintEvaluationResult | None
-    legalityChecks: tuple[OperationLegalityResult, ...]
-    metadata: dict[str, Any]
-
-    def to_dict(self) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "schemaVersion": self.schemaVersion,
-            "operationType": self.operationType,
-            "status": self.status,
-            "reasonCode": self.reasonCode,
-            "message": self.message,
-            "state": self.state.to_dict(),
-            "legalityChecks": [entry.to_dict() for entry in self.legalityChecks],
-            "metadata": dict(self.metadata),
-        }
-        if self.constraintEvaluation is not None:
-            payload["constraintEvaluation"] = self.constraintEvaluation.to_dict()
-        return payload
+StructuralOperationResult = OperationResultEnvelope
 
 
 class StructuralOperationsService:
@@ -355,7 +330,8 @@ class StructuralOperationsService:
         return StructuralOperationResult(
             schemaVersion="1.0.0",
             operationType=operation_type,
-            status="APPLIED",
+            status=constraint_evaluation.status,
+            applied=True,
             reasonCode=constraint_evaluation.status,
             message=f"Structural operation '{operation_type}' applied successfully.",
             state=next_state,
@@ -378,7 +354,8 @@ class StructuralOperationsService:
         return StructuralOperationResult(
             schemaVersion="1.0.0",
             operationType=operation_type,
-            status="DENY",
+            status="FAIL",
+            applied=False,
             reasonCode=reason_code,
             message=message,
             state=state,

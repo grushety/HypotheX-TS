@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Any
 
 from app.core.domain_config import DomainConfig, load_domain_config
@@ -13,6 +12,7 @@ from app.domain.signal_transforms import (
 )
 from app.domain.state_models import SegmentationState
 from app.domain.validation import OperationLegalityResult, validate_operation_legality
+from app.schemas.operation_results import OperationResultEnvelope
 from app.services.constraint_engine import ConstraintEngine, ConstraintEvaluationResult
 
 
@@ -20,38 +20,7 @@ class ValueOperationError(RuntimeError):
     """Raised when a value operation request is malformed."""
 
 
-@dataclass(frozen=True)
-class ValueOperationResult:
-    schemaVersion: str
-    operationType: str
-    status: str
-    reasonCode: str
-    message: str
-    editedSeries: Any
-    state: SegmentationState
-    constraintEvaluation: ConstraintEvaluationResult | None
-    legalityCheck: OperationLegalityResult | None
-    metadata: dict[str, Any]
-
-    def to_dict(self) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "schemaVersion": self.schemaVersion,
-            "operationType": self.operationType,
-            "status": self.status,
-            "reasonCode": self.reasonCode,
-            "message": self.message,
-            "editedSeries": self._serialize_series(self.editedSeries),
-            "state": self.state.to_dict(),
-            "metadata": dict(self.metadata),
-        }
-        if self.constraintEvaluation is not None:
-            payload["constraintEvaluation"] = self.constraintEvaluation.to_dict()
-        if self.legalityCheck is not None:
-            payload["legalityCheck"] = self.legalityCheck.to_dict()
-        return payload
-
-    def _serialize_series(self, series: Any) -> Any:
-        return series.tolist() if hasattr(series, "tolist") else series
+ValueOperationResult = OperationResultEnvelope
 
 
 class ValueOperationsService:
@@ -104,9 +73,9 @@ class ValueOperationsService:
                 ),
                 series=series,
                 state=state,
-                legality_check=legality,
-                metadata={"segmentId": segment_id, "parameters": dict(parameters or {})},
-            )
+            legality_checks=(legality,),
+            metadata={"segmentId": segment_id, "parameters": dict(parameters or {})},
+        )
 
         try:
             edited_series = self._apply_transform(
@@ -123,7 +92,7 @@ class ValueOperationsService:
                 message=str(exc),
                 series=series,
                 state=state,
-                legality_check=legality,
+                legality_checks=(legality,),
                 metadata={"segmentId": segment_id, "parameters": dict(parameters or {})},
             )
 
@@ -140,7 +109,7 @@ class ValueOperationsService:
                 message="Value operation violated one or more hard constraints.",
                 series=series,
                 state=state,
-                legality_check=legality,
+                legality_checks=(legality,),
                 constraint_evaluation=constraint_evaluation,
                 metadata={"segmentId": segment_id, "parameters": dict(parameters or {})},
             )
@@ -148,14 +117,15 @@ class ValueOperationsService:
         return ValueOperationResult(
             schemaVersion="1.0.0",
             operationType=normalized_operation,
-            status="APPLIED",
+            status=constraint_evaluation.status,
+            applied=True,
             reasonCode=constraint_evaluation.status,
             message=f"Value operation '{normalized_operation}' applied successfully.",
-            editedSeries=edited_series,
             state=state,
             constraintEvaluation=constraint_evaluation,
-            legalityCheck=legality,
+            legalityChecks=(legality,),
             metadata={"segmentId": segment_id, "parameters": dict(parameters or {})},
+            editedSeries=edited_series,
         )
 
     def _apply_transform(
@@ -206,19 +176,20 @@ class ValueOperationsService:
         message: str,
         series: Any,
         state: SegmentationState,
-        legality_check: OperationLegalityResult | None,
+        legality_checks: tuple[OperationLegalityResult, ...],
         constraint_evaluation: ConstraintEvaluationResult | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> ValueOperationResult:
         return ValueOperationResult(
             schemaVersion="1.0.0",
             operationType=operation_type,
-            status="DENY",
+            status="FAIL",
+            applied=False,
             reasonCode=reason_code,
             message=message,
             editedSeries=series,
             state=state,
             constraintEvaluation=constraint_evaluation,
-            legalityCheck=legality_check,
+            legalityChecks=legality_checks,
             metadata=dict(metadata or {}),
         )

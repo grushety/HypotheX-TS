@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.0.0",
+  "operationType": "reclassify",
+  "status": "WARN",
+  "applied": true,
+  "reasonCode": "WARN",
+  "message": "Structural operation 'reclassify' applied successfully.",
+  "constraintMode": "soft",
+  "violations": [
+    {
+      "constraintId": "monotonic_trend_consistency",
+      "severity": "soft",
+      "message": "Trend segment 'segment-plateau' is not sufficiently monotonic under the current slope, sign-consistency, and residual thresholds.",
+      "affectedSegmentIds": ["segment-plateau"],
+      "repairHint": {
+        "suggestedAction": "adjust_boundary_or_reclassify",
+        "requiredSlopeAbsMin": 0.1,
+        "requiredSignConsistencyMin": 0.8,
+        "requiredResidualToLineMax": 0.05
+      }
+    }
+  ],
+  "state": {
+    "schemaVersion": "1.0.0",
+    "stateId": "state-seg-001",
+    "segmentationId": "seg-001",
+    "seriesId": "series-001",
+    "currentVersion": 2,
+    "currentSnapshot": {
+      "schemaVersion": "1.0.0",
+      "segmentationId": "seg-001",
+      "seriesId": "series-001",
+      "version": 2,
+      "segments": [
+        {
+          "segmentId": "segment-001",
+          "startIndex": 0,
+          "endIndex": 3,
+          "label": "trend",
+          "provenance": "user"
+        },
+        {
+          "segmentId": "segment-plateau",
+          "startIndex": 4,
+          "endIndex": 7,
+          "label": "trend",
+          "provenance": "user"
+        }
+      ]
+    },
+    "history": []
+  },
+  "constraintEvaluation": {
+    "schemaVersion": "1.0.0",
+    "evaluationId": "constraint-eval-state-seg-001-reclassify-2",
+    "operationId": "state-seg-001-reclassify-2",
+    "constraintMode": "soft",
+    "status": "WARN",
+    "violations": [
+      {
+        "constraintId": "monotonic_trend_consistency",
+        "severity": "soft",
+        "message": "Trend segment 'segment-plateau' is not sufficiently monotonic under the current slope, sign-consistency, and residual thresholds.",
+        "affectedSegmentIds": ["segment-plateau"],
+        "repairHint": {
+          "suggestedAction": "adjust_boundary_or_reclassify",
+          "requiredSlopeAbsMin": 0.1,
+          "requiredSignConsistencyMin": 0.8,
+          "requiredResidualToLineMax": 0.05
+        }
+      }
+    ]
+  },
+  "legalityChecks": [],
+  "metadata": {
+    "segmentId": "segment-plateau",
+    "previousLabel": "plateau",
+    "newLabel": "trend"
+  }
+}

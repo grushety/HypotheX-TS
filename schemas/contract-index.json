@@ -38,6 +38,11 @@
       "fixturePath": "schemas/fixtures/constraint-evaluation.sample.json"
     },
     {
+      "name": "operation-result",
+      "schemaPath": "schemas/operation-result.schema.json",
+      "fixturePath": "schemas/fixtures/operation-result.sample.json"
+    },
+    {
       "name": "session-log",
       "schemaPath": "schemas/session-log.schema.json",
       "fixturePath": "schemas/fixtures/session-log.sample.json"

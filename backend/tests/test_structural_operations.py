@@ -49,7 +49,8 @@ def test_edit_boundary_updates_only_adjacent_segments_and_records_history():
         new_left_end_index=2,
     )
 
-    assert result.status == "APPLIED"
+    assert result.status == "WARN"
+    assert result.applied is True
     assert result.state.currentVersion == 2
     assert result.state.currentSnapshot.segments[0].end_index == 2
     assert result.state.currentSnapshot.segments[1].start_index == 3
@@ -69,7 +70,8 @@ def test_split_creates_two_contiguous_children_with_valid_boundaries():
         split_after_index=1,
     )
 
-    assert result.status == "APPLIED"
+    assert result.status == "PASS"
+    assert result.applied is True
     child_segments = result.state.currentSnapshot.segments[:2]
     assert [segment.segment_id for segment in child_segments] == ["segment-001-a", "segment-001-b"]
     assert child_segments[0].start_index == 0
@@ -89,7 +91,8 @@ def test_merge_combines_adjacent_compatible_segments_and_preserves_coverage():
         right_segment_id="segment-003",
     )
 
-    assert result.status == "APPLIED"
+    assert result.status == "PASS"
+    assert result.applied is True
     merged_segment = result.state.currentSnapshot.segments[1]
     assert len(result.state.currentSnapshot.segments) == 2
     assert merged_segment.segment_id == "segment-002"
@@ -109,7 +112,8 @@ def test_reclassify_changes_only_label_and_preserves_boundaries():
         new_label="event",
     )
 
-    assert result.status == "APPLIED"
+    assert result.status == "PASS"
+    assert result.applied is True
     reclassified = result.state.currentSnapshot.segments[1]
     assert reclassified.label == "event"
     assert reclassified.start_index == 4
@@ -135,9 +139,11 @@ def test_invalid_structural_operations_return_explicit_feedback_without_mutating
         new_left_end_index=0,
     )
 
-    assert denied_merge.status == "DENY"
+    assert denied_merge.status == "FAIL"
+    assert denied_merge.applied is False
     assert denied_merge.reasonCode == "INCOMPATIBLE_SEGMENTS"
-    assert denied_boundary.status == "DENY"
+    assert denied_boundary.status == "FAIL"
+    assert denied_boundary.applied is False
     assert denied_boundary.reasonCode == "CONSTRAINT_FAIL"
     assert denied_merge.state.currentVersion == 1
     assert denied_boundary.state.currentVersion == 1

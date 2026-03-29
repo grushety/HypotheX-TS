@@ -21,4 +21,6 @@ Operation legality responses should align with `operation-legality.schema.json` 
 
 Constraint feedback should align with `constraint-evaluation.schema.json`, including optional repair-hint metadata when the backend can suggest a minimal next action.
 
+Operation outcomes should align with `operation-result.schema.json` so structural edits, value edits, and later API endpoints all expose one stable PASS/WARN/FAIL envelope with machine-readable codes and violation details.
+
 If a later ticket needs a new contract, extend this directory instead of inventing an ad hoc payload in a module-local file.

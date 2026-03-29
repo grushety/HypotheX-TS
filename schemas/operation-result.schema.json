@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/operation-result.schema.json",
+  "title": "HypotheXTS Operation Result",
+  "description": "Canonical shared contract for a structural or value operation outcome with normalized constraint feedback.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "operationType",
+    "status",
+    "applied",
+    "reasonCode",
+    "message",
+    "constraintMode",
+    "violations",
+    "state",
+    "legalityChecks",
+    "metadata"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "operationType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"]
+    },
+    "applied": {
+      "type": "boolean"
+    },
+    "reasonCode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraintMode": {
+      "type": ["string", "null"],
+      "enum": ["soft", "hard", null]
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "constraintId",
+          "severity",
+          "message"
+        ],
+        "properties": {
+          "constraintId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["soft", "hard"]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "affectedSegmentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "repairHint": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "object"
+    },
+    "editedSeries": {
+      "type": ["array", "null"]
+    },
+    "constraintEvaluation": {
+      "type": "object"
+    },
+    "legalityChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "ontologyName",
+          "chunkType",
+          "requestedOperation",
+          "status",
+          "reasonCode",
+          "message",
+          "validOperations"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "const": "1.0.0"
+          },
+          "ontologyName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chunkType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requestedOperation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ALLOW", "DENY"]
+          },
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "validOperations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  }
+}

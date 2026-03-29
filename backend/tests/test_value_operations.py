@@ -62,7 +62,8 @@ def test_shift_level_applies_to_plateau_and_keeps_constraint_feedback():
         parameters={"delta": 0.25},
     )
 
-    assert result.status == "APPLIED"
+    assert result.status == "PASS"
+    assert result.applied is True
     assert result.editedSeries[4:8].tolist() == [1.25, 1.25, 1.26, 1.24]
     assert result.editedSeries[:4].tolist() == [0.0, 0.2, 0.4, 0.6]
     assert result.constraintEvaluation is not None
@@ -82,7 +83,8 @@ def test_change_slope_applies_only_to_trend_segment():
         parameters={"slopeDelta": 0.1},
     )
 
-    assert result.status == "APPLIED"
+    assert result.status == "PASS"
+    assert result.applied is True
     assert result.editedSeries[:4].tolist() == pytest.approx([-0.15, 0.15, 0.45, 0.75])
     assert result.editedSeries[4:].tolist() == create_series()[4:].tolist()
 
@@ -105,11 +107,13 @@ def test_spike_operations_cover_scale_and_suppress_edge_cases():
         operation_type="suppress_spike",
     )
 
-    assert scaled.status == "APPLIED"
+    assert scaled.status == "PASS"
+    assert scaled.applied is True
     assert scaled.editedSeries[8:11].tolist() == pytest.approx(
         [0.8333333333333333, 3.333333333333333, 0.8333333333333333]
     )
-    assert suppressed.status == "APPLIED"
+    assert suppressed.status == "PASS"
+    assert suppressed.applied is True
     assert suppressed.editedSeries[8:11].tolist() == pytest.approx(
         [1.6666666666666665, 1.6666666666666665, 1.6666666666666665]
     )
@@ -133,10 +137,12 @@ def test_event_operations_cover_shift_and_remove_without_touching_other_regions(
         operation_type="remove_event",
     )
 
-    assert shifted.status == "APPLIED"
+    assert shifted.status == "PASS"
+    assert shifted.applied is True
     assert shifted.editedSeries[:11].tolist() == create_series()[:11].tolist()
     assert shifted.editedSeries[11:15].tolist() == [2.0, 2.0, 3.0, 4.0]
-    assert removed.status == "APPLIED"
+    assert removed.status == "PASS"
+    assert removed.applied is True
     assert removed.editedSeries[11:15].tolist() == pytest.approx([1.8, 3.6, 5.4, 7.2])
     assert removed.editedSeries[15] == 9.0
 
@@ -153,7 +159,8 @@ def test_illegal_chunk_type_combination_is_rejected_before_mutation():
         operation_type="suppress_spike",
     )
 
-    assert result.status == "DENY"
+    assert result.status == "FAIL"
+    assert result.applied is False
     assert result.reasonCode == "OPERATION_NOT_ALLOWED"
     assert result.editedSeries.tolist() == original.tolist()
 
@@ -170,7 +177,8 @@ def test_invalid_parameters_and_unknown_segment_fail_explicitly():
         parameters={"offset": 0},
     )
 
-    assert denied.status == "DENY"
+    assert denied.status == "FAIL"
+    assert denied.applied is False
     assert denied.reasonCode == "INVALID_PARAMETERS"
 
     try:
