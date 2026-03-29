@@ -557,6 +557,76 @@ h3 {
   position: relative;
 }
 
+.timeline-viewer {
+  display: grid;
+  gap: 16px;
+}
+
+.timeline-header,
+.timeline-summary,
+.timeline-footer {
+  display: flex;
+  gap: 12px;
+}
+
+.timeline-header,
+.timeline-footer {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.timeline-summary {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.timeline-stage {
+  position: relative;
+}
+
+.timeline-focus-card {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 18px;
+  background: #eef4f7;
+}
+
+.timeline-focus-copy {
+  margin: 8px 0 0;
+  color: #41526a;
+}
+
+.timeline-minimap {
+  position: relative;
+  height: 24px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: rgba(18, 32, 51, 0.08);
+  overflow: hidden;
+}
+
+.timeline-minimap-span,
+.timeline-minimap-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.timeline-minimap-span {
+  opacity: 0.9;
+}
+
+.timeline-minimap-span-active {
+  box-shadow: inset 0 0 0 2px rgba(18, 32, 51, 0.45);
+}
+
+.timeline-minimap-window {
+  border: 2px solid rgba(18, 32, 51, 0.72);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
 .chart-svg {
   height: 240px;
   overflow: visible;
@@ -691,7 +761,7 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .segment-legend-item {
@@ -957,7 +1027,9 @@ h3 {
 @media (max-width: 900px) {
   .hero,
   .viewer-header,
-  .selector-panel-header {
+  .selector-panel-header,
+  .timeline-header,
+  .timeline-footer {
     flex-direction: column;
   }
 
@@ -979,6 +1051,10 @@ h3 {
   .history-surface {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .timeline-summary {
+    justify-content: flex-start;
   }
 }
 

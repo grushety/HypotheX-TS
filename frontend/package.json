@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/lib/data/*.test.js src/lib/viewer/*.test.js src/lib/chart/*.test.js src/lib/segments/*.test.js src/lib/operations/*.test.js src/lib/constraints/*.test.js src/lib/audit/*.test.js src/lib/export/*.test.js src/lib/benchmarks/*.test.js src/services/api/*.test.js"
+    "test": "node --test --test-isolation=none src/lib/data/*.test.js src/lib/viewer/*.test.js src/lib/chart/*.test.js src/lib/segments/*.test.js src/lib/operations/*.test.js src/lib/constraints/*.test.js src/lib/audit/*.test.js src/lib/export/*.test.js src/lib/benchmarks/*.test.js src/services/api/*.test.js",
+    "lint": "node scripts/lint.mjs"
   },
   "dependencies": {
     "vue": "^3.5.13"

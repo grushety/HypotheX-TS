@@ -398,11 +398,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-022 MVP</p>
-        <h1>Benchmark viewer workflow</h1>
+        <p class="eyebrow">HTS-401 timeline viewer</p>
+        <h1>Timeline viewer workflow</h1>
         <p class="hero-copy">
-          The MVP viewer supports segment editing, semantic operations, soft warnings, interaction
-          history, and JSON log export on top of the benchmark sample workflow.
+          The main viewer now centers the chart and segmentation overlay in a shared timeline
+          surface, with selection context preserved as you inspect benchmark samples.
         </p>
       </div>
 

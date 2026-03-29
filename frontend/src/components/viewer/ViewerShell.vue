@@ -2,8 +2,7 @@
 import HistoryPanel from "../history/HistoryPanel.vue";
 import OperationPalette from "../operations/OperationPalette.vue";
 import WarningPanel from "../warnings/WarningPanel.vue";
-import SegmentationOverlay from "./SegmentationOverlay.vue";
-import TimeSeriesChart from "./TimeSeriesChart.vue";
+import TimelineViewer from "./TimelineViewer.vue";
 import { AVAILABLE_SEGMENT_LABELS } from "../../lib/segments/updateSegmentLabel";
 
 defineProps({
@@ -85,35 +84,29 @@ const emit = defineEmits([
         <div class="surface-header">
           <div>
             <p class="section-label">Chart area</p>
-            <h3>Time-series plot</h3>
+            <h3>Time-series timeline</h3>
           </div>
           <span class="surface-tag">{{ sample?.seriesLength ?? "--" }} points</span>
         </div>
 
-        <div v-if="sample?.values?.length" class="chart-stack">
-          <TimeSeriesChart :values="sample.values" :title="`${sample.datasetName} sample ${sample.sampleId}`" />
-          <SegmentationOverlay
-            v-if="sample?.segments?.length"
-            :segments="sample.segments"
-            :series-length="sample.seriesLength"
-            :selected-segment-id="selectedSegmentId"
-            @select-segment="emit('select-segment', $event)"
-            @move-boundary="emit('move-boundary', $event)"
-          />
-        </div>
-        <div v-else class="chart-empty-state">Preparing chart data...</div>
+        <TimelineViewer
+          :sample="sample"
+          :selected-segment-id="selectedSegmentId"
+          @select-segment="emit('select-segment', $event)"
+          @move-boundary="emit('move-boundary', $event)"
+        />
 
         <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
         <p class="surface-copy">
-          Drag a boundary handle to update adjacent segments through the shared boundary logic.
+          The timeline keeps segment spans, boundaries, and current selection aligned on one surface.
         </p>
       </section>
 
       <section class="surface overlay-surface" aria-label="Overlay area placeholder">
         <div class="surface-header">
           <div>
-            <p class="section-label">Overlay area</p>
-            <h3>Segment map</h3>
+            <p class="section-label">Segment index</p>
+            <h3>Overlay map</h3>
           </div>
           <span class="surface-tag">{{ sample?.segments?.length ?? 0 }} segments</span>
         </div>
@@ -134,7 +127,7 @@ const emit = defineEmits([
         <div v-else class="overlay-placeholder">Preparing segments...</div>
 
         <p class="surface-copy">
-          Segment spans and labels are now aligned to the loaded series and ready for selection work.
+          Use the list for precise segment selection while the timeline keeps global context visible.
         </p>
       </section>
 

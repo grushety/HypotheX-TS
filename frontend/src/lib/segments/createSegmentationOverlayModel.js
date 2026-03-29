@@ -29,9 +29,9 @@ export function createSegmentationOverlayModel(segments, seriesLength) {
     };
   });
 
-  const boundaries = segments.slice(0, -1).map((segment) => ({
+  const boundaries = segments.slice(0, -1).map((segment, boundaryIndex) => ({
     id: `${segment.id}-boundary`,
-    boundaryIndex: segments.indexOf(segment),
+    boundaryIndex,
     left: toPercent((((segment.end + 1) / denominator) * 100)),
   }));
 
