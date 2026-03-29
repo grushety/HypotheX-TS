@@ -22,6 +22,52 @@
         },
         "requestedBy": "user"
       },
+      "operationResult": {
+        "schemaVersion": "1.0.0",
+        "operationType": "reclassify",
+        "status": "WARN",
+        "applied": true,
+        "reasonCode": "WARN",
+        "message": "Structural operation 'reclassify' applied successfully.",
+        "constraintMode": "soft",
+        "violations": [
+          {
+            "constraintId": "minimum_segment_duration",
+            "severity": "soft",
+            "message": "The target segment is close to the minimum preferred duration.",
+            "affectedSegmentIds": ["segment-003"]
+          }
+        ],
+        "state": {
+          "schemaVersion": "1.0.0",
+          "stateId": "state-seg-gunpoint-test-0",
+          "segmentationId": "seg-gunpoint-test-0",
+          "seriesId": "gunpoint-test-0",
+          "currentVersion": 2,
+          "currentSnapshot": {
+            "schemaVersion": "1.0.0",
+            "segmentationId": "seg-gunpoint-test-0",
+            "seriesId": "gunpoint-test-0",
+            "version": 2,
+            "segments": [
+              {
+                "segmentId": "segment-003",
+                "startIndex": 20,
+                "endIndex": 32,
+                "label": "event",
+                "provenance": "user"
+              }
+            ]
+          },
+          "history": []
+        },
+        "legalityChecks": [],
+        "metadata": {
+          "segmentId": "segment-003",
+          "previousLabel": "other",
+          "newLabel": "event"
+        }
+      },
       "constraintEvaluation": {
         "schemaVersion": "1.0.0",
         "evaluationId": "constraint-eval-001",
@@ -36,6 +82,25 @@
             "affectedSegmentIds": ["segment-003"]
           }
         ]
+      },
+      "metadata": {
+        "targetSegmentIds": ["segment-003"],
+        "constraintOutcome": "WARN",
+        "applied": true
+      }
+    },
+    {
+      "eventId": "event-002",
+      "timestamp": "2026-03-28T10:03:00Z",
+      "eventType": "suggestion_overridden",
+      "suggestion": {
+        "suggestionId": "suggestion-001",
+        "decision": "overridden",
+        "targetSegmentIds": ["segment-003"],
+        "source": "model"
+      },
+      "metadata": {
+        "reason": "user_kept_manual_reclassify"
       }
     }
   ]

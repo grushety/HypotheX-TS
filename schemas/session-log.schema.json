@@ -47,8 +47,7 @@
           "eventId",
           "timestamp",
           "eventType",
-          "operation",
-          "constraintEvaluation"
+          "metadata"
         ],
         "properties": {
           "eventId": {
@@ -61,13 +60,64 @@
           },
           "eventType": {
             "type": "string",
-            "enum": ["operation_applied", "operation_rejected", "projection_applied"]
+            "enum": [
+              "operation_applied",
+              "operation_rejected",
+              "projection_applied",
+              "suggestion_accepted",
+              "suggestion_overridden"
+            ]
           },
           "operation": {
             "$ref": "typed-operation.schema.json"
           },
+          "operationResult": {
+            "$ref": "operation-result.schema.json"
+          },
           "constraintEvaluation": {
-            "$ref": "constraint-evaluation.schema.json"
+            "oneOf": [
+              {
+                "$ref": "constraint-evaluation.schema.json"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suggestion": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "suggestionId",
+              "decision",
+              "targetSegmentIds",
+              "source"
+            ],
+            "properties": {
+              "suggestionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "decision": {
+                "type": "string",
+                "enum": ["accepted", "overridden"]
+              },
+              "targetSegmentIds": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "source": {
+                "type": "string",
+                "enum": ["model", "system"]
+              }
+            }
+          },
+          "metadata": {
+            "type": "object"
           }
         }
       }

@@ -1,6 +1,7 @@
 from importlib import import_module
 
 _EXPORTS = {
+    "AuditLogService": ("app.services.audit_log", "AuditLogService"),
     "CompatibilityValidator": ("app.services.compatibility", "CompatibilityValidator"),
     "ConstraintEngine": ("app.services.constraint_engine", "ConstraintEngine"),
     "DatasetRegistry": ("app.services.datasets", "DatasetRegistry"),

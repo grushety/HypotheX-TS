@@ -23,4 +23,6 @@ Constraint feedback should align with `constraint-evaluation.schema.json`, inclu
 
 Operation outcomes should align with `operation-result.schema.json` so structural edits, value edits, and later API endpoints all expose one stable PASS/WARN/FAIL envelope with machine-readable codes and violation details.
 
+Session exports should align with `session-log.schema.json`, including ordered operation events and explicit suggestion accept/override events rather than burying those distinctions in free-form text.
+
 If a later ticket needs a new contract, extend this directory instead of inventing an ad hoc payload in a module-local file.
