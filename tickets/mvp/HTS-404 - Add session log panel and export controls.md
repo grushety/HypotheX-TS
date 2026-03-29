@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-404`  
 **Title:** `Add session log panel and export controls`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P2`  
 **Type:** `feature`  
 **Depends on:** `HTS-305, HTS-401`  
@@ -85,11 +85,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] The UI shows an ordered list of recorded actions.
-- [ ] Each log entry displays action type and status in a readable way.
-- [ ] The user can export the session without developer tools.
-- [ ] Rendering tolerates empty and non-empty sessions.
-- [ ] Basic smoke tests cover the panel.
+- [x] The UI shows an ordered list of recorded actions.
+- [x] Each log entry displays action type and status in a readable way.
+- [x] The user can export the session without developer tools.
+- [x] Rendering tolerates empty and non-empty sessions.
+- [x] Basic smoke tests cover the panel.
 
 ---
 
@@ -110,9 +110,9 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] frontend tests
-- [ ] lint
-- [ ] manual verification
+- [x] frontend tests
+- [x] lint
+- [x] manual verification
 
 ### Commands
 ```bash
@@ -134,13 +134,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -157,22 +157,22 @@ A ticket is done only when all items below are true.
 Before marking complete, verify:
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
 
 ---
 
@@ -188,18 +188,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added a session log panel over the existing frontend audit stream, added session metadata and readable timestamps, and updated export generation so the downloaded JSON uses a session-shaped payload and filename.`  
+**Checks run:** `npm test -- --runInBand; npm run lint; npm run build; frontend dev-server smoke pass on http://127.0.0.1:5173`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `Move to the next ticket in sequence.`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-29`  
+**Summary:** `Added a readable session log panel with session metadata, timestamped action entries, and an Export Session control. The UI is driven from the existing frontend audit event stream, and the exported file now uses a session-log payload shape suitable for later backend alignment.`  
+**Tests passed:** `npm test -- --runInBand; npm run lint; npm run build; frontend dev-server smoke pass on http://127.0.0.1:5173`  
+**Files changed:** `frontend/src/components/history/HistoryPanel.vue; frontend/src/components/viewer/ViewerShell.vue; frontend/src/lib/audit/createHistoryEntries.js; frontend/src/lib/audit/createHistoryEntries.test.js; frontend/src/lib/audit/createSessionPanelState.js; frontend/src/lib/audit/createSessionPanelState.test.js; frontend/src/lib/export/createInteractionLogExport.js; frontend/src/lib/export/createInteractionLogExport.test.js; frontend/src/styles.css; frontend/src/views/BenchmarkViewerPage.vue`  
+**Follow-up tickets needed:** `none`

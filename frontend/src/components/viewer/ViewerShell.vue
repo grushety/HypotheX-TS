@@ -47,6 +47,15 @@ defineProps({
     type: Array,
     default: () => [],
   },
+  sessionPanelState: {
+    type: Object,
+    default: () => ({
+      sessionId: "session-unloaded",
+      startedAt: null,
+      endedAt: null,
+      eventCount: 0,
+    }),
+  },
   operationPaletteState: {
     type: Object,
     default: () => ({}),
@@ -184,7 +193,7 @@ const emit = defineEmits([
 
       <ModelComparisonPanel :state="comparisonState" />
 
-      <HistoryPanel :entries="historyEntries" @export-log="emit('export-log')" />
+      <HistoryPanel :entries="historyEntries" :session="sessionPanelState" @export-log="emit('export-log')" />
     </div>
   </section>
 </template>

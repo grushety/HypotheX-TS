@@ -967,6 +967,33 @@ h3 {
   margin-bottom: 0;
 }
 
+.history-session-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.history-session-summary div {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #eef4f7;
+}
+
+.history-session-summary dt {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6b6f8d;
+}
+
+.history-session-summary dd {
+  margin: 0;
+  font-weight: 700;
+  color: #122033;
+}
+
 .history-list {
   display: grid;
   gap: 12px;
@@ -1130,6 +1157,7 @@ h3 {
   .selector-summary,
   .prediction-grid,
   .prediction-summary-list,
+  .history-session-summary,
   .status-strip,
   .viewer-grid {
     grid-template-columns: 1fr;

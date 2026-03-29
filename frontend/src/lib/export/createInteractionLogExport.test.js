@@ -12,10 +12,10 @@ test("createInteractionLogFilename produces a stable JSON filename", () => {
     new Date("2026-03-27T10:15:30.000Z"),
   );
 
-  assert.equal(filename, "interaction-log-ECG200-001-20260327T101530Z.json");
+  assert.equal(filename, "session-log-ECG200-001-20260327T101530Z.json");
 });
 
-test("createInteractionLogExport serializes core audit fields into JSON", () => {
+test("createInteractionLogExport serializes a session-shaped export payload", () => {
   const exportArtifact = createInteractionLogExport(
     [
       {
@@ -47,6 +47,11 @@ test("createInteractionLogExport serializes core audit fields into JSON", () => 
       },
     ],
     {
+      sessionId: "session-ECG200-001",
+      seriesId: "train-001",
+      segmentationId: "segmentation-train-001",
+      startedAt: "2026-03-27T10:15:30.000Z",
+      endedAt: "2026-03-27T10:15:30.000Z",
       sampleId: "ECG200-001",
       datasetName: "ECG200",
     },
@@ -55,9 +60,12 @@ test("createInteractionLogExport serializes core audit fields into JSON", () => 
 
   assert.equal(exportArtifact.mimeType, "application/json");
   assert.equal(exportArtifact.payload.eventCount, 1);
-  assert.equal(exportArtifact.payload.sampleId, "ECG200-001");
+  assert.equal(exportArtifact.payload.sessionId, "session-ECG200-001");
+  assert.equal(exportArtifact.payload.seriesId, "train-001");
+  assert.equal(exportArtifact.payload.segmentationId, "segmentation-train-001");
   assert.equal(exportArtifact.payload.datasetName, "ECG200");
-  assert.equal(exportArtifact.payload.events[0].warningCount, 2);
+  assert.equal(exportArtifact.payload.events[0].eventType, "operation_applied");
+  assert.equal(exportArtifact.payload.events[0].metadata.warningCount, 2);
+  assert.match(exportArtifact.content, /"sessionId": "session-ECG200-001"/);
   assert.match(exportArtifact.content, /"actionType": "split"/);
-  assert.match(exportArtifact.content, /"constraintStatus": "WARN"/);
 });

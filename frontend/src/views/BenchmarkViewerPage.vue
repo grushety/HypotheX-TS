@@ -6,6 +6,7 @@ import PredictionPanel from "../components/benchmarks/PredictionPanel.vue";
 import ViewerShell from "../components/viewer/ViewerShell.vue";
 import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } from "../lib/audit/auditEvents";
 import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
+import { createSessionPanelState } from "../lib/audit/createSessionPanelState";
 import { createPredictionPanelState } from "../lib/benchmarks/createPredictionPanelState";
 import { createViewerSampleFromApi } from "../lib/benchmarks/createViewerSampleFromApi";
 import { createBenchmarkSelectorState } from "../lib/benchmarks/createBenchmarkSelectorState";
@@ -67,6 +68,7 @@ const selectedSegment = computed(() =>
 );
 const pageState = computed(() => createViewerPageState(sample.value, selectedSegment.value));
 const historyEntries = computed(() => createHistoryEntries(auditEvents.value));
+const sessionPanelState = computed(() => createSessionPanelState(auditEvents.value, sample.value));
 const warningDisplay = computed(() =>
   createViewerWarningDisplay({
     editConstraintResult: editConstraintResult.value,
@@ -380,6 +382,11 @@ function handleExportLog() {
   }
 
   const exportArtifact = createInteractionLogExport(auditEvents.value, {
+    sessionId: sessionPanelState.value.sessionId,
+    seriesId: sessionPanelState.value.seriesId,
+    segmentationId: sessionPanelState.value.segmentationId,
+    startedAt: sessionPanelState.value.startedAt,
+    endedAt: sessionPanelState.value.endedAt,
     sampleId: sample.value?.sampleId ?? null,
     datasetName: sample.value?.datasetName ?? null,
   });
@@ -462,6 +469,7 @@ onMounted(() => {
       :operation-feedback="operationFeedback"
       :warning-display="warningDisplay"
       :history-entries="historyEntries"
+      :session-panel-state="sessionPanelState"
       :operation-palette-state="operationPaletteState"
       :comparison-state="comparisonState"
       @select-segment="handleSelectSegment"

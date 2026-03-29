@@ -30,6 +30,14 @@ function formatSummary(event) {
   return `${formatActionLabel(event)} ${event.actionStatus}.`;
 }
 
+function formatTimestampLabel(timestamp) {
+  if (!timestamp) {
+    return "Pending";
+  }
+
+  return timestamp.replace("T", " ").replace(".000Z", "Z");
+}
+
 export function createHistoryEntries(events = []) {
   return [...events]
     .sort((left, right) => (right.sequence ?? 0) - (left.sequence ?? 0))
@@ -40,6 +48,7 @@ export function createHistoryEntries(events = []) {
       summary: formatSummary(event),
       sequence: event.sequence ?? null,
       timestamp: event.timestamp ?? null,
+      timestampLabel: formatTimestampLabel(event.timestamp ?? null),
       warningCount: event.warningCount ?? 0,
       affectedSegmentIds: event.affectedSegmentIds ?? [],
     }));

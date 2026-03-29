@@ -13,17 +13,45 @@ export function createInteractionLogFilename(sampleId, timestamp = new Date()) {
   const seconds = padNumber(timestamp.getUTCSeconds());
   const safeSampleId = (sampleId ?? "sample").replace(/[^a-zA-Z0-9_-]+/g, "-");
 
-  return `interaction-log-${safeSampleId}-${year}${month}${day}T${hours}${minutes}${seconds}Z.json`;
+  return `session-log-${safeSampleId}-${year}${month}${day}T${hours}${minutes}${seconds}Z.json`;
+}
+
+function mapAuditEventToSessionEvent(event, sessionId) {
+  return {
+    eventId: `${sessionId}-event-${event.sequence ?? "pending"}`,
+    timestamp: event.timestamp ?? null,
+    eventType: event.actionStatus === "rejected" ? "operation_rejected" : "operation_applied",
+    metadata: {
+      kind: event.kind ?? null,
+      actionType: event.actionType ?? null,
+      actionStatus: event.actionStatus ?? null,
+      constraintStatus: event.constraintStatus ?? null,
+      warningCount: event.warningCount ?? 0,
+      affectedSegmentIds: event.affectedSegmentIds ?? [],
+      rejectionCode: event.rejectionCode ?? null,
+      message: event.message ?? "",
+      request: event.request ?? null,
+      selectedSegmentId: event.selectedSegmentId ?? null,
+      sampleId: event.sampleId ?? null,
+    },
+  };
 }
 
 export function createInteractionLogExport(events, context = {}, timestamp = new Date()) {
+  const sessionId = context.sessionId ?? `session-${context.sampleId ?? "sample"}`;
+  const startedAt = context.startedAt ?? events[0]?.timestamp ?? timestamp.toISOString();
+  const endedAt = context.endedAt ?? events.at(-1)?.timestamp ?? timestamp.toISOString();
   const payload = {
-    schemaVersion: AUDIT_EVENT_SCHEMA_VERSION,
-    exportedAt: timestamp.toISOString(),
-    sampleId: context.sampleId ?? null,
+    schemaVersion: "1.0.0",
+    sessionId,
+    seriesId: context.seriesId ?? context.sampleId ?? "sample",
+    segmentationId: context.segmentationId ?? `segmentation-${context.sampleId ?? "sample"}`,
+    startedAt,
+    endedAt,
     datasetName: context.datasetName ?? null,
     eventCount: events.length,
-    events,
+    exportedAt: timestamp.toISOString(),
+    events: events.map((event) => mapAuditEventToSessionEvent(event, sessionId)),
   };
 
   return {

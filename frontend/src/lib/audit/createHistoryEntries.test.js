@@ -31,6 +31,7 @@ test("createHistoryEntries orders newest events first and formats warned summari
   assert.equal(entries[0].title, "Split operation");
   assert.equal(entries[0].statusLabel, "Warned");
   assert.equal(entries[0].summary, "split applied with 2 warnings.");
+  assert.equal(entries[0].timestampLabel, "Pending");
   assert.deepEqual(entries[0].affectedSegmentIds, ["seg-002-a", "seg-002-b"]);
   assert.equal(entries[1].title, "Boundary edit");
 });
@@ -51,4 +52,18 @@ test("createHistoryEntries formats rejected actions distinctly", () => {
 
   assert.equal(entries[0].statusLabel, "Rejected");
   assert.equal(entries[0].summary, "Merge currently requires adjacent segments with the same label.");
+});
+
+test("createHistoryEntries formats timestamps for readable session display", () => {
+  const entries = createHistoryEntries([
+    {
+      sequence: 1,
+      kind: "edit",
+      actionType: "move-boundary",
+      actionStatus: "applied",
+      timestamp: "2026-03-29T12:15:00.000Z",
+    },
+  ]);
+
+  assert.equal(entries[0].timestampLabel, "2026-03-29 12:15:00Z");
 });
