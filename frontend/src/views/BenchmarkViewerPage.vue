@@ -15,11 +15,14 @@ import {
   createInteractionLogExport,
   downloadInteractionLogExport,
 } from "../lib/export/createInteractionLogExport";
+import { createOperationPaletteState } from "../lib/operations/createOperationPaletteState";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
 import {
   executeMoveBoundaryAction,
   executeUpdateSegmentLabelAction,
 } from "../lib/segments/executeSegmentEditAction";
+import { createModelComparisonState } from "../lib/viewer/createModelComparisonState";
+import { createProposalSegments } from "../lib/viewer/createProposalSegments";
 import { createViewerWarningDisplay } from "../lib/viewer/createViewerWarningDisplay";
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
 import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
@@ -27,6 +30,7 @@ import {
   fetchBenchmarkCompatibility,
   fetchBenchmarkDatasets,
   fetchBenchmarkModels,
+  fetchBenchmarkOperationRegistry,
   fetchBenchmarkPrediction,
   fetchBenchmarkSample,
 } from "../services/api/benchmarkApi";
@@ -54,6 +58,8 @@ const auditEvents = ref([]);
 const predictionLoading = ref(false);
 const predictionError = ref("");
 const predictionResult = ref(null);
+const operationRegistry = ref(null);
+const proposalSegments = ref([]);
 let compatibilityRequestId = 0;
 
 const selectedSegment = computed(() =>
@@ -96,6 +102,21 @@ const predictionPanelState = computed(() =>
     selectorError: selectorError.value,
   }),
 );
+const operationPaletteState = computed(() =>
+  createOperationPaletteState({
+    segments: sample.value?.segments ?? [],
+    selectedSegment: selectedSegment.value,
+    operationRegistry: operationRegistry.value,
+    feedback: operationFeedback.value,
+  }),
+);
+const comparisonState = computed(() =>
+  createModelComparisonState({
+    currentSegments: sample.value?.segments ?? [],
+    proposalSegments: proposalSegments.value,
+    selectedArtifact: selectorState.value.selectedArtifact ?? null,
+  }),
+);
 
 function clearPredictionState() {
   predictionLoading.value = false;
@@ -115,6 +136,7 @@ async function loadSample() {
       selectedSampleIndex.value,
     );
     sample.value = createViewerSampleFromApi(payload);
+    proposalSegments.value = createProposalSegments(sample.value.segments);
     editFeedback.value = "";
     operationFeedback.value = "";
     editConstraintResult.value = null;
@@ -154,17 +176,21 @@ async function loadBenchmarkOptions() {
   selectorError.value = "";
 
   try {
-    const [datasets, modelPayload] = await Promise.all([
+    const [datasets, modelPayload, operationCatalog] = await Promise.all([
       fetchBenchmarkDatasets(),
       fetchBenchmarkModels(),
+      fetchBenchmarkOperationRegistry(),
     ]);
     benchmarkDatasets.value = datasets;
     benchmarkArtifacts.value = modelPayload.artifacts;
+    operationRegistry.value = operationCatalog;
     reconcileSelectionState();
   } catch (loadError) {
     benchmarkDatasets.value = [];
     benchmarkArtifacts.value = [];
+    operationRegistry.value = null;
     sample.value = null;
+    proposalSegments.value = [];
     loading.value = false;
     selectorError.value =
       loadError instanceof Error ? loadError.message : "Failed to load benchmark options.";
@@ -436,6 +462,8 @@ onMounted(() => {
       :operation-feedback="operationFeedback"
       :warning-display="warningDisplay"
       :history-entries="historyEntries"
+      :operation-palette-state="operationPaletteState"
+      :comparison-state="comparisonState"
       @select-segment="handleSelectSegment"
       @move-boundary="handleMoveBoundary"
       @update-segment-label="handleUpdateSegmentLabel"

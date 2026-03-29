@@ -1,4 +1,5 @@
 <script setup>
+import ModelComparisonPanel from "../comparison/ModelComparisonPanel.vue";
 import HistoryPanel from "../history/HistoryPanel.vue";
 import OperationPalette from "../operations/OperationPalette.vue";
 import WarningPanel from "../warnings/WarningPanel.vue";
@@ -45,6 +46,19 @@ defineProps({
   historyEntries: {
     type: Array,
     default: () => [],
+  },
+  operationPaletteState: {
+    type: Object,
+    default: () => ({}),
+  },
+  comparisonState: {
+    type: Object,
+    default: () => ({
+      rows: [],
+      message: "",
+      heading: "Model comparison",
+      artifactLabel: "No model selected",
+    }),
   },
 });
 
@@ -156,9 +170,7 @@ const emit = defineEmits([
         </div>
 
         <OperationPalette
-          :selected-segment="selectedSegment"
-          :segments="sample?.segments ?? []"
-          :feedback="operationFeedback"
+          :state="operationPaletteState"
           @run-operation="emit('run-operation', $event)"
         />
 
@@ -169,6 +181,8 @@ const emit = defineEmits([
           </li>
         </ul>
       </aside>
+
+      <ModelComparisonPanel :state="comparisonState" />
 
       <HistoryPanel :entries="historyEntries" @export-log="emit('export-log')" />
     </div>

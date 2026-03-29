@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import numpy as np
 
@@ -192,6 +191,35 @@ def test_model_list_endpoint_returns_families_and_artifacts(tmp_path):
             "label_space": ["class-0", "class-1"],
             "notes": "test artifact",
         }
+    ]
+
+
+def test_operation_registry_endpoint_returns_chunk_operation_catalog(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get("/api/benchmarks/operation-registry")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["schemaVersion"] == "1.0.0"
+    assert payload["ontologyName"] == "mvp-core"
+    assert payload["operationsByChunk"]["trend"] == [
+        "change_slope",
+        "reverse_trend",
+        "shift_in_time",
+        "extend",
+        "shorten",
+        "split",
+        "merge",
+    ]
+    assert payload["operationsByChunk"]["event"] == [
+        "shift_in_time",
+        "change_duration",
+        "change_intensity",
+        "remove",
+        "duplicate",
+        "split",
+        "merge",
     ]
 
 

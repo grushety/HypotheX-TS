@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-403`  
 **Title:** `Build operation palette and model comparison panel`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-304, HTS-401`  
@@ -90,11 +90,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] The selected segment shows only the operations that are legal for its chunk type.
-- [ ] PASS/WARN/FAIL feedback is visible after an attempted operation.
-- [ ] Model-proposed segmentation can be viewed alongside the user segmentation.
-- [ ] Boundary or label disagreement is visually highlighted.
-- [ ] Frontend logic does not reimplement legality or constraint rules locally.
+- [x] The selected segment shows only the operations that are legal for its chunk type.
+- [x] PASS/WARN/FAIL feedback is visible after an attempted operation.
+- [x] Model-proposed segmentation can be viewed alongside the user segmentation.
+- [x] Boundary or label disagreement is visually highlighted.
+- [x] Frontend logic does not reimplement legality or constraint rules locally.
 
 ---
 
@@ -115,9 +115,9 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] frontend component tests
-- [ ] lint
-- [ ] manual UI verification
+- [x] frontend component tests
+- [x] lint
+- [x] manual UI verification
 
 ### Commands
 ```bash
@@ -139,13 +139,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -193,18 +193,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added a backend operation-registry endpoint, wired the frontend palette to that server-provided legality catalog, and added a comparison panel that highlights disagreement against the loaded proposal baseline.`  
+**Checks run:** `pytest -q backend/tests; npm test -- --runInBand; npm run lint; npm run build; frontend dev-server smoke check`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `HTS-404`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-29`  
+**Summary:** `Built a legality-filtered semantic operation palette backed by a backend registry contract and added a disagreement panel that compares the current user segmentation against the loaded proposal baseline until live suggestion-model proposals are added in the later 5xx tickets.`  
+**Tests passed:** `pytest -q backend/tests; npm test -- --runInBand; npm run lint; npm run build`  
+**Files changed:** `backend/app/routes/benchmarks.py; backend/tests/test_benchmark_routes.py; frontend/src/services/api/benchmarkApi.js; frontend/src/services/api/benchmarkApi.test.js; frontend/src/lib/operations/createOperationPaletteState.js; frontend/src/lib/operations/createOperationPaletteState.test.js; frontend/src/lib/viewer/createModelComparisonState.js; frontend/src/lib/viewer/createModelComparisonState.test.js; frontend/src/lib/viewer/createProposalSegments.js; frontend/src/components/operations/OperationPalette.vue; frontend/src/components/comparison/ModelComparisonPanel.vue; frontend/src/components/viewer/ViewerShell.vue; frontend/src/views/BenchmarkViewerPage.vue; frontend/src/styles.css`  
+**Follow-up tickets needed:** `none`

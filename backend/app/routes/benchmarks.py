@@ -1,5 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request
 
+from app.domain.operations_registry import build_operation_registry_catalog
 from app.services.compatibility import CompatibilityValidator
 from app.services.datasets import (
     DatasetNotFoundError,
@@ -57,6 +58,12 @@ def list_models():
         return jsonify(payload)
     except ModelRegistryError as exc:
         return jsonify({"error": str(exc)}), 500
+
+
+@benchmarks_bp.get("/api/benchmarks/operation-registry")
+def get_operation_registry():
+    payload = build_operation_registry_catalog().to_dict()
+    return jsonify(payload)
 
 
 @benchmarks_bp.get("/api/benchmarks/compatibility")

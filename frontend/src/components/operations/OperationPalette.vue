@@ -1,84 +1,57 @@
 <script setup>
-import { computed, ref, watch } from "vue";
-
-import { createManualEditingState } from "../../lib/viewer/createManualEditingState";
+import { ref, watch } from "vue";
 
 const props = defineProps({
-  selectedSegment: {
+  state: {
     type: Object,
-    default: null,
-  },
-  segments: {
-    type: Array,
-    default: () => [],
-  },
-  feedback: {
-    type: String,
-    default: "",
+    required: true,
   },
 });
 
 const emit = defineEmits(["run-operation"]);
 
 const splitIndexInput = ref("");
-const nextLabel = ref("");
-const editingState = computed(() =>
-  createManualEditingState(props.segments, props.selectedSegment),
-);
 
 watch(
-  () => props.selectedSegment?.id,
+  () => props.state.selectedSegmentId,
   () => {
-    splitIndexInput.value = editingState.value.suggestedSplitIndex;
-    nextLabel.value = props.selectedSegment?.label ?? editingState.value.relabelOptions[0] ?? "";
+    splitIndexInput.value = props.state.suggestedSplitIndex;
   },
   { immediate: true },
 );
 
 function runSplit() {
-  if (!props.selectedSegment || !splitIndexInput.value || !editingState.value.canSplit) {
+  if (!props.state.selectedSegmentId || !splitIndexInput.value || !props.state.canSplit) {
     return;
   }
 
   emit("run-operation", {
     type: "split",
-    segmentId: props.selectedSegment.id,
+    segmentId: props.state.selectedSegmentId,
     splitIndex: Number.parseInt(splitIndexInput.value, 10),
   });
 }
 
 function runMerge(direction) {
-  if (!props.selectedSegment) {
+  if (!props.state.selectedSegmentId) {
     return;
   }
 
-  if (direction === "left" && editingState.value.leftMergeTarget) {
+  if (direction === "left" && props.state.canMergeLeft) {
     emit("run-operation", {
       type: "merge",
-      leftSegmentId: editingState.value.leftMergeTarget.id,
-      rightSegmentId: props.selectedSegment.id,
+      leftSegmentId: props.state.leftMergeTarget.id,
+      rightSegmentId: props.state.selectedSegmentId,
     });
   }
 
-  if (direction === "right" && editingState.value.rightMergeTarget) {
+  if (direction === "right" && props.state.canMergeRight) {
     emit("run-operation", {
       type: "merge",
-      leftSegmentId: props.selectedSegment.id,
-      rightSegmentId: editingState.value.rightMergeTarget.id,
+      leftSegmentId: props.state.selectedSegmentId,
+      rightSegmentId: props.state.rightMergeTarget.id,
     });
   }
-}
-
-function runReclassify() {
-  if (!props.selectedSegment) {
-    return;
-  }
-
-  emit("run-operation", {
-    type: "reclassify",
-    segmentId: props.selectedSegment.id,
-    nextLabel: nextLabel.value,
-  });
 }
 </script>
 
@@ -87,51 +60,48 @@ function runReclassify() {
     <div class="surface-header">
       <div>
         <p class="section-label">Manual editing</p>
-        <h3>Split, merge, and relabel</h3>
+        <h3>Semantic operation palette</h3>
       </div>
-      <span class="surface-tag">{{ editingState.selectedSegmentId ?? "Select a segment" }}</span>
+      <span class="surface-tag">{{ state.selectedSegmentId ?? "Select a segment" }}</span>
     </div>
 
-    <p v-if="feedback" class="operation-feedback">{{ feedback }}</p>
-    <p class="operation-helper-text">{{ editingState.splitHint }}</p>
+    <p v-if="state.feedback" class="operation-feedback">{{ state.feedback }}</p>
+    <p class="operation-helper-text">{{ state.helperText }}</p>
 
-    <div class="operation-group">
+    <div v-if="state.legalOperations.length" class="operation-legal-list">
+      <span
+        v-for="operation in state.legalOperations"
+        :key="operation.key"
+        class="operation-legal-pill"
+        :class="{ 'operation-legal-pill-future': !operation.supported }"
+      >
+        {{ operation.label }}
+      </span>
+    </div>
+
+    <div v-if="state.showSplit" class="operation-group">
       <label class="operation-field">
         <span class="sidebar-label">Split at index</span>
         <input
           v-model="splitIndexInput"
           class="operation-input"
           type="number"
-          :min="editingState.splitMin ?? undefined"
-          :max="editingState.splitMax ?? undefined"
-          :disabled="!editingState.canSplit"
+          :min="state.splitMin ?? undefined"
+          :max="state.splitMax ?? undefined"
+          :disabled="!state.canSplit"
         />
       </label>
-      <button class="operation-button" type="button" :disabled="!editingState.canSplit" @click="runSplit">
+      <button class="operation-button" type="button" :disabled="!state.canSplit" @click="runSplit">
         Split
       </button>
     </div>
 
-    <div class="operation-group">
-      <button class="operation-button" type="button" :disabled="!editingState.canMergeLeft" @click="runMerge('left')">
-        {{ editingState.leftMergeTarget ? `Merge ${editingState.leftMergeTarget.id}` : "Merge Left" }}
+    <div v-if="state.showMerge" class="operation-group">
+      <button class="operation-button" type="button" :disabled="!state.canMergeLeft" @click="runMerge('left')">
+        {{ state.mergeLeftLabel }}
       </button>
-      <button class="operation-button" type="button" :disabled="!editingState.canMergeRight" @click="runMerge('right')">
-        {{ editingState.rightMergeTarget ? `Merge ${editingState.rightMergeTarget.id}` : "Merge Right" }}
-      </button>
-    </div>
-
-    <div class="operation-group">
-      <label class="operation-field">
-        <span class="sidebar-label">Relabel to</span>
-        <select v-model="nextLabel" class="label-editor-select" :disabled="!selectedSegment">
-          <option v-for="label in editingState.relabelOptions" :key="label" :value="label">
-            {{ label }}
-          </option>
-        </select>
-      </label>
-      <button class="operation-button" type="button" :disabled="!selectedSegment" @click="runReclassify">
-        Relabel
+      <button class="operation-button" type="button" :disabled="!state.canMergeRight" @click="runMerge('right')">
+        {{ state.mergeRightLabel }}
       </button>
     </div>
   </section>

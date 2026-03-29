@@ -5,6 +5,7 @@ import {
   fetchBenchmarkCompatibility,
   fetchBenchmarkDatasets,
   fetchBenchmarkModels,
+  fetchBenchmarkOperationRegistry,
   fetchBenchmarkPrediction,
 } from "./benchmarkApi.js";
 
@@ -30,6 +31,23 @@ test("fetchBenchmarkModels rejects malformed payloads", async () => {
       })),
     /families and artifacts arrays/,
   );
+});
+
+test("fetchBenchmarkOperationRegistry returns the backend operation catalog", async () => {
+  const registry = await fetchBenchmarkOperationRegistry(async () => ({
+    ok: true,
+    async json() {
+      return {
+        schemaVersion: "1.0.0",
+        ontologyName: "mvp-core",
+        operationsByChunk: {
+          trend: ["split", "merge"],
+        },
+      };
+    },
+  }));
+
+  assert.deepEqual(registry.operationsByChunk.trend, ["split", "merge"]);
 });
 
 test("fetchBenchmarkCompatibility surfaces backend errors", async () => {

@@ -47,6 +47,17 @@ export async function fetchBenchmarkModels(fetchImpl = fetch) {
   return payload;
 }
 
+export async function fetchBenchmarkOperationRegistry(fetchImpl = fetch) {
+  const response = await fetchImpl("/api/benchmarks/operation-registry");
+  const payload = await readJsonResponse(response, "Operation registry");
+
+  if (!payload.operationsByChunk || typeof payload.operationsByChunk !== "object") {
+    throw new Error("Operation registry response must include an operationsByChunk object.");
+  }
+
+  return payload;
+}
+
 export async function fetchBenchmarkCompatibility(datasetName, artifactId, fetchImpl = fetch) {
   const params = new URLSearchParams({
     dataset: datasetName,
