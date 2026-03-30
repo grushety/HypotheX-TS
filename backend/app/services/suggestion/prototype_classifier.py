@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -32,6 +32,101 @@ class PrototypeClassification:
     embedding: tuple[float, ...]
 
 
+@dataclass(frozen=True)
+class PrototypeMemoryConfig:
+    min_update_confidence: float = 0.75
+    max_buffer_per_label: int = 8
+    max_prototype_drift: float = 0.45
+
+
+@dataclass(frozen=True)
+class PrototypeUpdateResult:
+    applied: bool
+    label: str
+    reason: str
+    confidence: float
+    drift: float | None
+    buffer_size: int
+
+
+@dataclass(frozen=True)
+class PrototypeMemoryBank:
+    active_labels: tuple[str, ...]
+    config: PrototypeMemoryConfig = PrototypeMemoryConfig()
+    embeddings_by_label: dict[str, tuple[tuple[float, ...], ...]] = field(default_factory=dict)
+
+    def build_prototypes(self) -> dict[str, np.ndarray]:
+        prototypes: dict[str, np.ndarray] = {}
+        for label in self.active_labels:
+            embeddings = self.embeddings_by_label.get(label, ())
+            if not embeddings:
+                continue
+            stacked = np.stack([np.asarray(embedding, dtype=np.float64) for embedding in embeddings], axis=0)
+            prototypes[label] = _normalize(np.mean(stacked, axis=0))
+        return prototypes
+
+    def update(
+        self,
+        *,
+        label: str,
+        embedding: np.ndarray,
+        confidence: float,
+    ) -> tuple["PrototypeMemoryBank", PrototypeUpdateResult]:
+        if label not in self.active_labels:
+            raise PrototypeClassifierError(f"Prototype memory does not support label '{label}'.")
+        if self.config.max_buffer_per_label < 1:
+            raise PrototypeClassifierError("Prototype memory buffer size must be at least 1.")
+        if confidence < self.config.min_update_confidence:
+            return (
+                self,
+                PrototypeUpdateResult(
+                    applied=False,
+                    label=label,
+                    reason="confidence_below_threshold",
+                    confidence=float(confidence),
+                    drift=None,
+                    buffer_size=len(self.embeddings_by_label.get(label, ())),
+                ),
+            )
+
+        normalized_embedding = tuple(float(value) for value in _normalize(np.asarray(embedding, dtype=np.float64)))
+        current_embeddings = list(self.embeddings_by_label.get(label, ()))
+        previous_prototype = self.build_prototypes().get(label)
+        candidate_embeddings = tuple((current_embeddings + [normalized_embedding])[-self.config.max_buffer_per_label :])
+        candidate_prototype = _build_prototype_from_embeddings(candidate_embeddings)
+        drift = None if previous_prototype is None else float(np.linalg.norm(candidate_prototype - previous_prototype))
+        if drift is not None and drift > self.config.max_prototype_drift:
+            return (
+                self,
+                PrototypeUpdateResult(
+                    applied=False,
+                    label=label,
+                    reason="drift_threshold_exceeded",
+                    confidence=float(confidence),
+                    drift=drift,
+                    buffer_size=len(current_embeddings),
+                ),
+            )
+
+        next_embeddings = dict(self.embeddings_by_label)
+        next_embeddings[label] = candidate_embeddings
+        return (
+            PrototypeMemoryBank(
+                active_labels=self.active_labels,
+                config=self.config,
+                embeddings_by_label=next_embeddings,
+            ),
+            PrototypeUpdateResult(
+                applied=True,
+                label=label,
+                reason="updated",
+                confidence=float(confidence),
+                drift=drift,
+                buffer_size=len(candidate_embeddings),
+            ),
+        )
+
+
 class PrototypeChunkClassifier:
     def __init__(
         self,
@@ -52,10 +147,18 @@ class PrototypeChunkClassifier:
         self,
         support_segments: list[LabeledSupportSegment] | tuple[LabeledSupportSegment, ...],
     ) -> dict[str, np.ndarray]:
+        return self.build_memory_bank(support_segments).build_prototypes()
+
+    def build_memory_bank(
+        self,
+        support_segments: list[LabeledSupportSegment] | tuple[LabeledSupportSegment, ...],
+        *,
+        memory_config: PrototypeMemoryConfig | None = None,
+    ) -> PrototypeMemoryBank:
         if not support_segments:
             raise PrototypeClassifierError("Prototype classifier requires at least one support segment.")
 
-        grouped: dict[str, list[np.ndarray]] = {label: [] for label in self._active_labels}
+        grouped: dict[str, list[tuple[float, ...]]] = {label: [] for label in self._active_labels}
         for support_segment in support_segments:
             if support_segment.label not in grouped:
                 raise PrototypeClassifierError(
@@ -65,15 +168,35 @@ class PrototypeChunkClassifier:
                 embedding = encode_segment(support_segment.values, self._encoder_config).as_array()
             except SegmentEncodingError as exc:
                 raise PrototypeClassifierError(str(exc)) from exc
-            grouped[support_segment.label].append(embedding)
+            grouped[support_segment.label].append(tuple(float(value) for value in embedding))
 
-        prototypes: dict[str, np.ndarray] = {}
-        for label, embeddings in grouped.items():
-            if not embeddings:
-                continue
-            mean_embedding = np.mean(np.stack(embeddings, axis=0), axis=0)
-            prototypes[label] = _normalize(mean_embedding)
-        return prototypes
+        config = memory_config or PrototypeMemoryConfig()
+        capped_grouped = {
+            label: tuple(embeddings[-config.max_buffer_per_label :])
+            for label, embeddings in grouped.items()
+            if embeddings
+        }
+        return PrototypeMemoryBank(
+            active_labels=self._active_labels,
+            config=config,
+            embeddings_by_label=capped_grouped,
+        )
+
+    def update_memory_bank(
+        self,
+        memory_bank: PrototypeMemoryBank,
+        *,
+        label: str,
+        values: tuple[tuple[float, ...], ...] | tuple[float, ...] | list[list[float]] | list[float],
+        confidence: float,
+    ) -> tuple[PrototypeMemoryBank, PrototypeUpdateResult]:
+        if memory_bank.active_labels != self._active_labels:
+            raise PrototypeClassifierError("Prototype memory bank does not match classifier active labels.")
+        try:
+            embedding = encode_segment(values, self._encoder_config).as_array()
+        except SegmentEncodingError as exc:
+            raise PrototypeClassifierError(str(exc)) from exc
+        return memory_bank.update(label=label, embedding=embedding, confidence=confidence)
 
     def classify_segment(
         self,
@@ -141,6 +264,11 @@ def build_default_support_segments(
             )
         )
     return support_segments
+
+
+def _build_prototype_from_embeddings(embeddings: tuple[tuple[float, ...], ...]) -> np.ndarray:
+    stacked = np.stack([np.asarray(embedding, dtype=np.float64) for embedding in embeddings], axis=0)
+    return _normalize(np.mean(stacked, axis=0))
 
 
 def _normalize(vector: np.ndarray) -> np.ndarray:

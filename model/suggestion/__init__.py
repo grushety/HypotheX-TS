@@ -10,10 +10,13 @@ from .boundary_proposal import (
 )
 from .prototype_classifier import (
     LabeledSupportSegment,
+    PrototypeMemoryBank,
+    PrototypeMemoryConfig,
     PrototypeClassification,
     PrototypeChunkClassifier,
     PrototypeClassifierConfig,
     PrototypeClassifierError,
+    PrototypeUpdateResult,
 )
 from .segment_encoder import SegmentEmbedding, SegmentEncoderConfig, SegmentEncodingError, encode_segment, normalize_series
 
@@ -23,11 +26,14 @@ __all__ = [
     "BoundaryProposalError",
     "BoundaryProposerConfig",
     "LabeledSupportSegment",
+    "PrototypeMemoryBank",
+    "PrototypeMemoryConfig",
     "ProvisionalSegment",
     "PrototypeClassification",
     "PrototypeChunkClassifier",
     "PrototypeClassifierConfig",
     "PrototypeClassifierError",
+    "PrototypeUpdateResult",
     "SegmentEmbedding",
     "SegmentEncoderConfig",
     "SegmentEncodingError",

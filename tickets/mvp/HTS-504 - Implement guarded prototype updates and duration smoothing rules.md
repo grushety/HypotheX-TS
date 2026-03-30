@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-504`  
 **Title:** `Implement guarded prototype updates and duration smoothing rules`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P2`  
 **Type:** `feature`  
 **Depends on:** `HTS-502, HTS-503`  
@@ -88,11 +88,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] Prototype updates can be gated by confidence or equivalent policy.
-- [ ] Prototype state does not grow without bound.
-- [ ] Too-short segments can be merged or smoothed by rule-based duration logic.
-- [ ] Tests cover at least one drift-protection case and one too-short-segment smoothing case.
-- [ ] The ticket does not introduce full HSMM complexity.
+- [x] Prototype updates can be gated by confidence or equivalent policy.
+- [x] Prototype state does not grow without bound.
+- [x] Too-short segments can be merged or smoothed by rule-based duration logic.
+- [x] Tests cover at least one drift-protection case and one too-short-segment smoothing case.
+- [x] The ticket does not introduce full HSMM complexity.
 
 ---
 
@@ -113,8 +113,8 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] model/service tests
-- [ ] lint/static checks
+- [x] model/service tests
+- [x] lint/static checks
 
 ### Commands
 ```bash
@@ -135,13 +135,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -159,22 +159,22 @@ A ticket is done only when all items below are true.
 Before marking complete, verify:
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
 
 ---
 
@@ -190,18 +190,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added bounded prototype-memory helpers with confidence and drift gates, added duration smoothing for too-short provisional segments, and documented the stabilization heuristics without changing the suggestion API contract.`  
+**Checks run:** `pytest -q backend/tests/test_prototype_classifier.py backend/tests/test_boundary_suggestions.py backend/tests/test_suggestion_stabilization.py; pytest -q backend/tests; ruff check backend schemas docs model; manual stabilization check for low-confidence rejection, drift rejection, and short-event smoothing`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `Move to HTS-505 for evaluation-facing suggestion diagnostics or the next scheduled suggestion-model ticket.`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-30`  
+**Summary:** `Implemented explicit prototype stabilization for the MVP suggestion model through confidence-gated updates, bounded per-label memory, drift-based freeze logic, and a rule-based duration smoother that merges obviously too-short provisional segments into the more compatible neighbor.`  
+**Tests passed:** `pytest -q backend/tests/test_prototype_classifier.py backend/tests/test_boundary_suggestions.py backend/tests/test_suggestion_stabilization.py; pytest -q backend/tests; ruff check backend schemas docs model; manual stabilization check returned LOW_CONF_APPLIED=False, HIGH_DRIFT_APPLIED=False, and SMOOTHED_SEGMENTS=[('plateau', 0, 7), ('trend', 8, 13)]`  
+**Files changed:** `backend/app/services/suggestion/prototype_classifier.py; backend/app/services/suggestion/__init__.py; backend/app/services/suggestions.py; backend/tests/test_suggestion_stabilization.py; model/suggestion/prototype_classifier.py; model/suggestion/__init__.py; docs/suggestion-stabilization-note.md`  
+**Follow-up tickets needed:** `none`
