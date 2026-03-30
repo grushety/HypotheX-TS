@@ -22,19 +22,49 @@
       "segmentId": "segment-001",
       "startIndex": 0,
       "endIndex": 11,
-      "provenance": "model"
+      "provenance": "model",
+      "label": "plateau",
+      "confidence": 0.964,
+      "labelScores": {
+        "trend": 0.005,
+        "plateau": 0.964,
+        "spike": 0.004,
+        "event": 0.008,
+        "transition": 0.006,
+        "periodic": 0.013
+      }
     },
     {
       "segmentId": "segment-002",
       "startIndex": 12,
       "endIndex": 23,
-      "provenance": "model"
+      "provenance": "model",
+      "label": "event",
+      "confidence": 0.752,
+      "labelScores": {
+        "trend": 0.042,
+        "plateau": 0.073,
+        "spike": 0.049,
+        "event": 0.752,
+        "transition": 0.051,
+        "periodic": 0.033
+      }
     },
     {
       "segmentId": "segment-003",
       "startIndex": 24,
       "endIndex": 35,
-      "provenance": "model"
+      "provenance": "model",
+      "label": "plateau",
+      "confidence": 0.958,
+      "labelScores": {
+        "trend": 0.006,
+        "plateau": 0.958,
+        "spike": 0.004,
+        "event": 0.009,
+        "transition": 0.007,
+        "periodic": 0.016
+      }
     }
   ],
   "boundaryProposer": {

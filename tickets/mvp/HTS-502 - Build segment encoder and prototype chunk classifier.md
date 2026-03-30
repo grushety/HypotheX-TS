@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-502`  
 **Title:** `Build segment encoder and prototype chunk classifier`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-203, HTS-204, HTS-501`  
@@ -88,11 +88,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] The encoder produces fixed-size embeddings for candidate segments.
-- [ ] The prototype classifier returns label probabilities for the active chunk types.
-- [ ] Embeddings or distances are normalized in a documented way.
-- [ ] Tests cover inference shape and at least one predictable synthetic or fixture case.
-- [ ] The classifier output can be serialized into the suggestion contract.
+- [x] The encoder produces fixed-size embeddings for candidate segments.
+- [x] The prototype classifier returns label probabilities for the active chunk types.
+- [x] Embeddings or distances are normalized in a documented way.
+- [x] Tests cover inference shape and at least one predictable synthetic or fixture case.
+- [x] The classifier output can be serialized into the suggestion contract.
 
 ---
 
@@ -114,9 +114,9 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] model tests
-- [ ] lint/static checks
-- [ ] shape/inference smoke tests
+- [x] model tests
+- [x] lint/static checks
+- [x] shape/inference smoke tests
 
 ### Commands
 ```bash
@@ -137,13 +137,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -161,22 +161,22 @@ A ticket is done only when all items below are true.
 Before marking complete, verify:
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
 
 ---
 
@@ -192,18 +192,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added a fixed-length normalized segment encoder, a cosine-similarity prototype classifier over the active chunk labels, and service wiring so provisional segments can carry label proposals, confidence, and labelScores in the existing suggestion contract when support segments are provided.`  
+**Checks run:** `pytest -q backend/tests/test_prototype_classifier.py backend/tests/test_boundary_suggestions.py; pytest -q backend/tests; ruff check backend schemas docs model; manual prototype-classifier smoke run on a labeled fixture set`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `Move to HTS-503 for suggestion API wiring and accept/override flow.`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-30`  
+**Summary:** `Implemented a small inspectable segment encoder that resamples segments to a fixed profile, normalizes embeddings with L2 geometry, and classifies provisional segments via cosine-similarity prototypes over the active chunk vocabulary. The suggestion service now emits label proposals, confidence, and probability maps directly inside the existing suggestion payload contract.`  
+**Tests passed:** `pytest -q backend/tests/test_prototype_classifier.py backend/tests/test_boundary_suggestions.py; pytest -q backend/tests; ruff check backend schemas docs model; manual smoke run produced a 36-dimensional embedding and predicted 'event' with confidence 0.751818 on a held-out event-shaped segment.`  
+**Files changed:** `backend/app/services/suggestion/segment_encoder.py; backend/app/services/suggestion/prototype_classifier.py; backend/app/services/suggestion/__init__.py; backend/app/services/suggestions.py; backend/tests/test_prototype_classifier.py; model/suggestion/segment_encoder.py; model/suggestion/prototype_classifier.py; model/suggestion/__init__.py; schemas/fixtures/suggestion-proposal.sample.json`  
+**Follow-up tickets needed:** `none`
