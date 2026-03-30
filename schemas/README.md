@@ -17,6 +17,8 @@ Reusable segment statistic bundles should align with `segment-statistics.schema.
 
 The shared semantic segmentation schema now reflects the MVP six-label ontology from the domain config so score-based chunk assignment can emit canonical segment payloads without inventing a parallel label contract.
 
+Suggestion-model outputs should align with `suggestion-proposal.schema.json` so the boundary proposer, later prototype classifier, and the eventual suggestion API share one stable payload with candidate boundaries and provisional segments.
+
 Operation legality responses should align with `operation-legality.schema.json` so future API endpoints and the operation palette can share the same allow/deny reason vocabulary.
 
 Constraint feedback should align with `constraint-evaluation.schema.json`, including optional repair-hint metadata when the backend can suggest a minimal next action.

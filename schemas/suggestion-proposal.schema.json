@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hypothex-ts.local/schemas/suggestion-proposal.schema.json",
+  "title": "HypotheXTS Suggestion Proposal",
+  "description": "Canonical shared contract for model-generated boundary suggestions and provisional segments.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "suggestionId",
+    "seriesId",
+    "modelVersion",
+    "seriesLength",
+    "channelCount",
+    "candidateBoundaries",
+    "provisionalSegments",
+    "boundaryProposer"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "suggestionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seriesId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modelVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seriesLength": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "channelCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "candidateBoundaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "boundaryIndex",
+          "score",
+          "confidence"
+        ],
+        "properties": {
+          "boundaryIndex": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "provisionalSegments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "segmentId",
+          "startIndex",
+          "endIndex",
+          "provenance"
+        ],
+        "properties": {
+          "segmentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "provenance": {
+            "type": "string",
+            "enum": ["model"]
+          },
+          "label": {
+            "type": "string",
+            "enum": ["trend", "plateau", "spike", "event", "transition", "periodic"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "labelScores": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "boundaryProposer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "config"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "windowSize",
+            "minSegmentLength",
+            "scoreThreshold",
+            "maxBoundaries"
+          ],
+          "properties": {
+            "windowSize": {
+              "type": "integer",
+              "minimum": 2
+            },
+            "minSegmentLength": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "scoreThreshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "maxBoundaries": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "suggestionId": "suggestion-series-001",
+  "seriesId": "series-001",
+  "modelVersion": "suggestion-model-v1",
+  "seriesLength": 36,
+  "channelCount": 1,
+  "candidateBoundaries": [
+    {
+      "boundaryIndex": 12,
+      "score": 0.91,
+      "confidence": 0.91
+    },
+    {
+      "boundaryIndex": 24,
+      "score": 0.88,
+      "confidence": 0.88
+    }
+  ],
+  "provisionalSegments": [
+    {
+      "segmentId": "segment-001",
+      "startIndex": 0,
+      "endIndex": 11,
+      "provenance": "model"
+    },
+    {
+      "segmentId": "segment-002",
+      "startIndex": 12,
+      "endIndex": 23,
+      "provenance": "model"
+    },
+    {
+      "segmentId": "segment-003",
+      "startIndex": 24,
+      "endIndex": 35,
+      "provenance": "model"
+    }
+  ],
+  "boundaryProposer": {
+    "name": "conservative-change-point-v1",
+    "config": {
+      "windowSize": 5,
+      "minSegmentLength": 4,
+      "scoreThreshold": 0.25,
+      "maxBoundaries": 3
+    }
+  }
+}

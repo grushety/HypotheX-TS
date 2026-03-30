@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-501`  
 **Title:** `Integrate boundary proposal module for suggestion model v1`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-201`  
@@ -87,11 +87,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] The system can generate candidate boundaries for a sample series.
-- [ ] Boundary proposals are serializable into the suggestion payload.
-- [ ] The proposer can be configured without touching UI code.
-- [ ] At least one test covers a series with obvious change points.
-- [ ] The module can be swapped later without changing the external suggestion contract.
+- [x] The system can generate candidate boundaries for a sample series.
+- [x] Boundary proposals are serializable into the suggestion payload.
+- [x] The proposer can be configured without touching UI code.
+- [x] At least one test covers a series with obvious change points.
+- [x] The module can be swapped later without changing the external suggestion contract.
 
 ---
 
@@ -112,8 +112,8 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] model/service tests
-- [ ] lint/static checks
+- [x] model/service tests
+- [x] lint/static checks
 
 ### Commands
 ```bash
@@ -134,13 +134,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -157,22 +157,22 @@ A ticket is done only when all items below are true.
 Before marking complete, verify:
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
 
 ---
 
@@ -188,18 +188,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added a conservative change-point boundary proposer, a thin backend suggestion service, and a shared suggestion-proposal contract/fixture so boundary candidates and provisional segments can be serialized consistently before label classification is added.`  
+**Checks run:** `pytest -q backend/tests/test_boundary_suggestions.py; pytest -q backend/tests; ruff check backend schemas docs model; manual proposer run on a clear three-regime series`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `Move to HTS-502 for segment encoding and prototype chunk classification.`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-30`  
+**Summary:** `Integrated a conservative, inspectable boundary proposer for suggestion model v1, converted boundary candidates into provisional segments, and established a stable suggestion payload contract that can later absorb label proposals without changing the external wire shape.`  
+**Tests passed:** `pytest -q backend/tests/test_boundary_suggestions.py; pytest -q backend/tests; ruff check backend schemas docs model; manual proposer run produced boundaries at 12 and 24 for a three-regime series and a matching provisional segment list.`  
+**Files changed:** `backend/app/services/suggestion/; backend/app/services/suggestions.py; backend/app/schemas/suggestions.py; backend/tests/test_boundary_suggestions.py; model/suggestion/; schemas/suggestion-proposal.schema.json; schemas/fixtures/suggestion-proposal.sample.json; schemas/contract-index.json; schemas/README.md`  
+**Follow-up tickets needed:** `none`

@@ -28,6 +28,11 @@
       "fixturePath": "schemas/fixtures/semantic-segmentation.sample.json"
     },
     {
+      "name": "suggestion-proposal",
+      "schemaPath": "schemas/suggestion-proposal.schema.json",
+      "fixturePath": "schemas/fixtures/suggestion-proposal.sample.json"
+    },
+    {
       "name": "typed-operation",
       "schemaPath": "schemas/typed-operation.schema.json",
       "fixturePath": "schemas/fixtures/typed-operation.sample.json"
