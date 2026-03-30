@@ -5,6 +5,8 @@ function formatActionLabel(event) {
     split: "Split operation",
     merge: "Merge operation",
     reclassify: "Reclassify operation",
+    "accept-suggestion": "Suggestion accepted",
+    "override-suggestion": "Suggestion overridden",
   };
 
   return actionLabels[event.actionType] ?? "Action";
@@ -25,6 +27,10 @@ function formatStatusLabel(event) {
 function formatSummary(event) {
   if (event.message) {
     return event.message;
+  }
+
+  if (event.kind === "suggestion" && event.decision) {
+    return `Model suggestion ${event.decision}.`;
   }
 
   return `${formatActionLabel(event)} ${event.actionStatus}.`;

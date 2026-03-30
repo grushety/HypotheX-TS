@@ -154,3 +154,45 @@ def test_audit_export_route_returns_404_for_unknown_session():
 
     assert response.status_code == 404
     assert "missing-session" in response.get_json()["error"]
+
+
+def test_suggestion_decision_route_records_accept_and_override_events():
+    app = create_app_with_context()
+    client = app.test_client()
+
+    accepted_response = client.post(
+        "/api/audit/sessions/session-decision-001/suggestions/decision",
+        json={
+            "seriesId": "series-audit-001",
+            "segmentationId": "seg-audit-001",
+            "suggestionId": "suggestion-accept-001",
+            "decision": "accepted",
+            "targetSegmentIds": ["segment-trend"],
+            "timestamp": "2026-03-30T09:00:00Z",
+            "metadata": {"reason": "user_accepted_model_proposal"},
+        },
+    )
+    overridden_response = client.post(
+        "/api/audit/sessions/session-decision-001/suggestions/decision",
+        json={
+            "seriesId": "series-audit-001",
+            "segmentationId": "seg-audit-001",
+            "suggestionId": "suggestion-override-001",
+            "decision": "overridden",
+            "targetSegmentIds": ["segment-plateau"],
+            "timestamp": "2026-03-30T09:01:00Z",
+            "metadata": {"reason": "manual_edit_after_review"},
+        },
+    )
+
+    assert accepted_response.status_code == 201
+    assert accepted_response.get_json()["eventType"] == "suggestion_accepted"
+    assert overridden_response.status_code == 201
+    assert overridden_response.get_json()["eventType"] == "suggestion_overridden"
+
+    export_response = client.get("/api/audit/sessions/session-decision-001/export")
+    export_payload = export_response.get_json()
+    assert [event["eventType"] for event in export_payload["events"]] == [
+        "suggestion_accepted",
+        "suggestion_overridden",
+    ]

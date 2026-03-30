@@ -5,6 +5,8 @@ defineProps({
     required: true,
   },
 });
+
+const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-suggestion"]);
 </script>
 
 <template>
@@ -14,12 +16,38 @@ defineProps({
         <p class="section-label">Model comparison</p>
         <h3>{{ state.heading }}</h3>
       </div>
-      <span class="surface-tag">{{ state.artifactLabel }}</span>
+      <div class="comparison-header-actions">
+        <span class="surface-tag">{{ state.artifactLabel }}</span>
+        <button
+          class="comparison-button comparison-button-secondary"
+          type="button"
+          :disabled="!state.canRequestSuggestion"
+          @click="emit('request-suggestion')"
+        >
+          {{ state.suggestionLoading ? "Loading suggestion..." : "Load suggestion" }}
+        </button>
+        <button
+          class="comparison-button"
+          type="button"
+          :disabled="!state.canAcceptSuggestion"
+          @click="emit('accept-suggestion')"
+        >
+          Accept suggestion
+        </button>
+        <button
+          class="comparison-button comparison-button-secondary"
+          type="button"
+          :disabled="!state.canOverrideSuggestion"
+          @click="emit('override-suggestion')"
+        >
+          Override suggestion
+        </button>
+      </div>
     </div>
 
     <p class="comparison-summary">{{ state.message }}</p>
 
-    <ul class="comparison-list">
+    <ul v-if="state.hasProposal" class="comparison-list">
       <li
         v-for="row in state.rows"
         :key="row.id"

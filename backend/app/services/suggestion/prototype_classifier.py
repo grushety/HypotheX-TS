@@ -107,6 +107,42 @@ class PrototypeChunkClassifier:
         )
 
 
+def build_default_support_segments(
+    active_labels: tuple[str, ...] | None = None,
+    *,
+    length: int = 24,
+) -> list[LabeledSupportSegment]:
+    if length < 8:
+        raise PrototypeClassifierError("Default support segments require a minimum length of 8.")
+
+    labels = active_labels or load_domain_config().active_chunk_types
+    mid = length // 2
+    quarter = max(2, length // 4)
+
+    templates = {
+        "trend": [index / max(1, length - 1) for index in range(length)],
+        "plateau": [0.25] * length,
+        "spike": ([0.0] * (mid - 1)) + [3.0] + ([0.0] * (length - mid)),
+        "event": ([0.0] * quarter) + ([1.0] * (length - (quarter * 2))) + ([0.0] * quarter),
+        "transition": ([0.0] * quarter)
+        + [index / max(1, (length - (quarter * 2)) - 1) for index in range(length - (quarter * 2))]
+        + ([1.0] * quarter),
+        "periodic": [float(np.sin(index * (2 * np.pi / 6))) for index in range(length)],
+    }
+
+    support_segments: list[LabeledSupportSegment] = []
+    for label in labels:
+        if label not in templates:
+            raise PrototypeClassifierError(f"No default support template is available for label '{label}'.")
+        support_segments.append(
+            LabeledSupportSegment(
+                label=label,
+                values=templates[label],
+            )
+        )
+    return support_segments
+
+
 def _normalize(vector: np.ndarray) -> np.ndarray:
     norm = float(np.linalg.norm(vector))
     if norm <= 1e-8:

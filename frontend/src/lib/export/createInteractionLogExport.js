@@ -20,7 +20,16 @@ function mapAuditEventToSessionEvent(event, sessionId) {
   return {
     eventId: `${sessionId}-event-${event.sequence ?? "pending"}`,
     timestamp: event.timestamp ?? null,
-    eventType: event.actionStatus === "rejected" ? "operation_rejected" : "operation_applied",
+    eventType: getEventType(event),
+    suggestion:
+      event.kind === "suggestion"
+        ? {
+            suggestionId: event.suggestionId ?? null,
+            decision: event.decision ?? null,
+            targetSegmentIds: event.affectedSegmentIds ?? [],
+            source: "model",
+          }
+        : undefined,
     metadata: {
       kind: event.kind ?? null,
       actionType: event.actionType ?? null,
@@ -35,6 +44,14 @@ function mapAuditEventToSessionEvent(event, sessionId) {
       sampleId: event.sampleId ?? null,
     },
   };
+}
+
+function getEventType(event) {
+  if (event.kind === "suggestion") {
+    return event.decision === "accepted" ? "suggestion_accepted" : "suggestion_overridden";
+  }
+
+  return event.actionStatus === "rejected" ? "operation_rejected" : "operation_applied";
 }
 
 export function createInteractionLogExport(events, context = {}, timestamp = new Date()) {

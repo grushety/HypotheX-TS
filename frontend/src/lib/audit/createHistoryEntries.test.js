@@ -67,3 +67,21 @@ test("createHistoryEntries formats timestamps for readable session display", () 
 
   assert.equal(entries[0].timestampLabel, "2026-03-29 12:15:00Z");
 });
+
+test("createHistoryEntries formats suggestion decisions distinctly", () => {
+  const entries = createHistoryEntries([
+    {
+      sequence: 4,
+      kind: "suggestion",
+      actionType: "accept-suggestion",
+      actionStatus: "applied",
+      decision: "accepted",
+      message: "Suggestion accepted and applied to the current segmentation.",
+      affectedSegmentIds: ["seg-001", "seg-002"],
+    },
+  ]);
+
+  assert.equal(entries[0].title, "Suggestion accepted");
+  assert.equal(entries[0].statusLabel, "Applied");
+  assert.equal(entries[0].summary, "Suggestion accepted and applied to the current segmentation.");
+});

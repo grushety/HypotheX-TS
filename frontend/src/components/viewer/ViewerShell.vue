@@ -77,6 +77,9 @@ const emit = defineEmits([
   "update-segment-label",
   "run-operation",
   "export-log",
+  "request-suggestion",
+  "accept-suggestion",
+  "override-suggestion",
 ]);
 </script>
 
@@ -191,7 +194,12 @@ const emit = defineEmits([
         </ul>
       </aside>
 
-      <ModelComparisonPanel :state="comparisonState" />
+      <ModelComparisonPanel
+        :state="comparisonState"
+        @request-suggestion="emit('request-suggestion')"
+        @accept-suggestion="emit('accept-suggestion')"
+        @override-suggestion="emit('override-suggestion')"
+      />
 
       <HistoryPanel :entries="historyEntries" :session="sessionPanelState" @export-log="emit('export-log')" />
     </div>

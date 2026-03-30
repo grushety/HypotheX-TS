@@ -9,6 +9,7 @@ from .boundary_proposal import (
     propose_boundaries,
 )
 from .prototype_classifier import (
+    build_default_support_segments,
     LabeledSupportSegment,
     PrototypeClassification,
     PrototypeChunkClassifier,
@@ -22,6 +23,7 @@ __all__ = [
     "BoundaryProposal",
     "BoundaryProposalError",
     "BoundaryProposerConfig",
+    "build_default_support_segments",
     "LabeledSupportSegment",
     "ProvisionalSegment",
     "PrototypeClassification",

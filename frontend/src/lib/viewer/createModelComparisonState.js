@@ -30,11 +30,19 @@ function createComparisonRows(currentSegments, proposalSegments) {
   return rows;
 }
 
-export function createModelComparisonState({ currentSegments, proposalSegments, selectedArtifact }) {
+export function createModelComparisonState({
+  currentSegments,
+  proposalSegments,
+  selectedArtifact,
+  suggestionStatus = "idle",
+  suggestionLoading = false,
+  suggestionError = "",
+}) {
   const safeCurrentSegments = Array.isArray(currentSegments) ? currentSegments : [];
   const safeProposalSegments = Array.isArray(proposalSegments) ? proposalSegments : [];
   const rows = createComparisonRows(safeCurrentSegments, safeProposalSegments);
   const disagreementCount = rows.filter((row) => row.hasDisagreement).length;
+  const hasProposal = safeProposalSegments.length > 0;
 
   return {
     heading: selectedArtifact?.display_name
@@ -43,8 +51,19 @@ export function createModelComparisonState({ currentSegments, proposalSegments, 
     artifactLabel: selectedArtifact?.artifact_id ?? "No model selected",
     rows,
     disagreementCount,
-    message: disagreementCount
-      ? `${disagreementCount} disagreement row${disagreementCount === 1 ? "" : "s"} highlighted against the loaded proposal baseline.`
-      : "Current segmentation matches the loaded proposal baseline.",
+    hasProposal,
+    suggestionStatus,
+    suggestionLoading,
+    suggestionError,
+    canRequestSuggestion: Boolean(selectedArtifact) && !suggestionLoading,
+    canAcceptSuggestion: hasProposal && suggestionStatus === "pending" && !suggestionLoading,
+    canOverrideSuggestion: hasProposal && suggestionStatus === "pending" && !suggestionLoading,
+    message: suggestionError
+      ? suggestionError
+      : !hasProposal
+        ? "Load a model suggestion to compare it with the current segmentation."
+        : disagreementCount
+          ? `${disagreementCount} disagreement row${disagreementCount === 1 ? "" : "s"} highlighted against the loaded proposal baseline.`
+          : "Current segmentation matches the loaded proposal baseline.",
   };
 }

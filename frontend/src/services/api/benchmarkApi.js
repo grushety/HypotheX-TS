@@ -115,3 +115,38 @@ export async function fetchBenchmarkPrediction(
 
   return payload;
 }
+
+export async function fetchBenchmarkSuggestion(datasetName, split, sampleIndex, fetchImpl = fetch) {
+  const params = new URLSearchParams({
+    dataset: datasetName,
+    split,
+    sample_index: String(sampleIndex),
+  });
+  const response = await fetchImpl(`/api/benchmarks/suggestion?${params.toString()}`);
+  const payload = await readJsonResponse(response, "Benchmark suggestion");
+
+  if (!Array.isArray(payload.provisionalSegments) || !Array.isArray(payload.candidateBoundaries)) {
+    throw new Error(
+      "Benchmark suggestion response must include provisionalSegments and candidateBoundaries.",
+    );
+  }
+
+  return payload;
+}
+
+export async function submitSuggestionDecision(sessionId, suggestionDecision, fetchImpl = fetch) {
+  const response = await fetchImpl(`/api/audit/sessions/${sessionId}/suggestions/decision`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(suggestionDecision),
+  });
+  const payload = await readJsonResponse(response, "Suggestion decision");
+
+  if (typeof payload.eventType !== "string" || !payload.suggestion || typeof payload.suggestion !== "object") {
+    throw new Error("Suggestion decision response must include eventType and suggestion.");
+  }
+
+  return payload;
+}

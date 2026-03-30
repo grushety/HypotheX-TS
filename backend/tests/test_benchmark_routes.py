@@ -273,3 +273,20 @@ def test_sample_endpoint_returns_real_sample_payload(tmp_path):
         "label": "class-1",
         "values": [[0.8999999761581421, 1.0, 0.800000011920929]],
     }
+
+
+def test_suggestion_endpoint_returns_serializable_suggestion_payload(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get("/api/benchmarks/suggestion?dataset=GunPoint&split=test&sample_index=1")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["schemaVersion"] == "1.0.0"
+    assert payload["suggestionId"] == "suggestion-GunPoint-test-1"
+    assert payload["seriesId"] == "GunPoint:test:1"
+    assert payload["modelVersion"] == "suggestion-model-v1"
+    assert isinstance(payload["candidateBoundaries"], list)
+    assert len(payload["provisionalSegments"]) >= 1
+    assert "label" in payload["provisionalSegments"][0]
+    assert "labelScores" in payload["provisionalSegments"][0]

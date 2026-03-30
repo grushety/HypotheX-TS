@@ -69,3 +69,39 @@ test("createInteractionLogExport serializes a session-shaped export payload", ()
   assert.match(exportArtifact.content, /"sessionId": "session-ECG200-001"/);
   assert.match(exportArtifact.content, /"actionType": "split"/);
 });
+
+test("createInteractionLogExport serializes suggestion decisions distinctly", () => {
+  const exportArtifact = createInteractionLogExport(
+    [
+      {
+        schemaVersion: 1,
+        kind: "suggestion",
+        actionType: "accept-suggestion",
+        actionStatus: "applied",
+        warningCount: 0,
+        affectedSegmentIds: ["seg-001", "seg-002"],
+        message: "Suggestion accepted and applied to the current segmentation.",
+        sampleId: "ECG200-001",
+        selectedSegmentId: "seg-001",
+        suggestionId: "suggestion-001",
+        decision: "accepted",
+        request: {
+          suggestionId: "suggestion-001",
+        },
+        timestamp: "2026-03-27T10:16:30.000Z",
+        sequence: 3,
+      },
+    ],
+    {
+      sessionId: "session-ECG200-001",
+      seriesId: "train-001",
+      segmentationId: "segmentation-train-001",
+      sampleId: "ECG200-001",
+    },
+    new Date("2026-03-27T10:20:00.000Z"),
+  );
+
+  assert.equal(exportArtifact.payload.events[0].eventType, "suggestion_accepted");
+  assert.equal(exportArtifact.payload.events[0].suggestion.suggestionId, "suggestion-001");
+  assert.equal(exportArtifact.payload.events[0].suggestion.decision, "accepted");
+});

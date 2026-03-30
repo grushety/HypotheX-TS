@@ -6,6 +6,7 @@ import {
   appendAuditEvent,
   createEditAuditEvent,
   createOperationAuditEvent,
+  createSuggestionAuditEvent,
 } from "./auditEvents.js";
 import { executeMoveBoundaryAction } from "../segments/executeSegmentEditAction.js";
 import { executeOperationAction } from "../operations/executeOperationAction.js";
@@ -68,6 +69,8 @@ test("createEditAuditEvent captures warned label edits in a stable schema", () =
     message: "Label updated with 1 warning.",
     sampleId: "ECG200-001",
     selectedSegmentId: "seg-003",
+    suggestionId: null,
+    decision: null,
     request: {
       type: "update-label",
       segmentId: "seg-003",
@@ -209,4 +212,33 @@ test("manual edit actions remain audit-ready across boundary moves and merges", 
   assert.equal(mergeEvent.actionType, "merge");
   assert.deepEqual(mergeEvent.affectedSegmentIds, ["seg-002"]);
   assert.equal(mergeEvent.actionStatus, "applied");
+});
+
+test("createSuggestionAuditEvent captures explicit accept and override decisions", () => {
+  const acceptedEvent = createSuggestionAuditEvent(
+    "accepted",
+    { suggestionId: "suggestion-001" },
+    {
+      sampleId: "ECG200-001",
+      selectedSegmentId: "seg-001",
+      targetSegmentIds: ["seg-001", "seg-002"],
+    },
+  );
+  const overriddenEvent = createSuggestionAuditEvent(
+    "overridden",
+    { suggestionId: "suggestion-002" },
+    {
+      sampleId: "ECG200-001",
+      selectedSegmentId: "seg-001",
+      targetSegmentIds: ["seg-003"],
+    },
+  );
+
+  assert.equal(acceptedEvent.kind, "suggestion");
+  assert.equal(acceptedEvent.actionType, "accept-suggestion");
+  assert.equal(acceptedEvent.decision, "accepted");
+  assert.equal(acceptedEvent.suggestionId, "suggestion-001");
+  assert.deepEqual(acceptedEvent.affectedSegmentIds, ["seg-001", "seg-002"]);
+  assert.equal(overriddenEvent.actionType, "override-suggestion");
+  assert.equal(overriddenEvent.decision, "overridden");
 });

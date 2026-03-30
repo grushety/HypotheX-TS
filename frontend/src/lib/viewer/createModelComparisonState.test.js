@@ -39,3 +39,22 @@ test("createModelComparisonState reports a clean match when segments align", () 
   assert.equal(state.disagreementCount, 0);
   assert.equal(state.message, "Current segmentation matches the loaded proposal baseline.");
 });
+
+test("createModelComparisonState exposes suggestion action availability", () => {
+  const state = createModelComparisonState({
+    currentSegments: [],
+    proposalSegments: [{ id: "seg-001", start: 0, end: 9, label: "event" }],
+    selectedArtifact: {
+      artifact_id: "fcn-gunpoint",
+      display_name: "FCN",
+    },
+    suggestionStatus: "pending",
+    suggestionLoading: false,
+    suggestionError: "",
+  });
+
+  assert.equal(state.hasProposal, true);
+  assert.equal(state.canRequestSuggestion, true);
+  assert.equal(state.canAcceptSuggestion, true);
+  assert.equal(state.canOverrideSuggestion, true);
+});

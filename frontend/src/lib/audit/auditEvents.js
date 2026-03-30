@@ -22,6 +22,8 @@ function createAuditEvent(kind, actionType, request, options = {}) {
     message: options.message ?? "",
     sampleId: options.sampleId ?? null,
     selectedSegmentId: options.selectedSegmentId ?? null,
+    suggestionId: options.suggestionId ?? null,
+    decision: options.decision ?? null,
     request,
     timestamp: options.timestamp ?? null,
     sequence: options.sequence ?? null,
@@ -73,6 +75,22 @@ export function createOperationAuditEvent(request, result, context = {}) {
     message: result.message,
     sampleId: context.sampleId ?? null,
     selectedSegmentId: context.selectedSegmentId ?? null,
+  });
+}
+
+export function createSuggestionAuditEvent(decision, suggestion, context = {}) {
+  const actionType = decision === "accepted" ? "accept-suggestion" : "override-suggestion";
+  return createAuditEvent("suggestion", actionType, suggestion, {
+    actionStatus: "applied",
+    affectedSegmentIds: context.targetSegmentIds ?? [],
+    message:
+      decision === "accepted"
+        ? "Suggestion accepted and applied to the current segmentation."
+        : "Suggestion overridden; manual editing remains active.",
+    sampleId: context.sampleId ?? null,
+    selectedSegmentId: context.selectedSegmentId ?? null,
+    suggestionId: suggestion?.suggestionId ?? null,
+    decision,
   });
 }
 

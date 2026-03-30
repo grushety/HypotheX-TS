@@ -4,7 +4,12 @@ import { computed, onMounted, ref, watch } from "vue";
 import BenchmarkSelectorPanel from "../components/benchmarks/BenchmarkSelectorPanel.vue";
 import PredictionPanel from "../components/benchmarks/PredictionPanel.vue";
 import ViewerShell from "../components/viewer/ViewerShell.vue";
-import { appendAuditEvent, createEditAuditEvent, createOperationAuditEvent } from "../lib/audit/auditEvents";
+import {
+  appendAuditEvent,
+  createEditAuditEvent,
+  createOperationAuditEvent,
+  createSuggestionAuditEvent,
+} from "../lib/audit/auditEvents";
 import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
 import { createSessionPanelState } from "../lib/audit/createSessionPanelState";
 import { createPredictionPanelState } from "../lib/benchmarks/createPredictionPanelState";
@@ -34,6 +39,8 @@ import {
   fetchBenchmarkOperationRegistry,
   fetchBenchmarkPrediction,
   fetchBenchmarkSample,
+  fetchBenchmarkSuggestion,
+  submitSuggestionDecision,
 } from "../services/api/benchmarkApi";
 
 const sample = ref(null);
@@ -61,6 +68,10 @@ const predictionError = ref("");
 const predictionResult = ref(null);
 const operationRegistry = ref(null);
 const proposalSegments = ref([]);
+const suggestionPayload = ref(null);
+const suggestionLoading = ref(false);
+const suggestionError = ref("");
+const suggestionStatus = ref("idle");
 let compatibilityRequestId = 0;
 
 const selectedSegment = computed(() =>
@@ -117,6 +128,9 @@ const comparisonState = computed(() =>
     currentSegments: sample.value?.segments ?? [],
     proposalSegments: proposalSegments.value,
     selectedArtifact: selectorState.value.selectedArtifact ?? null,
+    suggestionStatus: suggestionStatus.value,
+    suggestionLoading: suggestionLoading.value,
+    suggestionError: suggestionError.value,
   }),
 );
 
@@ -124,6 +138,14 @@ function clearPredictionState() {
   predictionLoading.value = false;
   predictionError.value = "";
   predictionResult.value = null;
+}
+
+function clearSuggestionState() {
+  suggestionPayload.value = null;
+  suggestionLoading.value = false;
+  suggestionError.value = "";
+  suggestionStatus.value = "idle";
+  proposalSegments.value = [];
 }
 
 async function loadSample() {
@@ -138,7 +160,7 @@ async function loadSample() {
       selectedSampleIndex.value,
     );
     sample.value = createViewerSampleFromApi(payload);
-    proposalSegments.value = createProposalSegments(sample.value.segments);
+    clearSuggestionState();
     editFeedback.value = "";
     operationFeedback.value = "";
     editConstraintResult.value = null;
@@ -146,6 +168,7 @@ async function loadSample() {
     auditEvents.value = [];
   } catch (loadError) {
     sample.value = null;
+    clearSuggestionState();
     error.value =
       loadError instanceof Error ? loadError.message : "Failed to load benchmark sample.";
   } finally {
@@ -192,7 +215,7 @@ async function loadBenchmarkOptions() {
     benchmarkArtifacts.value = [];
     operationRegistry.value = null;
     sample.value = null;
-    proposalSegments.value = [];
+    clearSuggestionState();
     loading.value = false;
     selectorError.value =
       loadError instanceof Error ? loadError.message : "Failed to load benchmark options.";
@@ -232,6 +255,54 @@ async function refreshCompatibility() {
       compatibilityLoading.value = false;
     }
   }
+}
+
+function createSuggestionDecisionPayload(decision, reason) {
+  return {
+    seriesId: sessionPanelState.value.seriesId,
+    segmentationId: sessionPanelState.value.segmentationId,
+    suggestionId: suggestionPayload.value?.suggestionId ?? null,
+    decision,
+    targetSegmentIds: proposalSegments.value.map((segment) => segment.id),
+    timestamp: new Date().toISOString(),
+    metadata: {
+      reason,
+      artifactId: selectorState.value.selectedArtifact?.artifact_id ?? null,
+      datasetName: sample.value?.datasetName ?? null,
+    },
+  };
+}
+
+async function persistSuggestionDecision(decision, reason) {
+  const payload = createSuggestionDecisionPayload(decision, reason);
+  if (!payload.suggestionId) {
+    return;
+  }
+
+  try {
+    await submitSuggestionDecision(sessionPanelState.value.sessionId, payload);
+  } catch (requestError) {
+    operationFeedback.value =
+      requestError instanceof Error ? requestError.message : "Failed to persist suggestion decision.";
+  }
+}
+
+async function markSuggestionDecision(decision, reason) {
+  if (!suggestionPayload.value || suggestionStatus.value !== "pending") {
+    return;
+  }
+
+  const payload = createSuggestionDecisionPayload(decision, reason);
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createSuggestionAuditEvent(decision, suggestionPayload.value, {
+      sampleId: sample.value?.sampleId ?? null,
+      selectedSegmentId: selectedSegmentId.value,
+      targetSegmentIds: payload.targetSegmentIds,
+    }),
+  );
+  suggestionStatus.value = decision;
+  await persistSuggestionDecision(decision, reason);
 }
 
 function handleUpdateDataset(datasetName) {
@@ -279,13 +350,64 @@ async function handleRequestPrediction() {
   }
 }
 
+async function handleRequestSuggestion() {
+  if (!selectedDatasetName.value || !sample.value) {
+    return;
+  }
+
+  suggestionLoading.value = true;
+  suggestionError.value = "";
+
+  try {
+    const payload = await fetchBenchmarkSuggestion(
+      selectedDatasetName.value,
+      selectedSplit.value,
+      selectedSampleIndex.value,
+    );
+    suggestionPayload.value = payload;
+    proposalSegments.value = createProposalSegments(payload);
+    suggestionStatus.value = "pending";
+  } catch (requestError) {
+    suggestionPayload.value = null;
+    proposalSegments.value = [];
+    suggestionStatus.value = "idle";
+    suggestionError.value =
+      requestError instanceof Error ? requestError.message : "Failed to load model suggestion.";
+  } finally {
+    suggestionLoading.value = false;
+  }
+}
+
+async function handleAcceptSuggestion() {
+  if (!sample.value || !proposalSegments.value.length || suggestionStatus.value !== "pending") {
+    return;
+  }
+
+  sample.value = {
+    ...sample.value,
+    segments: proposalSegments.value.map((segment) => ({
+      id: segment.id,
+      start: segment.start,
+      end: segment.end,
+      label: segment.label,
+    })),
+  };
+  selectedSegmentId.value = proposalSegments.value[0]?.id ?? null;
+  await markSuggestionDecision("accepted", "user_accepted_model_suggestion");
+}
+
+async function handleOverrideSuggestion() {
+  await markSuggestionDecision("overridden", "user_explicitly_overrode_model_suggestion");
+}
+
 function handleSelectSegment(segmentId) {
   selectedSegmentId.value = segmentId;
   editFeedback.value = "";
   operationFeedback.value = "";
 }
 
-function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
+async function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
+  await markSuggestionDecision("overridden", "manual_boundary_edit_after_suggestion_review");
   const request = {
     type: "move-boundary",
     boundaryIndex,
@@ -319,7 +441,8 @@ function handleMoveBoundary({ boundaryIndex, nextBoundaryStart }) {
   operationConstraintResult.value = null;
 }
 
-function handleUpdateSegmentLabel(nextLabel) {
+async function handleUpdateSegmentLabel(nextLabel) {
+  await markSuggestionDecision("overridden", "manual_label_edit_after_suggestion_review");
   const request = {
     type: "update-label",
     segmentId: selectedSegmentId.value,
@@ -350,7 +473,8 @@ function handleUpdateSegmentLabel(nextLabel) {
   operationConstraintResult.value = null;
 }
 
-function handleRunOperation(request) {
+async function handleRunOperation(request) {
+  await markSuggestionDecision("overridden", "manual_operation_after_suggestion_review");
   const result = executeOperationAction(sample.value, selectedSegmentId.value, request);
 
   auditEvents.value = appendAuditEvent(
@@ -432,11 +556,11 @@ onMounted(() => {
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">HTS-401 timeline viewer</p>
-        <h1>Timeline viewer workflow</h1>
+        <p class="eyebrow">HTS-503 suggestion workflow</p>
+        <h1>Model suggestion workflow</h1>
         <p class="hero-copy">
-          The main viewer now centers the chart and segmentation overlay in a shared timeline
-          surface, with selection context preserved as you inspect benchmark samples.
+          Load a model suggestion, compare it with the current segmentation, and accept or override
+          it explicitly while keeping manual editing authoritative.
         </p>
       </div>
 
@@ -477,6 +601,9 @@ onMounted(() => {
       @update-segment-label="handleUpdateSegmentLabel"
       @run-operation="handleRunOperation"
       @export-log="handleExportLog"
+      @request-suggestion="handleRequestSuggestion"
+      @accept-suggestion="handleAcceptSuggestion"
+      @override-suggestion="handleOverrideSuggestion"
     />
   </main>
 </template>

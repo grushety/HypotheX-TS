@@ -1013,6 +1013,35 @@ h3 {
   color: #41526a;
 }
 
+.comparison-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.comparison-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #122033;
+  color: #f4fbff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.comparison-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.comparison-button-secondary {
+  background: rgba(18, 32, 51, 0.1);
+  color: #122033;
+}
+
 .comparison-summary {
   margin-bottom: 14px;
 }

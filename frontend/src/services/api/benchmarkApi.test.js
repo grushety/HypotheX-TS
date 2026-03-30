@@ -7,6 +7,8 @@ import {
   fetchBenchmarkModels,
   fetchBenchmarkOperationRegistry,
   fetchBenchmarkPrediction,
+  fetchBenchmarkSuggestion,
+  submitSuggestionDecision,
 } from "./benchmarkApi.js";
 
 test("fetchBenchmarkDatasets returns dataset array from backend payload", async () => {
@@ -91,4 +93,47 @@ test("fetchBenchmarkPrediction rejects malformed payloads", async () => {
       })),
     /predicted_label and scores/,
   );
+});
+
+test("fetchBenchmarkSuggestion returns normalized suggestion payload", async () => {
+  const suggestion = await fetchBenchmarkSuggestion("GunPoint", "test", 0, async () => ({
+    ok: true,
+    async json() {
+      return {
+        provisionalSegments: [{ segmentId: "segment-001", startIndex: 0, endIndex: 11 }],
+        candidateBoundaries: [{ boundaryIndex: 12, score: 0.9, confidence: 0.9 }],
+      };
+    },
+  }));
+
+  assert.equal(suggestion.provisionalSegments.length, 1);
+  assert.equal(suggestion.candidateBoundaries[0].boundaryIndex, 12);
+});
+
+test("submitSuggestionDecision returns the backend audit event payload", async () => {
+  const payload = await submitSuggestionDecision(
+    "session-test-001",
+    {
+      seriesId: "series-001",
+      segmentationId: "segmentation-001",
+      suggestionId: "suggestion-001",
+      decision: "accepted",
+      targetSegmentIds: ["segment-001"],
+    },
+    async () => ({
+      ok: true,
+      async json() {
+        return {
+          eventType: "suggestion_accepted",
+          suggestion: {
+            suggestionId: "suggestion-001",
+            decision: "accepted",
+          },
+        };
+      },
+    }),
+  );
+
+  assert.equal(payload.eventType, "suggestion_accepted");
+  assert.equal(payload.suggestion.decision, "accepted");
 });
