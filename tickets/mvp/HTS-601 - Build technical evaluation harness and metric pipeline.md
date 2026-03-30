@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-601`  
 **Title:** `Build technical evaluation harness and metric pipeline`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P1`  
 **Type:** `feature`  
 **Depends on:** `HTS-203, HTS-204, HTS-504`  
@@ -88,11 +88,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] Technical evaluation can be run on at least one fixture or dataset split.
-- [ ] IoU and Boundary F1 are computed reproducibly.
-- [ ] At least one stability metric and one constraint metric are reported.
-- [ ] Results can be exported in a machine-readable form.
-- [ ] Evaluation code is separated from application runtime logic.
+- [x] Technical evaluation can be run on at least one fixture or dataset split.
+- [x] IoU and Boundary F1 are computed reproducibly.
+- [x] At least one stability metric and one constraint metric are reported.
+- [x] Results can be exported in a machine-readable form.
+- [x] Evaluation code is separated from application runtime logic.
 
 ---
 
@@ -113,8 +113,8 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] evaluation tests or fixture checks
-- [ ] lint/static checks
+- [x] evaluation tests or fixture checks
+- [x] lint/static checks
 
 ### Commands
 ```bash
@@ -135,13 +135,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -159,22 +159,22 @@ A ticket is done only when all items below are true.
 Before marking complete, verify:
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
 
 ---
 
@@ -190,18 +190,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added a standalone evaluation package with fixture loading, reproducible segmentation/stability/constraint metrics, a CLI runner, machine-readable JSON report export, and known-good/known-bad evaluation fixtures.`  
+**Checks run:** `pytest -q backend/tests; ruff check backend schemas docs model evaluation; manual evaluation runs for known-good and known-bad fixtures through evaluation/run_fixture_evaluation.py`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `Move to HTS-602 for baseline evaluation flow preparation and telemetry validation.`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-30`  
+**Summary:** `Built the first technical evaluation harness under evaluation/, with fixture-driven case loading, reproducible macro IoU, Boundary F1, Covering, over-segmentation, prototype-drift, and constraint-violation metrics, plus a CLI that exports JSON reports for known-good and known-bad examples. WARI and SMS are left explicitly unsupported in this MVP harness rather than approximated silently.`  
+**Tests passed:** `pytest -q backend/tests; ruff check backend schemas docs model evaluation; manual good fixture run produced macroIoU=1.0, boundaryF1=1.0, constraintViolationRate=0.0; manual bad fixture run produced macroIoU=0.266667, boundaryF1=0.571429, constraintViolationRate=1.0`  
+**Files changed:** `evaluation/__init__.py; evaluation/io.py; evaluation/metrics.py; evaluation/harness.py; evaluation/run_fixture_evaluation.py; evaluation/fixtures/known-good.json; evaluation/fixtures/known-bad.json; evaluation/README.md; backend/tests/test_evaluation_harness.py`  
+**Follow-up tickets needed:** `none`

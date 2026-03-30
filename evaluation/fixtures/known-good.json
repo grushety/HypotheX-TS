@@ -1,0 +1,89 @@
+{
+  "fixtureId": "known-good-001",
+  "seriesId": "fixture-series-good",
+  "segmentationId": "fixture-seg-good",
+  "seriesLength": 12,
+  "groundTruth": {
+    "schemaVersion": "1.0.0",
+    "segmentationId": "fixture-seg-good",
+    "seriesId": "fixture-series-good",
+    "segments": [
+      {
+        "segmentId": "segment-001",
+        "startIndex": 0,
+        "endIndex": 3,
+        "label": "plateau",
+        "provenance": "imported"
+      },
+      {
+        "segmentId": "segment-002",
+        "startIndex": 4,
+        "endIndex": 7,
+        "label": "event",
+        "provenance": "imported"
+      },
+      {
+        "segmentId": "segment-003",
+        "startIndex": 8,
+        "endIndex": 11,
+        "label": "trend",
+        "provenance": "imported"
+      }
+    ]
+  },
+  "prediction": {
+    "schemaVersion": "1.0.0",
+    "segmentationId": "fixture-seg-good-pred",
+    "seriesId": "fixture-series-good",
+    "segments": [
+      {
+        "segmentId": "segment-001",
+        "startIndex": 0,
+        "endIndex": 3,
+        "label": "plateau",
+        "provenance": "model"
+      },
+      {
+        "segmentId": "segment-002",
+        "startIndex": 4,
+        "endIndex": 7,
+        "label": "event",
+        "provenance": "model"
+      },
+      {
+        "segmentId": "segment-003",
+        "startIndex": 8,
+        "endIndex": 11,
+        "label": "trend",
+        "provenance": "model"
+      }
+    ]
+  },
+  "sessionLog": {
+    "schemaVersion": "1.0.0",
+    "sessionId": "session-good-001",
+    "seriesId": "fixture-series-good",
+    "segmentationId": "fixture-seg-good",
+    "startedAt": "2026-03-30T10:00:00Z",
+    "events": [
+      {
+        "eventId": "event-001",
+        "timestamp": "2026-03-30T10:01:00Z",
+        "eventType": "operation_applied",
+        "constraintEvaluation": {
+          "schemaVersion": "1.0.0",
+          "evaluationId": "constraint-eval-good-001",
+          "operationId": "operation-good-001",
+          "constraintMode": "soft",
+          "status": "PASS",
+          "violations": []
+        },
+        "metadata": {
+          "applied": true
+        }
+      }
+    ]
+  },
+  "prototypeDriftValues": [0.02, 0.03, 0.01],
+  "notes": "Known-good aligned segmentation fixture."
+}

@@ -1,0 +1,140 @@
+{
+  "fixtureId": "known-bad-001",
+  "seriesId": "fixture-series-bad",
+  "segmentationId": "fixture-seg-bad",
+  "seriesLength": 12,
+  "groundTruth": {
+    "schemaVersion": "1.0.0",
+    "segmentationId": "fixture-seg-bad",
+    "seriesId": "fixture-series-bad",
+    "segments": [
+      {
+        "segmentId": "segment-001",
+        "startIndex": 0,
+        "endIndex": 3,
+        "label": "plateau",
+        "provenance": "imported"
+      },
+      {
+        "segmentId": "segment-002",
+        "startIndex": 4,
+        "endIndex": 7,
+        "label": "event",
+        "provenance": "imported"
+      },
+      {
+        "segmentId": "segment-003",
+        "startIndex": 8,
+        "endIndex": 11,
+        "label": "trend",
+        "provenance": "imported"
+      }
+    ]
+  },
+  "prediction": {
+    "schemaVersion": "1.0.0",
+    "segmentationId": "fixture-seg-bad-pred",
+    "seriesId": "fixture-series-bad",
+    "segments": [
+      {
+        "segmentId": "segment-001",
+        "startIndex": 0,
+        "endIndex": 1,
+        "label": "plateau",
+        "provenance": "model"
+      },
+      {
+        "segmentId": "segment-002",
+        "startIndex": 2,
+        "endIndex": 3,
+        "label": "spike",
+        "provenance": "model"
+      },
+      {
+        "segmentId": "segment-003",
+        "startIndex": 4,
+        "endIndex": 5,
+        "label": "transition",
+        "provenance": "model"
+      },
+      {
+        "segmentId": "segment-004",
+        "startIndex": 6,
+        "endIndex": 7,
+        "label": "event",
+        "provenance": "model"
+      },
+      {
+        "segmentId": "segment-005",
+        "startIndex": 8,
+        "endIndex": 9,
+        "label": "plateau",
+        "provenance": "model"
+      },
+      {
+        "segmentId": "segment-006",
+        "startIndex": 10,
+        "endIndex": 11,
+        "label": "trend",
+        "provenance": "model"
+      }
+    ]
+  },
+  "sessionLog": {
+    "schemaVersion": "1.0.0",
+    "sessionId": "session-bad-001",
+    "seriesId": "fixture-series-bad",
+    "segmentationId": "fixture-seg-bad",
+    "startedAt": "2026-03-30T10:00:00Z",
+    "events": [
+      {
+        "eventId": "event-001",
+        "timestamp": "2026-03-30T10:01:00Z",
+        "eventType": "operation_applied",
+        "constraintEvaluation": {
+          "schemaVersion": "1.0.0",
+          "evaluationId": "constraint-eval-bad-001",
+          "operationId": "operation-bad-001",
+          "constraintMode": "soft",
+          "status": "WARN",
+          "violations": [
+            {
+              "constraintId": "minimum_segment_duration",
+              "severity": "soft",
+              "message": "Short segment warning.",
+              "affectedSegmentIds": ["segment-004"]
+            }
+          ]
+        },
+        "metadata": {
+          "applied": true
+        }
+      },
+      {
+        "eventId": "event-002",
+        "timestamp": "2026-03-30T10:02:00Z",
+        "eventType": "operation_rejected",
+        "constraintEvaluation": {
+          "schemaVersion": "1.0.0",
+          "evaluationId": "constraint-eval-bad-002",
+          "operationId": "operation-bad-002",
+          "constraintMode": "hard",
+          "status": "FAIL",
+          "violations": [
+            {
+              "constraintId": "causal_ordering",
+              "severity": "hard",
+              "message": "Causal inversion blocked.",
+              "affectedSegmentIds": ["segment-003"]
+            }
+          ]
+        },
+        "metadata": {
+          "applied": false
+        }
+      }
+    ]
+  },
+  "prototypeDriftValues": [0.2, 0.41, 0.52],
+  "notes": "Known-bad over-segmented and constraint-heavy fixture."
+}
