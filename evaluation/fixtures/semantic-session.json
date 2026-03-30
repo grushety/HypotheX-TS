@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0.0",
+  "sessionId": "session-semantic-001",
+  "seriesId": "gunpoint-test-1",
+  "segmentationId": "seg-gunpoint-test-1",
+  "startedAt": "2026-03-30T11:00:00Z",
+  "endedAt": "2026-03-30T11:06:00Z",
+  "events": [
+    {
+      "eventId": "event-001",
+      "timestamp": "2026-03-30T11:01:00Z",
+      "eventType": "suggestion_accepted",
+      "suggestion": {
+        "suggestionId": "suggestion-001",
+        "decision": "accepted",
+        "targetSegmentIds": ["segment-002"],
+        "source": "model"
+      },
+      "metadata": {
+        "reason": "user_accepted_boundary_help"
+      }
+    },
+    {
+      "eventId": "event-002",
+      "timestamp": "2026-03-30T11:03:00Z",
+      "eventType": "operation_applied",
+      "operation": {
+        "schemaVersion": "1.0.0",
+        "operationId": "operation-001",
+        "operationType": "merge",
+        "seriesId": "gunpoint-test-1",
+        "segmentationId": "seg-gunpoint-test-1",
+        "targetSegmentIds": ["segment-002", "segment-003"],
+        "parameters": {
+          "strategy": "adjacent_same_label"
+        },
+        "requestedBy": "user"
+      },
+      "constraintEvaluation": {
+        "schemaVersion": "1.0.0",
+        "evaluationId": "constraint-eval-merge-001",
+        "operationId": "operation-001",
+        "constraintMode": "soft",
+        "status": "PASS",
+        "violations": []
+      },
+      "operationResult": {
+        "schemaVersion": "1.0.0",
+        "operationType": "merge",
+        "status": "PASS",
+        "applied": true,
+        "reasonCode": "PASS",
+        "message": "Merge applied successfully.",
+        "constraintMode": "soft",
+        "violations": [],
+        "state": null,
+        "legalityChecks": [],
+        "metadata": {
+          "targetSegmentIds": ["segment-002", "segment-003"]
+        }
+      },
+      "metadata": {
+        "targetSegmentIds": ["segment-002", "segment-003"],
+        "constraintOutcome": "PASS",
+        "applied": true
+      }
+    }
+  ]
+}

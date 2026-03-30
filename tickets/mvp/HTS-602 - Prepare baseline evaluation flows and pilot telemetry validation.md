@@ -2,7 +2,7 @@
 
 **Ticket ID:** `HTS-602`  
 **Title:** `Prepare baseline evaluation flows and pilot telemetry validation`  
-**Status:** `todo`  
+**Status:** `done`  
 **Priority:** `P2`  
 **Type:** `feature`  
 **Depends on:** `HTS-305, HTS-404, HTS-601`  
@@ -88,11 +88,11 @@ This section should be concrete enough that Codex can verify behavior.
 
 ## 6. Acceptance Criteria
 
-- [ ] A baseline flow can be executed and logged for comparison against the semantic interface.
-- [ ] Session exports contain the fields needed for planned interaction metrics.
-- [ ] A small set of pilot scenarios or tasks is documented and runnable.
-- [ ] Missing telemetry fields, if any, are identified explicitly rather than ignored.
-- [ ] The resulting note is actionable for later study preparation.
+- [x] A baseline flow can be executed and logged for comparison against the semantic interface.
+- [x] Session exports contain the fields needed for planned interaction metrics.
+- [x] A small set of pilot scenarios or tasks is documented and runnable.
+- [x] Missing telemetry fields, if any, are identified explicitly rather than ignored.
+- [x] The resulting note is actionable for later study preparation.
 
 ---
 
@@ -113,9 +113,9 @@ Known pitfalls:
 Codex must run the checks listed here before completion.
 
 ### Required checks
-- [ ] evaluation smoke checks
-- [ ] docs review
-- [ ] manual baseline run-through
+- [x] evaluation smoke checks
+- [x] docs review
+- [x] manual baseline run-through
 
 ### Commands
 ```bash
@@ -136,13 +136,13 @@ If a check cannot run, Codex must record why.
 
 A ticket is done only when all items below are true.
 
-- [ ] Goal is implemented.
-- [ ] All acceptance criteria are satisfied.
-- [ ] Required tests and checks pass.
-- [ ] No blocking review issues remain.
-- [ ] Docs/comments are updated if behavior changed.
-- [ ] Changes are committed with the ticket ID.
-- [ ] Ticket status is updated to `done`.
+- [x] Goal is implemented.
+- [x] All acceptance criteria are satisfied.
+- [x] Required tests and checks pass.
+- [x] No blocking review issues remain.
+- [x] Docs/comments are updated if behavior changed.
+- [x] Changes are committed with the ticket ID.
+- [x] Ticket status is updated to `done`.
 
 ---
 
@@ -159,22 +159,22 @@ A ticket is done only when all items below are true.
 Before marking complete, verify:
 
 ### Scope review
-- [ ] No unrelated files were changed.
-- [ ] No out-of-scope behavior was added.
+- [x] No unrelated files were changed.
+- [x] No out-of-scope behavior was added.
 
 ### Architecture review
-- [ ] Business logic is not in route handlers.
-- [ ] Domain logic is not embedded in UI code.
-- [ ] Layer boundaries remain clean.
+- [x] Business logic is not in route handlers.
+- [x] Domain logic is not embedded in UI code.
+- [x] Layer boundaries remain clean.
 
 ### Quality review
-- [ ] Names match project concepts.
-- [ ] Error handling is explicit.
-- [ ] New behavior is covered by tests.
-- [ ] Logging/audit behavior is preserved where relevant.
+- [x] Names match project concepts.
+- [x] Error handling is explicit.
+- [x] New behavior is covered by tests.
+- [x] Logging/audit behavior is preserved where relevant.
 
 ### Contract review
-- [ ] Public interfaces remain compatible, or the change is documented in the ticket.
+- [x] Public interfaces remain compatible, or the change is documented in the ticket.
 
 ---
 
@@ -190,18 +190,18 @@ Before marking complete, verify:
 
 ## 13. Status Update Block
 
-**Current status:** `todo`  
-**What changed:** `none yet`  
-**Checks run:** `none yet`  
+**Current status:** `done`  
+**What changed:** `Added baseline-flow definitions, added telemetry-validation utilities against planned pilot metrics, added semantic and rule-only session fixtures plus a pilot scenario pack, and documented the concrete telemetry gaps that still need study-ready export fields.`  
+**Checks run:** `pytest -q backend/tests; ruff check backend schemas docs model evaluation; manual pilot readiness run through evaluation/run_pilot_readiness_check.py`  
 **Blockers:** `none`  
-**Next step:** `{t['status_next']}`
+**Next step:** `Use the rule-only baseline and semantic-interface flow for internal pilot runs, then add explicit condition and task metadata before formal study collection.`
 
 ---
 
 ## 14. Completion Note
 
-**Completed on:** `<date>`  
-**Summary:** `<brief summary of implemented result>`  
-**Tests passed:** `<list>`  
-**Files changed:** `<list or summary>`  
-**Follow-up tickets needed:** `<IDs or none>`
+**Completed on:** `2026-03-30`  
+**Summary:** `Prepared the first pilot-readiness layer by formalizing a rule-only baseline flow, validating current session exports against planned interaction metrics, documenting three runnable pilot scenarios, and surfacing the remaining telemetry gaps instead of hiding them. Current exports support session duration, operation diversity, constraint feedback, suggestion uptake, and target-segment coverage; they still lack explicit condition, participant, and task markers.`  
+**Tests passed:** `pytest -q backend/tests; ruff check backend schemas docs model evaluation; manual pilot readiness run returned SCENARIO_COUNT=3, SEMANTIC_MISSING_CHECKS=3, BASELINE_MISSING_CHECKS=4, with semantic-only event coverage ['suggestion_accepted'] and shared event coverage ['operation_applied']`  
+**Files changed:** `evaluation/baselines.py; evaluation/telemetry.py; evaluation/pilot_readiness.py; evaluation/run_pilot_readiness_check.py; evaluation/pilot-scenarios.json; evaluation/fixtures/semantic-session.json; evaluation/fixtures/rule-only-baseline-session.json; evaluation/README.md; evaluation/__init__.py; backend/tests/test_pilot_readiness.py; docs/pilot-readiness-note.md`  
+**Follow-up tickets needed:** `none`

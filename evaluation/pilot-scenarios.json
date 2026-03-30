@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0.0",
+  "packId": "pilot-pack-001",
+  "scenarios": [
+    {
+      "scenarioId": "pilot-001",
+      "title": "Boundary Cleanup on GunPoint",
+      "dataset": "GunPoint",
+      "split": "test",
+      "sampleIndex": 1,
+      "objective": "Produce a clean three-part segmentation and resolve one ambiguous boundary.",
+      "recommendedConditionOrder": ["rule-only-baseline", "semantic-interface"],
+      "successChecklist": [
+        "At least one manual boundary edit is attempted.",
+        "The final session is exported.",
+        "No unrecoverable FAIL state remains at the end of the task."
+      ]
+    },
+    {
+      "scenarioId": "pilot-002",
+      "title": "Suggestion Review and Override",
+      "dataset": "GunPoint",
+      "split": "test",
+      "sampleIndex": 2,
+      "objective": "Load one model suggestion, accept or override it, and finish with a justified final segmentation.",
+      "recommendedConditionOrder": ["semantic-interface"],
+      "successChecklist": [
+        "A suggestion is loaded.",
+        "The exported session contains either suggestion_accepted or suggestion_overridden.",
+        "At least one follow-up semantic edit is recorded after review."
+      ]
+    },
+    {
+      "scenarioId": "pilot-003",
+      "title": "Constraint-Limited Merge Decision",
+      "dataset": "GunPoint",
+      "split": "test",
+      "sampleIndex": 3,
+      "objective": "Attempt a merge near a constrained boundary and decide whether to keep or revise the segmentation.",
+      "recommendedConditionOrder": ["rule-only-baseline", "semantic-interface"],
+      "successChecklist": [
+        "One constraint warning or failure is encountered.",
+        "The participant finishes with an exported session log.",
+        "Target segment IDs remain visible in the exported metadata."
+      ]
+    }
+  ]
+}

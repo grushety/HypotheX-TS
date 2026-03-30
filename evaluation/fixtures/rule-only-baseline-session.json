@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0.0",
+  "sessionId": "session-baseline-001",
+  "seriesId": "gunpoint-test-1",
+  "segmentationId": "seg-gunpoint-test-1",
+  "startedAt": "2026-03-30T11:10:00Z",
+  "endedAt": "2026-03-30T11:17:00Z",
+  "events": [
+    {
+      "eventId": "event-001",
+      "timestamp": "2026-03-30T11:12:00Z",
+      "eventType": "operation_applied",
+      "operation": {
+        "schemaVersion": "1.0.0",
+        "operationId": "operation-raw-001",
+        "operationType": "split",
+        "seriesId": "gunpoint-test-1",
+        "segmentationId": "seg-gunpoint-test-1",
+        "targetSegmentIds": ["segment-002"],
+        "parameters": {
+          "splitIndex": 24
+        },
+        "requestedBy": "user"
+      },
+      "constraintEvaluation": {
+        "schemaVersion": "1.0.0",
+        "evaluationId": "constraint-eval-split-001",
+        "operationId": "operation-raw-001",
+        "constraintMode": "soft",
+        "status": "WARN",
+        "violations": [
+          {
+            "constraintId": "minimum_segment_duration",
+            "severity": "soft",
+            "message": "One child segment is close to the minimum duration.",
+            "affectedSegmentIds": ["segment-002"]
+          }
+        ]
+      },
+      "operationResult": {
+        "schemaVersion": "1.0.0",
+        "operationType": "split",
+        "status": "WARN",
+        "applied": true,
+        "reasonCode": "WARN",
+        "message": "Split applied with a soft warning.",
+        "constraintMode": "soft",
+        "violations": [
+          {
+            "constraintId": "minimum_segment_duration",
+            "severity": "soft",
+            "message": "One child segment is close to the minimum duration.",
+            "affectedSegmentIds": ["segment-002"]
+          }
+        ],
+        "state": null,
+        "legalityChecks": [],
+        "metadata": {
+          "targetSegmentIds": ["segment-002"]
+        }
+      },
+      "metadata": {
+        "targetSegmentIds": ["segment-002"],
+        "constraintOutcome": "WARN",
+        "applied": true
+      }
+    },
+    {
+      "eventId": "event-002",
+      "timestamp": "2026-03-30T11:14:00Z",
+      "eventType": "operation_rejected",
+      "operation": {
+        "schemaVersion": "1.0.0",
+        "operationId": "operation-raw-002",
+        "operationType": "merge",
+        "seriesId": "gunpoint-test-1",
+        "segmentationId": "seg-gunpoint-test-1",
+        "targetSegmentIds": ["segment-004", "segment-005"],
+        "parameters": {
+          "strategy": "adjacent_same_label"
+        },
+        "requestedBy": "user"
+      },
+      "constraintEvaluation": {
+        "schemaVersion": "1.0.0",
+        "evaluationId": "constraint-eval-merge-002",
+        "operationId": "operation-raw-002",
+        "constraintMode": "hard",
+        "status": "FAIL",
+        "violations": [
+          {
+            "constraintId": "causal_ordering",
+            "severity": "hard",
+            "message": "Merge would violate causal ordering.",
+            "affectedSegmentIds": ["segment-004", "segment-005"]
+          }
+        ]
+      },
+      "operationResult": {
+        "schemaVersion": "1.0.0",
+        "operationType": "merge",
+        "status": "FAIL",
+        "applied": false,
+        "reasonCode": "FAIL",
+        "message": "Merge blocked by a hard constraint.",
+        "constraintMode": "hard",
+        "violations": [
+          {
+            "constraintId": "causal_ordering",
+            "severity": "hard",
+            "message": "Merge would violate causal ordering.",
+            "affectedSegmentIds": ["segment-004", "segment-005"]
+          }
+        ],
+        "state": null,
+        "legalityChecks": [],
+        "metadata": {
+          "targetSegmentIds": ["segment-004", "segment-005"]
+        }
+      },
+      "metadata": {
+        "targetSegmentIds": ["segment-004", "segment-005"],
+        "constraintOutcome": "FAIL",
+        "applied": false
+      }
+    }
+  ]
+}
