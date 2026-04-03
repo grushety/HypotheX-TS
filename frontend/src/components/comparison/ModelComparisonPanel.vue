@@ -6,7 +6,7 @@ defineProps({
   },
 });
 
-const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-suggestion"]);
+const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-suggestion", "adapt-model"]);
 </script>
 
 <template>
@@ -42,8 +42,20 @@ const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-s
         >
           Override suggestion
         </button>
+        <button
+          v-if="state.canAdaptModel || state.adaptLoading || state.adaptVersionId || state.adaptError"
+          class="comparison-button comparison-button-secondary"
+          type="button"
+          :disabled="!state.canAdaptModel"
+          @click="emit('adapt-model')"
+        >
+          {{ state.adaptLoading ? "Adapting..." : "Adapt model from corrections" }}
+        </button>
+        <span v-if="state.adaptVersionId" class="surface-tag">{{ state.adaptVersionId }}</span>
       </div>
     </div>
+
+    <p v-if="state.adaptError" class="comparison-adapt-error">{{ state.adaptError }}</p>
 
     <p class="comparison-summary">{{ state.message }}</p>
 

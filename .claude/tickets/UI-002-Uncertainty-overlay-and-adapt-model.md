@@ -1,6 +1,6 @@
 # UI-002 — Wire uncertainty overlay and adapt-model into UI
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** UI-001, SEG-004, SEG-005
 
 ---
@@ -50,4 +50,11 @@ No new components required — wire into existing `BenchmarkViewerPage.vue`,
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+
+- `frontend/src/services/api/benchmarkApi.js` — added `fetchBenchmarkUncertainty` (GET /api/benchmarks/suggestion/uncertainty) and `adaptModel` (POST /api/benchmarks/suggestion/adapt) with validation and fetch-injection pattern
+- `frontend/src/services/api/benchmarkApi.test.js` — added 6 tests for both new functions: happy path, malformed payload rejection, backend error surfacing
+- `frontend/src/lib/viewer/createModelComparisonState.js` — added `auditEvents`, `adaptLoading`, `adaptError`, `adaptVersionId` params; computes `canAdaptModel` (≥3 edit/operation events)
+- `frontend/src/components/comparison/ModelComparisonPanel.vue` — added "Adapt model from corrections" button (shown when canAdaptModel or in loading/done/error state), loading label, `adaptVersionId` badge, inline error display; emits `adapt-model`
+- `frontend/src/components/viewer/TimelineViewer.vue` — added `segmentUncertainty` and `boundaryUncertainty` props, passes them through to `SegmentationOverlay`
+- `frontend/src/components/viewer/SegmentationOverlay.vue` — added `segmentUncertainty` and `boundaryUncertainty` props; segment span opacity scales with `max(0.35, 1 - u_seg)`; boundary handle gets a `segment-boundary-uncertainty` indicator div whose width scales with uncertainty
+- `frontend/src/views/BenchmarkViewerPage.vue` — imported new API functions; added `uncertaintyPayload`, `adaptLoading`, `adaptError`, `adaptVersionId` refs; clears uncertainty/adapt state on sample load; fetches uncertainty non-blockingly after suggestion loads; added `handleAdaptModel()`; wired uncertainty arrays to `TimelineViewer`; wired `@adapt-model` on `ModelComparisonPanel`

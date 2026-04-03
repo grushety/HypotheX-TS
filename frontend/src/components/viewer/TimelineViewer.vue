@@ -14,6 +14,14 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  segmentUncertainty: {
+    type: Array,
+    default: () => [],
+  },
+  boundaryUncertainty: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["select-segment", "move-boundary"]);
@@ -43,6 +51,8 @@ const timelineModel = computed(() =>
         :segments="sample.segments"
         :series-length="sample.seriesLength"
         :selected-segment-id="selectedSegmentId"
+        :segment-uncertainty="props.segmentUncertainty"
+        :boundary-uncertainty="props.boundaryUncertainty"
         @select-segment="emit('select-segment', $event)"
         @move-boundary="emit('move-boundary', $event)"
       />

@@ -10,7 +10,8 @@
       "Bash(grep:*)",
       "Bash(python -m pytest backend/tests/test_prototype_classifier.py -x --tb=short -q)",
       "Bash(python -m pytest backend/tests/test_prototype_classifier.py::test_boundary_suggestion_service_serializes_classifier_output_into_contract -x --tb=long -s)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(del \"benchmarks\\\\models\\\\tcn_encoder\\\\encoder.pt\")"
     ]
   }
 }

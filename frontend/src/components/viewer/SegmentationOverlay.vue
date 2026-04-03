@@ -17,6 +17,14 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  segmentUncertainty: {
+    type: Array,
+    default: () => [],
+  },
+  boundaryUncertainty: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["select-segment", "move-boundary"]);
@@ -66,14 +74,18 @@ onBeforeUnmount(() => {
   <div class="segmentation-overlay" aria-label="Segmentation overlay">
     <div ref="trackRef" class="segmentation-track">
       <div
-        v-for="segment in overlayModel.spans"
+        v-for="(segment, spanIndex) in overlayModel.spans"
         :key="segment.id"
         class="segment-span"
         :class="[
           `segment-span-${segment.label}`,
           { 'segment-span-active': segment.id === selectedSegmentId },
         ]"
-        :style="{ left: segment.left, width: segment.width }"
+        :style="{
+          left: segment.left,
+          width: segment.width,
+          opacity: Math.max(0.35, 1 - (props.segmentUncertainty[spanIndex] ?? 0)),
+        }"
         role="button"
         tabindex="0"
         :aria-pressed="segment.id === selectedSegmentId"
@@ -96,6 +108,14 @@ onBeforeUnmount(() => {
           type="button"
           :aria-label="`Drag boundary ${boundary.boundaryIndex + 1}`"
           @pointerdown.prevent="startDrag(boundary.boundaryIndex, $event)"
+        />
+        <div
+          v-if="props.boundaryUncertainty[boundary.boundaryIndex] != null"
+          class="segment-boundary-uncertainty"
+          :style="{
+            width: `${Math.round((props.boundaryUncertainty[boundary.boundaryIndex] ?? 0) * 8)}px`,
+          }"
+          aria-hidden="true"
         />
       </div>
     </div>

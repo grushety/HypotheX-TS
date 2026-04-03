@@ -134,6 +134,39 @@ export async function fetchBenchmarkSuggestion(datasetName, split, sampleIndex, 
   return payload;
 }
 
+export async function fetchBenchmarkUncertainty(datasetName, split, sampleIndex, fetchImpl = fetch) {
+  const params = new URLSearchParams({
+    dataset: datasetName,
+    split,
+    sample_index: String(sampleIndex),
+  });
+  const response = await fetchImpl(`/api/benchmarks/suggestion/uncertainty?${params.toString()}`);
+  const payload = await readJsonResponse(response, "Benchmark uncertainty");
+
+  if (!Array.isArray(payload.boundaryUncertainty) || !Array.isArray(payload.segmentUncertainty)) {
+    throw new Error(
+      "Benchmark uncertainty response must include boundaryUncertainty and segmentUncertainty.",
+    );
+  }
+
+  return payload;
+}
+
+export async function adaptModel(sessionId, supportSegments, fetchImpl = fetch) {
+  const response = await fetchImpl("/api/benchmarks/suggestion/adapt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, support_segments: supportSegments }),
+  });
+  const payload = await readJsonResponse(response, "Adapt model");
+
+  if (typeof payload.model_version_id !== "string" || !Array.isArray(payload.prototypes_updated)) {
+    throw new Error("Adapt model response must include model_version_id and prototypes_updated.");
+  }
+
+  return payload;
+}
+
 export async function submitSuggestionDecision(sessionId, suggestionDecision, fetchImpl = fetch) {
   const response = await fetchImpl(`/api/audit/sessions/${sessionId}/suggestions/decision`, {
     method: "POST",

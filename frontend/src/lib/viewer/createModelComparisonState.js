@@ -37,12 +37,19 @@ export function createModelComparisonState({
   suggestionStatus = "idle",
   suggestionLoading = false,
   suggestionError = "",
+  auditEvents = [],
+  adaptLoading = false,
+  adaptError = "",
+  adaptVersionId = null,
 }) {
   const safeCurrentSegments = Array.isArray(currentSegments) ? currentSegments : [];
   const safeProposalSegments = Array.isArray(proposalSegments) ? proposalSegments : [];
   const rows = createComparisonRows(safeCurrentSegments, safeProposalSegments);
   const disagreementCount = rows.filter((row) => row.hasDisagreement).length;
   const hasProposal = safeProposalSegments.length > 0;
+  const editOpCount = Array.isArray(auditEvents)
+    ? auditEvents.filter((e) => e.kind === "edit" || e.kind === "operation").length
+    : 0;
 
   return {
     heading: selectedArtifact?.display_name
@@ -58,6 +65,10 @@ export function createModelComparisonState({
     canRequestSuggestion: Boolean(selectedArtifact) && !suggestionLoading,
     canAcceptSuggestion: hasProposal && suggestionStatus === "pending" && !suggestionLoading,
     canOverrideSuggestion: hasProposal && suggestionStatus === "pending" && !suggestionLoading,
+    canAdaptModel: editOpCount >= 3 && !adaptLoading,
+    adaptLoading,
+    adaptError,
+    adaptVersionId,
     message: suggestionError
       ? suggestionError
       : !hasProposal

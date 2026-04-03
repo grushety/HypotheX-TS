@@ -36,6 +36,7 @@ import { createViewerWarningDisplay } from "../lib/viewer/createViewerWarningDis
 import { createViewerPageState } from "../lib/viewer/createViewerPageState";
 import { getSelectedSegment, reconcileSelectedSegmentId } from "../lib/viewer/reconcileSelectedSegmentId";
 import {
+  adaptModel,
   fetchBenchmarkCompatibility,
   fetchBenchmarkDatasets,
   fetchBenchmarkModels,
@@ -43,6 +44,7 @@ import {
   fetchBenchmarkPrediction,
   fetchBenchmarkSample,
   fetchBenchmarkSuggestion,
+  fetchBenchmarkUncertainty,
   submitSuggestionDecision,
 } from "../services/api/benchmarkApi";
 
@@ -75,6 +77,10 @@ const suggestionPayload = ref(null);
 const suggestionLoading = ref(false);
 const suggestionError = ref("");
 const suggestionStatus = ref("idle");
+const uncertaintyPayload = ref(null);
+const adaptLoading = ref(false);
+const adaptError = ref("");
+const adaptVersionId = ref(null);
 let compatibilityRequestId = 0;
 
 const selectedSegment = computed(() =>
@@ -134,6 +140,10 @@ const comparisonState = computed(() =>
     suggestionStatus: suggestionStatus.value,
     suggestionLoading: suggestionLoading.value,
     suggestionError: suggestionError.value,
+    auditEvents: auditEvents.value,
+    adaptLoading: adaptLoading.value,
+    adaptError: adaptError.value,
+    adaptVersionId: adaptVersionId.value,
   }),
 );
 
@@ -149,6 +159,10 @@ function clearSuggestionState() {
   suggestionError.value = "";
   suggestionStatus.value = "idle";
   proposalSegments.value = [];
+  uncertaintyPayload.value = null;
+  adaptLoading.value = false;
+  adaptError.value = "";
+  adaptVersionId.value = null;
 }
 
 async function loadSample() {
@@ -370,6 +384,19 @@ async function handleRequestSuggestion() {
     suggestionPayload.value = payload;
     proposalSegments.value = createProposalSegments(payload);
     suggestionStatus.value = "pending";
+
+    // Fetch uncertainty non-blockingly; failure does not affect suggestion display.
+    fetchBenchmarkUncertainty(
+      selectedDatasetName.value,
+      selectedSplit.value,
+      selectedSampleIndex.value,
+    )
+      .then((u) => {
+        uncertaintyPayload.value = u;
+      })
+      .catch(() => {
+        uncertaintyPayload.value = null;
+      });
   } catch (requestError) {
     suggestionPayload.value = null;
     proposalSegments.value = [];
@@ -501,6 +528,31 @@ async function handleRunOperation(request) {
   operationConstraintResult.value = result.constraintResult;
   editFeedback.value = "";
   editConstraintResult.value = null;
+}
+
+async function handleAdaptModel() {
+  if (!comparisonState.value.canAdaptModel || !sample.value) {
+    return;
+  }
+
+  adaptLoading.value = true;
+  adaptError.value = "";
+
+  const values = sample.value.values;
+  const supportSegments = (sample.value.segments ?? []).map((seg) => ({
+    label: seg.label,
+    values: values.slice(seg.start, seg.end + 1),
+  }));
+
+  try {
+    const result = await adaptModel(sessionPanelState.value.sessionId, supportSegments);
+    adaptVersionId.value = result.model_version_id;
+  } catch (requestError) {
+    adaptError.value =
+      requestError instanceof Error ? requestError.message : "Failed to adapt model.";
+  } finally {
+    adaptLoading.value = false;
+  }
 }
 
 function handleExportLog() {
@@ -663,6 +715,8 @@ onMounted(() => {
           <TimelineViewer
             :sample="sample"
             :selected-segment-id="selectedSegmentId"
+            :segment-uncertainty="uncertaintyPayload?.segmentUncertainty ?? []"
+            :boundary-uncertainty="uncertaintyPayload?.boundaryUncertainty ?? []"
             @select-segment="handleSelectSegment"
             @move-boundary="handleMoveBoundary"
           />
@@ -722,6 +776,7 @@ onMounted(() => {
           @request-suggestion="handleRequestSuggestion"
           @accept-suggestion="handleAcceptSuggestion"
           @override-suggestion="handleOverrideSuggestion"
+          @adapt-model="handleAdaptModel"
         />
 
         <div class="session-stats-panel">
