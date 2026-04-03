@@ -1,6 +1,6 @@
 # SEG-005 — adapt_model endpoint (few-shot prototype update)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-002, SEG-004
 
 ---
@@ -42,4 +42,9 @@ Prototype state is held in-memory per session (keyed by `session_id`); no persis
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+
+- `backend/app/services/suggestions.py` — added `AdaptResult` frozen dataclass (`model_version_id`, `prototypes_updated`, `drift_report`); added `_sessions` dict to `BoundarySuggestionService.__init__`; added `adapt(session_id, support_segments)` method: initialises session from `build_default_support_segments` on first access, encodes each segment, calls `PrototypeMemoryBank.update()` with confidence gating and drift guard, returns `AdaptResult` with version string and applied labels
+- `backend/app/factory.py` — registered shared `BoundarySuggestionService()` in `app.config["BOUNDARY_SUGGESTION_SERVICE"]` so prototype session state persists across requests within the same process
+- `backend/app/routes/benchmarks.py` — added `POST /api/benchmarks/suggestion/adapt` route: validates `session_id` and `support_segments`, delegates to `svc.adapt()`, no logic in route handler
+- `docu/API-Spec.md` — created full API specification documenting all routes including the new adapt endpoint (request/response schemas, error codes, field descriptions)
+- `backend/tests/test_adapt_model.py` — 27 tests: successful update, default confidence, multi-segment, model version format, counter increments across calls, session isolation, confidence rejection, unknown label, missing fields, empty segments, route 200/400 shapes

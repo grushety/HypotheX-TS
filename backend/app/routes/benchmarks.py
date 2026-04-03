@@ -13,7 +13,7 @@ from app.services.models import ModelArtifactNotFoundError, ModelRegistry, Model
 from app.services.suggestion import build_default_support_segments
 from app.services.suggestion.boundary_proposal import compute_boundary_scores
 from app.services.suggestion.uncertainty import score_uncertainty
-from app.services.suggestions import BoundarySuggestionService, SuggestionServiceError
+from app.services.suggestions import AdaptResult, BoundarySuggestionService, SuggestionServiceError
 
 benchmarks_bp = Blueprint("benchmarks", __name__)
 
@@ -224,6 +224,37 @@ def fetch_suggestion():
         return jsonify({"error": str(exc)}), 400
 
     return jsonify(suggestion.to_dict())
+
+
+@benchmarks_bp.post("/api/benchmarks/suggestion/adapt")
+def adapt_model():
+    body = request.get_json(silent=True)
+    if not body:
+        return jsonify({"error": "Request body must be valid JSON."}), 400
+
+    session_id = body.get("session_id")
+    support_segments = body.get("support_segments")
+
+    if not session_id or not isinstance(session_id, str):
+        return jsonify({"error": "Field 'session_id' is required and must be a non-empty string."}), 400
+    if support_segments is None or not isinstance(support_segments, list):
+        return jsonify({"error": "Field 'support_segments' is required and must be a list."}), 400
+    if len(support_segments) == 0:
+        return jsonify({"error": "Field 'support_segments' must not be empty."}), 400
+
+    svc = _get_boundary_suggestion_service()
+    try:
+        result: AdaptResult = svc.adapt(session_id=session_id, support_segments=support_segments)
+    except SuggestionServiceError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(
+        {
+            "model_version_id": result.model_version_id,
+            "prototypes_updated": list(result.prototypes_updated),
+            "drift_report": result.drift_report,
+        }
+    )
 
 
 @benchmarks_bp.get("/api/benchmarks/suggestion/uncertainty")

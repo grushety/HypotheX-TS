@@ -17,12 +17,40 @@ from app.services.suggestion.prototype_classifier import (
     PrototypeChunkClassifier,
     PrototypeClassifierConfig,
     PrototypeClassifierError,
+    PrototypeMemoryBank,
+    build_default_support_segments,
 )
-from app.services.suggestion.segment_encoder import SegmentEncoderConfig, SegmentEncodingError, slice_series
+from app.services.suggestion.segment_encoder import (
+    SegmentEncoderConfig,
+    SegmentEncodingError,
+    encode_segment,
+    slice_series,
+)
 
 
 class SuggestionServiceError(RuntimeError):
     """Raised when suggestion generation cannot be completed safely."""
+
+
+@dataclass(frozen=True)
+class AdaptResult:
+    """Result of a few-shot prototype update (adapt_model).
+
+    Attributes:
+        model_version_id:   Version string in the format
+                            ``suggestion-model-v1+adapt-{n}`` where *n* is the
+                            cumulative update count for the session.
+        prototypes_updated: Labels whose prototype was successfully updated
+                            (i.e. confidence-gated and drift-guarded updates
+                            that were applied).
+        drift_report:       Per-label Euclidean drift of the prototype vector
+                            after the update.  0.0 for the first update (no
+                            previous prototype to compare against).
+    """
+
+    model_version_id: str
+    prototypes_updated: tuple[str, ...]
+    drift_report: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -77,6 +105,8 @@ class BoundarySuggestionService:
             classifier_config=self._classifier_config,
         )
         self._smoothing_config = smoothing_config or build_duration_smoothing_config()
+        # In-memory prototype state per session: {session_id: (PrototypeMemoryBank, update_count)}
+        self._sessions: dict[str, tuple[PrototypeMemoryBank, int]] = {}
 
     def propose(
         self,
@@ -135,6 +165,90 @@ class BoundarySuggestionService:
             proposerConfig=config,
             boundary_uncertainty=boundary_uncertainty,
             segment_uncertainty=segment_uncertainty,
+        )
+
+    def adapt(
+        self,
+        *,
+        session_id: str,
+        support_segments: list[dict[str, object]],
+    ) -> AdaptResult:
+        """Apply few-shot prototype updates for a session from labeled support segments.
+
+        The encoder weights stay frozen; only the in-memory ``PrototypeMemoryBank``
+        for the session is mutated.  Confidence-gating and drift-guarding are
+        enforced by ``PrototypeMemoryBank.update()`` (HTS-504).
+
+        On first call for a ``session_id`` the bank is initialised from the
+        default support templates (``build_default_support_segments``).
+
+        Args:
+            session_id:       Arbitrary caller-chosen session identifier.
+            support_segments: Non-empty list of dicts; each must have ``label``
+                              (str) and ``values`` (list); ``confidence``
+                              (float ∈ [0, 1]) is optional, defaults to 1.0.
+
+        Returns:
+            AdaptResult with version string, applied label list, and drift report.
+
+        Raises:
+            SuggestionServiceError: If ``support_segments`` is empty, a label is
+                                    unknown, or encoding fails.
+        """
+        if not support_segments:
+            raise SuggestionServiceError("adapt() requires at least one support segment.")
+
+        # Initialise session from default templates on first access.
+        if session_id not in self._sessions:
+            default_support = build_default_support_segments(self._classifier.active_labels)
+            try:
+                initial_bank = self._classifier.build_memory_bank(default_support)
+            except PrototypeClassifierError as exc:
+                raise SuggestionServiceError(str(exc)) from exc
+            self._sessions[session_id] = (initial_bank, 0)
+
+        memory_bank, update_count = self._sessions[session_id]
+
+        prototypes_updated: list[str] = []
+        drift_report: dict[str, float] = {}
+
+        for raw_seg in support_segments:
+            label = raw_seg.get("label")
+            values = raw_seg.get("values")
+            confidence = float(raw_seg.get("confidence", 1.0))
+
+            if not isinstance(label, str) or not label:
+                raise SuggestionServiceError("Each support segment must have a non-empty 'label'.")
+            if values is None:
+                raise SuggestionServiceError("Each support segment must have a 'values' field.")
+
+            try:
+                embedding = encode_segment(values, self._encoder_config).as_array()
+            except SegmentEncodingError as exc:
+                raise SuggestionServiceError(str(exc)) from exc
+
+            try:
+                new_bank, result = memory_bank.update(
+                    label=label,
+                    embedding=embedding,
+                    confidence=confidence,
+                )
+            except PrototypeClassifierError as exc:
+                raise SuggestionServiceError(str(exc)) from exc
+
+            if result.applied:
+                memory_bank = new_bank
+                prototypes_updated.append(label)
+                drift_report[label] = float(result.drift) if result.drift is not None else 0.0
+
+            update_count += 1
+
+        self._sessions[session_id] = (memory_bank, update_count)
+
+        return AdaptResult(
+            model_version_id=f"suggestion-model-v1+adapt-{update_count}",
+            prototypes_updated=tuple(prototypes_updated),
+            drift_report=drift_report,
         )
 
     def _to_mapping(self) -> dict[str, object]:

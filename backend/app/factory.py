@@ -6,6 +6,7 @@ import app.models  # noqa: F401 - Register SQLAlchemy models before create_all.
 from app.routes.audit import audit_bp
 from app.routes.benchmarks import benchmarks_bp
 from app.routes.health import health_bp
+from app.services.suggestions import BoundarySuggestionService
 
 
 def create_app(config_object: type[Config] = Config) -> Flask:
@@ -23,6 +24,10 @@ def create_app(config_object: type[Config] = Config) -> Flask:
 
     with app.app_context():
         db.create_all()
+
+    # Register a single shared BoundarySuggestionService so that in-memory
+    # prototype session state persists across requests within the same process.
+    app.config["BOUNDARY_SUGGESTION_SERVICE"] = BoundarySuggestionService()
 
     app.register_blueprint(health_bp)
     app.register_blueprint(benchmarks_bp)
