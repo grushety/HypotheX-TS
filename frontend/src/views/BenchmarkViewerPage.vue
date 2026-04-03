@@ -1,9 +1,12 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 
-import BenchmarkSelectorPanel from "../components/benchmarks/BenchmarkSelectorPanel.vue";
-import PredictionPanel from "../components/benchmarks/PredictionPanel.vue";
-import ViewerShell from "../components/viewer/ViewerShell.vue";
+import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
+import HistoryPanel from "../components/history/HistoryPanel.vue";
+import OperationPalette from "../components/operations/OperationPalette.vue";
+import TimelineViewer from "../components/viewer/TimelineViewer.vue";
+import WarningPanel from "../components/warnings/WarningPanel.vue";
+import { AVAILABLE_SEGMENT_LABELS } from "../lib/segments/updateSegmentLabel";
 import {
   appendAuditEvent,
   createEditAuditEvent,
@@ -553,57 +556,224 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="app-shell">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">HTS-503 suggestion workflow</p>
-        <h1>Model suggestion workflow</h1>
-        <p class="hero-copy">
-          Load a model suggestion, compare it with the current segmentation, and accept or override
-          it explicitly while keeping manual editing authoritative.
-        </p>
+  <div class="research-viewport">
+    <!-- Topbar: selectors + compatibility indicator + Run Prediction button -->
+    <header class="research-topbar">
+      <div class="topbar-selectors">
+        <label class="topbar-field">
+          <span class="topbar-label">Dataset</span>
+          <select
+            class="topbar-input"
+            :value="selectorState.selectedDataset?.name ?? ''"
+            :disabled="selectorState.loading || !selectorState.datasetOptions.length"
+            @change="handleUpdateDataset($event.target.value)"
+          >
+            <option value="" disabled>Select dataset</option>
+            <option v-for="option in selectorState.datasetOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+
+        <label class="topbar-field">
+          <span class="topbar-label">Model</span>
+          <select
+            class="topbar-input"
+            :value="selectorState.selectedArtifact?.artifact_id ?? ''"
+            :disabled="selectorState.loading || !selectorState.modelOptions.length"
+            @change="handleUpdateArtifact($event.target.value)"
+          >
+            <option value="" disabled>Select model</option>
+            <option
+              v-for="option in selectorState.modelOptions"
+              :key="option.value"
+              :value="option.value"
+              :disabled="option.disabled"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+
+        <label class="topbar-field">
+          <span class="topbar-label">Split</span>
+          <select
+            class="topbar-input"
+            :value="selectorState.selectedSplit"
+            :disabled="selectorState.loading || !selectorState.selectedDataset"
+            @change="handleUpdateSplit($event.target.value)"
+          >
+            <option value="train">Train</option>
+            <option value="test">Test</option>
+          </select>
+        </label>
+
+        <label class="topbar-field">
+          <span class="topbar-label">Sample</span>
+          <input
+            class="topbar-input topbar-input-number"
+            type="number"
+            min="0"
+            :max="selectorState.maxSampleIndex"
+            :value="selectorState.sampleIndex"
+            :disabled="selectorState.loading || !selectorState.selectedDataset"
+            @input="handleUpdateSampleIndex($event.target.value)"
+          />
+        </label>
       </div>
 
-      <button class="ghost-button" type="button" @click="loadSample" :disabled="!selectedDatasetName">
-        Reload selected sample
+      <span
+        class="topbar-compat"
+        :class="{
+          'topbar-compat-loading': selectorState.compatibilityTone === 'loading',
+          'topbar-compat-ok': selectorState.compatibilityTone === 'ok',
+          'topbar-compat-warn': selectorState.compatibilityTone === 'warn',
+          'topbar-compat-error': selectorState.compatibilityTone === 'error',
+        }"
+      >
+        {{ selectorState.compatibilityMessage }}
+      </span>
+
+      <button
+        class="topbar-run-button"
+        type="button"
+        :disabled="predictionPanelState.buttonDisabled"
+        @click="handleRequestPrediction"
+      >
+        ▶ {{ predictionPanelState.buttonLabel }}
       </button>
-    </section>
+    </header>
 
-    <p v-if="error" class="banner-error">{{ error }}</p>
+    <p v-if="error || selectorState.error" class="banner-error topbar-error">
+      {{ error || selectorState.error }}
+    </p>
 
-    <BenchmarkSelectorPanel
-      :state="selectorState"
-      @reload="loadBenchmarkOptions"
-      @update-dataset="handleUpdateDataset"
-      @update-artifact="handleUpdateArtifact"
-      @update-split="handleUpdateSplit"
-      @update-sample-index="handleUpdateSampleIndex"
-    />
+    <!-- Main content: left column (chart + segment list) + right column (controls) -->
+    <div class="viewport-body">
+      <section class="col-left" aria-label="Timeline and segments">
+        <div class="chart-panel">
+          <div class="chart-panel-header">
+            <span class="section-label">
+              {{ sample?.datasetName ?? (loading ? "Loading…" : "No sample") }}
+              <span v-if="sample"> · Sample {{ sample.sampleId }}</span>
+            </span>
+            <span class="surface-tag">{{ sample?.seriesLength ?? "--" }} pts</span>
+          </div>
 
-    <PredictionPanel :state="predictionPanelState" @request-prediction="handleRequestPrediction" />
+          <TimelineViewer
+            :sample="sample"
+            :selected-segment-id="selectedSegmentId"
+            @select-segment="handleSelectSegment"
+            @move-boundary="handleMoveBoundary"
+          />
 
-    <ViewerShell
-      :sample="sample"
-      :loading="loading"
-      :status-items="pageState.statusItems"
-      :sidebar-items="pageState.sidebarItems"
-      :selected-segment-id="selectedSegmentId"
-      :selected-segment="selectedSegment"
-      :edit-feedback="editFeedback"
-      :operation-feedback="operationFeedback"
-      :warning-display="warningDisplay"
-      :history-entries="historyEntries"
-      :session-panel-state="sessionPanelState"
-      :operation-palette-state="operationPaletteState"
-      :comparison-state="comparisonState"
-      @select-segment="handleSelectSegment"
-      @move-boundary="handleMoveBoundary"
-      @update-segment-label="handleUpdateSegmentLabel"
-      @run-operation="handleRunOperation"
-      @export-log="handleExportLog"
-      @request-suggestion="handleRequestSuggestion"
-      @accept-suggestion="handleAcceptSuggestion"
-      @override-suggestion="handleOverrideSuggestion"
-    />
-  </main>
+          <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
+        </div>
+
+        <div class="segment-list-panel">
+          <div class="segment-list-header">
+            <span class="section-label">Segment index</span>
+            <span class="surface-tag">{{ sample?.segments?.length ?? 0 }} segments</span>
+          </div>
+
+          <ul v-if="sample?.segments?.length" class="overlay-segment-list segment-list-scroll">
+            <li
+              v-for="segment in sample.segments"
+              :key="segment.id"
+              class="overlay-segment-item"
+              :class="{ 'overlay-segment-item-active': segment.id === selectedSegmentId }"
+            >
+              <span class="segment-chip" :class="`segment-chip-${segment.label}`">{{ segment.label }}</span>
+              <button class="segment-select-button" type="button" @click="handleSelectSegment(segment.id)">
+                {{ segment.start }}-{{ segment.end }}
+              </button>
+            </li>
+          </ul>
+          <div v-else class="overlay-placeholder">
+            {{ loading ? "Preparing segments…" : "No segments loaded." }}
+          </div>
+        </div>
+      </section>
+
+      <!-- Right column: label editor + operations + model comparison + session stats -->
+      <aside class="col-right" aria-label="Controls and comparison">
+        <div v-if="selectedSegment" class="label-editor">
+          <label class="label-editor-field">
+            <span class="sidebar-label">Segment label</span>
+            <select
+              class="label-editor-select"
+              :value="selectedSegment.label"
+              @change="handleUpdateSegmentLabel($event.target.value)"
+            >
+              <option v-for="label in AVAILABLE_SEGMENT_LABELS" :key="label" :value="label">
+                {{ label }}
+              </option>
+            </select>
+          </label>
+        </div>
+
+        <OperationPalette
+          :state="operationPaletteState"
+          @run-operation="handleRunOperation"
+        />
+
+        <ModelComparisonPanel
+          :state="comparisonState"
+          @request-suggestion="handleRequestSuggestion"
+          @accept-suggestion="handleAcceptSuggestion"
+          @override-suggestion="handleOverrideSuggestion"
+        />
+
+        <div class="session-stats-panel">
+          <div class="session-stats-header">
+            <span class="section-label">Session · {{ sessionPanelState.eventCount }} events</span>
+          </div>
+          <ul class="status-strip-inline">
+            <li v-for="item in pageState.statusItems" :key="item.label" class="status-pill">
+              <span class="status-pill-label">{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </li>
+          </ul>
+          <ul v-if="pageState.sidebarItems.length" class="sidebar-list sidebar-list-compact">
+            <li v-for="item in pageState.sidebarItems" :key="item.label" class="sidebar-item">
+              <span class="sidebar-label">{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Bottom strip: warnings pill + audit log -->
+    <footer class="bottom-strip">
+      <details class="strip-item warnings-strip">
+        <summary class="strip-summary">
+          <span
+            class="strip-pill"
+            :class="warningDisplay ? 'strip-pill-warn' : 'strip-pill-ok'"
+          >
+            {{ warningDisplay ? `⚠ ${warningDisplay.status}` : "✓ No warnings" }}
+          </span>
+        </summary>
+        <div class="strip-body">
+          <WarningPanel :warning="warningDisplay" />
+        </div>
+      </details>
+
+      <details class="strip-item history-strip">
+        <summary class="strip-summary">
+          <span class="strip-pill">
+            {{ sessionPanelState.eventCount }} audit event{{ sessionPanelState.eventCount !== 1 ? "s" : "" }}
+          </span>
+        </summary>
+        <div class="strip-body">
+          <HistoryPanel
+            :entries="historyEntries"
+            :session="sessionPanelState"
+            @export-log="handleExportLog"
+          />
+        </div>
+      </details>
+    </footer>
+  </div>
 </template>
