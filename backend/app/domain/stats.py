@@ -155,7 +155,18 @@ def compute_context_contrast(
     else:
         context_mean = (np.mean(left_context, axis=0) + np.mean(right_context, axis=0)) / 2
 
-    return float(np.linalg.norm(segment_mean - context_mean))
+    averaged_context_contrast = float(np.linalg.norm(segment_mean - context_mean))
+    if averaged_context_contrast > 0.0:
+        return averaged_context_contrast
+
+    boundary_deltas: list[float] = []
+    if left_context.size != 0:
+        boundary_deltas.append(float(np.linalg.norm(segment[0] - left_context[-1])))
+    if right_context.size != 0:
+        boundary_deltas.append(float(np.linalg.norm(right_context[0] - segment[-1])))
+    if not boundary_deltas:
+        return 0.0
+    return float(np.mean(boundary_deltas))
 
 
 def compute_peak_score(segment: Any, *, window_size: int = 3, epsilon: float = 1e-8) -> float:

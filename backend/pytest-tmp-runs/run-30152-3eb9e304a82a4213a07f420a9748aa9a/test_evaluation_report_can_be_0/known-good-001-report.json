@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "fixtureId": "known-good-001",
+  "seriesId": "fixture-series-good",
+  "segmentationId": "fixture-seg-good",
+  "notes": "Known-good aligned segmentation fixture.",
+  "metrics": {
+    "segmentationQuality": {
+      "macroIoU": 1.0,
+      "boundaryF1": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "covering": 1.0
+    },
+    "stability": {
+      "overSegmentationRate": 0.0,
+      "prototypeDrift": {
+        "count": 3,
+        "mean": 0.02,
+        "max": 0.03
+      }
+    },
+    "constraintAwareness": {
+      "operationEventCount": 1,
+      "violatingEventCount": 0,
+      "violationRate": 0.0
+    }
+  },
+  "unsupportedMetrics": {
+    "wari": "Not implemented in the MVP harness; requires the later pilot-analysis definition.",
+    "sms": "Not implemented in the MVP harness; reserved for the later study metric pipeline."
+  }
+}

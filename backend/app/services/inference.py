@@ -55,16 +55,11 @@ class PrototypeInferenceAdapter(InferenceAdapter):
             )
 
         vector = self._vectorize_sample(sample)
-        prototypes = np.asarray(prototype_vectors, dtype=np.float64)
-        if prototypes.ndim != 2:
-            raise InferenceAdapterError(
-                f"Model artifact '{handle.artifact.artifact_id}' prototype_vectors must be a 2D array."
-            )
-        if prototypes.shape[1] != vector.shape[0]:
-            raise InferenceAdapterError(
-                f"Model artifact '{handle.artifact.artifact_id}' expects vector length {prototypes.shape[1]}, "
-                f"but received {vector.shape[0]}."
-            )
+        prototypes = self._normalize_prototypes(
+            prototype_vectors,
+            target_length=vector.shape[0],
+            artifact_id=handle.artifact.artifact_id,
+        )
 
         deltas = prototypes - vector
         scores = tuple(float(-np.sum(deltas * deltas, axis=1)[index]) for index in range(prototypes.shape[0]))
@@ -73,6 +68,43 @@ class PrototypeInferenceAdapter(InferenceAdapter):
 
     def _vectorize_sample(self, sample: np.ndarray) -> np.ndarray:
         return np.asarray(sample, dtype=np.float64).reshape(-1)
+
+    def _normalize_prototypes(
+        self,
+        prototype_vectors: list[Any],
+        *,
+        target_length: int,
+        artifact_id: str,
+    ) -> np.ndarray:
+        normalized_rows: list[np.ndarray] = []
+        for prototype_vector in prototype_vectors:
+            row = np.asarray(prototype_vector, dtype=np.float64).reshape(-1)
+            if row.size == 0:
+                raise InferenceAdapterError(
+                    f"Model artifact '{artifact_id}' contains an empty prototype vector."
+                )
+            if row.shape[0] != target_length:
+                row = self._resample_vector(row, target_length)
+            normalized_rows.append(row)
+
+        prototypes = np.stack(normalized_rows, axis=0)
+        if prototypes.ndim != 2:
+            raise InferenceAdapterError(
+                f"Model artifact '{artifact_id}' prototype_vectors must normalize to a 2D array."
+            )
+        return prototypes
+
+    def _resample_vector(self, values: np.ndarray, target_length: int) -> np.ndarray:
+        if target_length < 1:
+            raise InferenceAdapterError("Prediction vectors must have positive length.")
+        if values.shape[0] == target_length:
+            return values
+        if values.shape[0] == 1:
+            return np.repeat(values, target_length)
+
+        source_positions = np.arange(values.shape[0], dtype=np.float64)
+        target_positions = np.linspace(0, values.shape[0] - 1, num=target_length, dtype=np.float64)
+        return np.interp(target_positions, source_positions, values)
 
     def _read_metadata(self, path: Path) -> dict[str, Any]:
         try:

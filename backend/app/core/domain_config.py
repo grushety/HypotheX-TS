@@ -132,8 +132,8 @@ def _parse_operations_registry(
     active_chunk_types: tuple[str, ...],
     path: Path,
 ) -> dict[str, tuple[str, ...]]:
-    if not isinstance(value, dict) or not value:
-        raise DomainConfigError(f"Domain config field 'legalOperationsByChunk' must be a non-empty object: {path}")
+    if not isinstance(value, dict):
+        raise DomainConfigError(f"Domain config field 'legalOperationsByChunk' must be an object: {path}")
 
     parsed: dict[str, tuple[str, ...]] = {}
     for chunk_type in active_chunk_types:

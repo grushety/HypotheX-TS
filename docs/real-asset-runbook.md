@@ -6,10 +6,10 @@ This runbook describes how to place, validate, and use real benchmark datasets a
 
 | Dataset | Series Type | Channels | Length | Supported Model Families | Notes |
 | --- | --- | ---: | ---: | --- | --- |
-| GunPoint | univariate | 1 | 150 | FCN, MLP, InceptionTime | Includes a shipped prototype smoke artifact for `fcn-gunpoint`. |
-| ECG200 | univariate | 1 | 96 | FCN, MLP, InceptionTime | Dataset is prepared; runnable artifact must be added under weights. |
-| Wafer | univariate | 1 | 152 | FCN, MLP, InceptionTime | Dataset is prepared; runnable artifact must be added under weights. |
-| BasicMotions | multivariate | 6 | 100 | FCN, MLP, InceptionTime | Dataset is prepared; no runnable multivariate artifact is currently shipped. |
+| GunPoint | univariate | 1 | 150 | FCN, MLP, InceptionTime | Shipped prototype smoke artifacts are available for all supported families. |
+| ECG200 | univariate | 1 | 96 | FCN, MLP, InceptionTime | Shipped prototype smoke artifacts are available for all supported families. |
+| Wafer | univariate | 1 | 152 | FCN, MLP, InceptionTime | Shipped prototype smoke artifacts are available for all supported families. |
+| BasicMotions | multivariate | 6 | 100 | FCN, MLP, InceptionTime | Shipped prototype smoke artifacts are available for all supported families. |
 
 ## Canonical Paths
 
@@ -86,8 +86,8 @@ curl "http://127.0.0.1:5000/api/benchmarks/prediction?dataset=GunPoint&artifact_
 
 ## Smoke Expectations
 
-- Univariate smoke path: `GunPoint` with `fcn-gunpoint`
-- Current multivariate state: `BasicMotions` data and compatibility are ready, but prediction is expected to fail at the artifact-loading stage until a real multivariate artifact is added.
+- Univariate smoke paths: `GunPoint`, `ECG200`, and `Wafer` with any declared FCN, MLP, or InceptionTime artifact.
+- Multivariate smoke path: `BasicMotions` with any declared FCN, MLP, or InceptionTime artifact.
 - Stage order for smoke debugging: dataset registry, model registry, compatibility validation, sample load, prediction
 
 ## Common Failures

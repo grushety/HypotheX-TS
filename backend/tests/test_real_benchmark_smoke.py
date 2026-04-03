@@ -1,4 +1,5 @@
 from app.config import TestingConfig
+from app.core.benchmark_manifest import load_model_manifest
 from app.factory import create_app
 
 
@@ -57,35 +58,72 @@ def test_univariate_real_benchmark_smoke_path():
     assert len(prediction_payload["scores"]) == 2
 
 
-def test_multivariate_smoke_localizes_missing_artifact_to_prediction_stage():
+def test_wafer_prediction_smoke_path_uses_shipped_fcn_artifact():
     client = create_real_benchmark_client()
 
     compatibility_payload = assert_stage_ok(
-        client.get("/api/benchmarks/compatibility?dataset=BasicMotions&artifact_id=fcn-basicmotions"),
-        "validation:compatibility-multivariate",
+        client.get("/api/benchmarks/compatibility?dataset=Wafer&artifact_id=fcn-wafer"),
+        "validation:compatibility-wafer",
     )
     assert compatibility_payload["is_compatible"] is True, (
-        "Smoke stage 'validation:compatibility-multivariate' unexpectedly failed before artifact loading."
+        "Smoke stage 'validation:compatibility-wafer' marked Wafer and fcn-wafer incompatible."
     )
 
     sample_payload = assert_stage_ok(
-        client.get("/api/benchmarks/sample?dataset=BasicMotions&split=test&sample_index=0"),
-        "sample:load-multivariate",
+        client.get("/api/benchmarks/sample?dataset=Wafer&split=test&sample_index=0"),
+        "sample:load-wafer",
     )
-    assert sample_payload["dataset_name"] == "BasicMotions"
-    assert sample_payload["series_type"] == "multivariate"
-    assert sample_payload["channel_count"] == 6
-    assert len(sample_payload["values"]) == 6
-    assert len(sample_payload["values"][0]) == 100
+    assert sample_payload["dataset_name"] == "Wafer"
+    assert sample_payload["series_type"] == "univariate"
+    assert sample_payload["channel_count"] == 1
+    assert sample_payload["series_length"] == 152
+    assert len(sample_payload["values"]) == 1
+    assert len(sample_payload["values"][0]) == 152
 
-    response = client.get(
-        "/api/benchmarks/prediction?dataset=BasicMotions&artifact_id=fcn-basicmotions&split=test&sample_index=0"
+    prediction_payload = assert_stage_ok(
+        client.get("/api/benchmarks/prediction?dataset=Wafer&artifact_id=fcn-wafer&split=test&sample_index=0"),
+        "prediction:run-wafer",
     )
+    assert prediction_payload["dataset_name"] == "Wafer"
+    assert prediction_payload["artifact_id"] == "fcn-wafer"
+    assert prediction_payload["split"] == "test"
+    assert prediction_payload["sample_index"] == 0
+    assert prediction_payload["predicted_label"] in {"1", "-1"}
+    assert len(prediction_payload["scores"]) == 2
 
-    assert response.status_code == 500, (
-        "Smoke stage 'prediction:run-multivariate' should currently fail until a real BasicMotions artifact is added."
-    )
-    payload = response.get_json()
-    assert "Model artifact directory does not exist" in payload["error"], (
-        "Smoke stage 'prediction:run-multivariate' did not localize the failure to missing model artifacts."
-    )
+
+def test_all_manifest_artifacts_support_prediction_smoke_path():
+    client = create_real_benchmark_client()
+    manifest = load_model_manifest()
+
+    for artifact in manifest["artifacts"]:
+        dataset_name = artifact["dataset"]
+        artifact_id = artifact["artifact_id"]
+        label_space = artifact["label_space"]
+
+        compatibility_payload = assert_stage_ok(
+            client.get(f"/api/benchmarks/compatibility?dataset={dataset_name}&artifact_id={artifact_id}"),
+            f"validation:compatibility:{artifact_id}",
+        )
+        assert compatibility_payload["is_compatible"] is True, (
+            f"Smoke stage 'validation:compatibility:{artifact_id}' marked {dataset_name} and {artifact_id} incompatible."
+        )
+
+        sample_payload = assert_stage_ok(
+            client.get(f"/api/benchmarks/sample?dataset={dataset_name}&split=test&sample_index=0"),
+            f"sample:load:{dataset_name}",
+        )
+        assert sample_payload["dataset_name"] == dataset_name
+
+        prediction_payload = assert_stage_ok(
+            client.get(
+                f"/api/benchmarks/prediction?dataset={dataset_name}&artifact_id={artifact_id}&split=test&sample_index=0"
+            ),
+            f"prediction:run:{artifact_id}",
+        )
+        assert prediction_payload["dataset_name"] == dataset_name
+        assert prediction_payload["artifact_id"] == artifact_id
+        assert prediction_payload["split"] == "test"
+        assert prediction_payload["sample_index"] == 0
+        assert prediction_payload["predicted_label"] in set(label_space)
+        assert len(prediction_payload["scores"]) == len(label_space)

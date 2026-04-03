@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from app.core.paths import (
     BENCHMARK_DATASETS_MANIFEST_PATH,
     BENCHMARK_MANIFESTS_DIR,

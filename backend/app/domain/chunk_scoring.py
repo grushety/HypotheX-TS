@@ -72,8 +72,7 @@ def compute_chunk_scores(
     transition_score = _average(
         _minimum_duration_score(stats.segmentLength, duration_limits["transitionMinLength"]),
         _ratio_score(stats.contextContrast, thresholds["contextContrastMin"]),
-        _ratio_score(slope_abs, thresholds["slopeAbsMin"]),
-    )
+    ) * _ratio_score(slope_abs, thresholds["slopeAbsMin"])
 
     computed_scores = {
         "trend": trend_score,

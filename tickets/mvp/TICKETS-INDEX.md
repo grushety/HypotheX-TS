@@ -38,4 +38,4 @@ Grouped by topic series and intended implementation order.
 
 - IDs start at **201** and move to **301, 401, 501, 601** for the next topic groups as requested.
 - Tickets follow the uploaded Codex template.
-- This is an initial implementation ticket set, not the final exhaustive backlog.
+- This is an initial implementation tclicket set, not the final exhaustive backlog.

@@ -177,6 +177,7 @@ def evaluate_plateau_stability(
 ) -> tuple[ConstraintViolation, ...]:
     config = domain_config or load_domain_config()
     severity = _resolve_severity("plateau_stability", config, constraint_mode)
+    periodic_min_length = config.duration_limits["periodicMinLength"]
     slope_min = config.thresholds["slopeAbsMin"]
     variance_max = config.thresholds["varianceMax"]
     periodicity_min = config.thresholds["periodicityScoreMin"]
@@ -196,10 +197,14 @@ def evaluate_plateau_stability(
         except SegmentStatisticsError:
             continue
 
+        periodicity_ok = (
+            statistics.segmentLength < periodic_min_length
+            or statistics.periodicityScore < periodicity_min
+        )
         if (
             abs(statistics.slope) < slope_min
             and statistics.variance <= variance_max
-            and statistics.periodicityScore < periodicity_min
+            and periodicity_ok
         ):
             continue
 
@@ -217,6 +222,7 @@ def evaluate_plateau_stability(
                     "requiredSlopeAbsMax": slope_min,
                     "requiredVarianceMax": variance_max,
                     "requiredPeriodicityMax": periodicity_min,
+                    "periodicityAppliesAtLength": periodic_min_length,
                 },
             )
         )
