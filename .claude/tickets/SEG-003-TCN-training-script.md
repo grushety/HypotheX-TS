@@ -7,6 +7,11 @@
 
 ## Goal
 
+> **Researcher action required after this ticket:** once Claude Code marks this done, run
+> `python scripts/train_tcn_encoder.py` manually. The app works without it (heuristic fallback),
+> but the TCN encoder only activates once the checkpoint exists at `benchmarks/models/tcn_encoder/encoder.pt`.
+> Run SEG-006 evaluation before and after training to capture the baseline vs. TCN comparison.
+
 Provide a standalone training script that trains the `TcnSegmentEncoder` on the benchmark
 datasets and saves the checkpoint to `benchmarks/models/tcn_encoder/encoder.pt`.
 

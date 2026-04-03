@@ -1,0 +1,1 @@
+{"schemaVersion": "1.0.0", "ontologyName": "mvp-core", "activeChunkTypes": ["trend"], "thresholds": {"slopeAbsMin": 0.1}, "durationLimits": {"minimumSegmentLength": 2}, "legalOperationsByChunk": {}, "constraintDefaults": {"minimum_segment_duration": {"defaultMode": "hard", "description": "Segments must satisfy the configured minimum duration."}}}
