@@ -1,6 +1,6 @@
 # SEG-003 — Training script for TCN encoder
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-002
 
 ---
@@ -43,4 +43,7 @@ encoder with classification loss, and writes the checkpoint.
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+
+- `scripts/train_tcn_encoder.py` — standalone training script: `extract_training_segments()` loads univariate benchmark splits and proposes segments via `propose_boundaries`; `build_support_feature_matrices()` creates the 6 labeled synthetic templates; `assign_pseudo_labels()` assigns each real segment to the nearest prototype by cosine similarity; `train_epoch()` computes per-epoch prototypes then optimises cross-entropy loss `L_cls = -sum(log p(y_s|s))` (Snell et al. 2017 Eq. 2) with Adam; `evaluate()` measures held-out accuracy; `main()` accepts `--epochs`, `--lr`, `--embedding-dim` CLI args and saves checkpoint via `save_tcn_encoder_checkpoint`
+- `.gitignore` — added `benchmarks/models/tcn_encoder/` so the trained checkpoint is not committed
+- `backend/tests/test_train_tcn_helpers.py` — 17 tests covering: `build_support_feature_matrices` (6 classes, correct channel count, finite values, stable ordering), `extract_training_segments` (returns arrays with 5 channels, meets min_length, skips multivariate, more min_length = fewer segments), `resample_feat` (output shape and dtype), `assign_pseudo_labels` (count, range, support templates map to themselves)
