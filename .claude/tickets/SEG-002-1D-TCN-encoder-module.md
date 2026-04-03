@@ -1,6 +1,6 @@
 # SEG-002 — 1D-TCN encoder module (PyTorch)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-001
 
 ---
@@ -51,4 +51,8 @@ Keep it small — this is a research tool, not a production model.
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+
+- `backend/app/services/suggestion/tcn_encoder.py` — new module: `TcnEncoderConfig` dataclass, `_build_tcn_model()` building a 3-layer causal TCN with dilations 1/2/4, `TcnSegmentEncoder` (frozen weights, `encode()` under `torch.no_grad()`), `load_tcn_encoder()` with `@lru_cache(maxsize=1)` returning None on any failure, `save_tcn_encoder_checkpoint()` helper
+- `backend/app/services/suggestion/segment_encoder.py` — updated `encode_segment` to call `load_tcn_encoder()` and route through the TCN when a checkpoint is available; falls back silently to heuristic on any failure (DEBUG log only)
+- `backend/requirements.txt` — added `torch==2.11.0` (CPU-only wheel; pinned to installed version on Python 3.14)
+- `backend/tests/test_tcn_encoder.py` — 13 new tests covering: output shape `(embedding_dim,)`, dtype float64, L2 norm ≈ 1.0 across input lengths, wrong channel count raises ValueError, params require no grad, model in eval mode, no gradient accumulation, graceful fallback for missing/corrupt checkpoint, checkpoint round-trip produces identical embeddings, config serialisation defaults and round-trip

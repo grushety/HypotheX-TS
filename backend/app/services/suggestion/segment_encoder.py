@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class SegmentEncodingError(RuntimeError):
@@ -92,13 +95,25 @@ def encode_segment(
     if series.shape[1] < 2:
         raise SegmentEncodingError("Segment encoder requires at least 2 time steps.")
 
-    # Build the augmented feature matrix (d' × T).  The full matrix is computed
-    # here as the authoritative data-layer representation; the embedding pipeline
-    # currently uses only the raw channel(s) so that downstream classifiers that
-    # were calibrated on single-channel embeddings remain unaffected.  The
-    # remaining feature channels (smooth, Δx, z-score, mask) are consumed by the
-    # TCN encoder introduced in SEG-002.
+    # Build the augmented feature matrix (d' × T).
     feature_series = build_feature_matrix(series, encoder_config)  # (d', T)
+
+    # Try the learned TCN encoder first (SEG-002).  Falls back silently to the
+    # heuristic encoder if no checkpoint exists or torch is unavailable.
+    try:
+        from app.services.suggestion.tcn_encoder import load_tcn_encoder  # noqa: PLC0415
+
+        tcn = load_tcn_encoder()
+        if tcn is not None:
+            embedding_array = tcn.encode(feature_series)
+            return SegmentEmbedding(
+                values=tuple(float(v) for v in embedding_array),
+                length=int(series.shape[1]),
+                channelCount=int(series.shape[0]),
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("TCN encoder failed (%s); using heuristic encoder.", exc)
+
     raw_channels = feature_series[: series.shape[0], :]  # (C, T) — raw with NaN→0
     standardized = _standardize_channels(_resample_channels(raw_channels, encoder_config.resample_length))
     components = [np.mean(standardized, axis=0)]
