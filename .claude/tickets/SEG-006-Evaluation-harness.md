@@ -1,6 +1,6 @@
 # SEG-006 — Segmentation model evaluation harness
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-003, SEG-004
 
 ---
@@ -36,4 +36,6 @@ Results are written to `evaluation/results/segmentation_eval.json`.
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+
+- `evaluation/segmentation_eval.py` — new script: `boundary_f1(proposed, true, tolerance=3, series_length=None)` (Turnbull 2007 tolerance-window F1); `label_accuracy(proposed_segs, true_segs)` (IoU > 0.5 match + label equality, Everingham 2010); `Segment` NamedTuple; `derive_true_boundaries` + `derive_true_segments` (group consecutive same-class test samples into ground-truth segments); `evaluate_dataset` (concatenates up to 50 test samples per univariate dataset, runs `propose_boundaries` + `PrototypeChunkClassifier`, computes both metrics); `main()` with `--dataset`, `--samples`, `--tolerance` CLI args; writes `evaluation/results/segmentation_eval.json` with per-dataset and aggregate results; records active encoder type (heuristic vs TCN) for baseline comparison
+- `backend/tests/test_segmentation_eval.py` — 27 unit tests covering: `boundary_f1` (perfect match, empty both, empty proposed/true, tolerance boundary conditions, partial match, F1 formula, each true boundary matched once), `label_accuracy` (all correct, all wrong, empty inputs, IoU below/above threshold, partial correct), `derive_true_boundaries` (no change, single/multiple/every-sample changes), `derive_true_segments` (single run, two runs, alternating, no gaps in coverage)
