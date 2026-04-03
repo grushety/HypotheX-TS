@@ -1,6 +1,6 @@
 # UI-001 — Refactor to researcher viewport layout
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** HTS-404
 
 ---
@@ -38,4 +38,5 @@ No logic changes. All existing event bindings and props stay wired. Only layout 
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+- `frontend/src/views/BenchmarkViewerPage.vue` — replaced hero + stacked panels template with topbar/viewport-body/bottom-strip structure; swapped BenchmarkSelectorPanel/PredictionPanel/ViewerShell imports for direct sub-component imports; added inline topbar selectors and collapsible bottom-strip using `<details>`
+- `frontend/src/styles.css` — changed `html/body/#app` to `height:100vh; overflow:hidden`; added all new viewport layout classes (`.research-viewport`, `.research-topbar`, `.viewport-body`, `.col-left`, `.col-right`, `.segment-list-panel`, `.bottom-strip`, `.strip-*`)

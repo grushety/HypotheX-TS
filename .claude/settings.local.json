@@ -4,7 +4,9 @@
       "Bash(wc -l \"C:/Users/yulia/PycharmProjects/HypotheX-TS/backend/tests\"/*.py)",
       "Bash(wc:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)"
     ]
   }
 }
