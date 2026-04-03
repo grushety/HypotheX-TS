@@ -17,9 +17,11 @@ class SuggestionProposal:
     provisionalSegments: tuple[ProvisionalSegment, ...]
     proposerName: str
     proposerConfig: BoundaryProposerConfig
+    boundary_uncertainty: tuple[float, ...] | None = None
+    segment_uncertainty: tuple[float, ...] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "schemaVersion": "1.0.0",
             "suggestionId": self.suggestionId,
             "seriesId": self.seriesId,
@@ -38,3 +40,8 @@ class SuggestionProposal:
                 },
             },
         }
+        if self.boundary_uncertainty is not None:
+            payload["boundaryUncertainty"] = list(self.boundary_uncertainty)
+        if self.segment_uncertainty is not None:
+            payload["segmentUncertainty"] = list(self.segment_uncertainty)
+        return payload

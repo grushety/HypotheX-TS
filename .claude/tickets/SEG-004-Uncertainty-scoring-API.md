@@ -1,6 +1,6 @@
 # SEG-004 — Uncertainty scoring API
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-002
 
 ---
@@ -38,4 +38,10 @@ Expose via `GET /api/benchmarks/suggestion/uncertainty?dataset=...&split=...&sam
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+
+- `backend/app/services/suggestion/uncertainty.py` — new module: `UncertaintyResult` frozen dataclass; `score_uncertainty(values, segments, boundary_scores)` → Gaussian-smoothed boundary uncertainty (σ=2, NumPy convolve, clipped to [0,1]) + normalised Shannon entropy per segment `H(p)/log(|Y|)`; source-cited internal helpers `_gaussian_kernel`, `_smooth_boundary_scores`, `_normalized_entropy`
+- `backend/app/services/suggestion/boundary_proposal.py` — exposed `compute_boundary_scores(values, config)` as a public function (delegates to existing private `_compute_boundary_scores`; no existing behaviour changed)
+- `backend/app/schemas/suggestions.py` — added optional `boundary_uncertainty` and `segment_uncertainty` fields (default None) to `SuggestionProposal`; `to_dict()` includes `boundaryUncertainty`/`segmentUncertainty` keys only when the fields are not None
+- `backend/app/services/suggestions.py` — added `include_uncertainty: bool = False` parameter to `BoundarySuggestionService.propose()`; when True, calls `compute_boundary_scores` + `score_uncertainty` and attaches results to the returned `SuggestionProposal`
+- `backend/app/routes/benchmarks.py` — added `GET /api/benchmarks/suggestion/uncertainty` route; returns `{boundary_uncertainty: [...], segment_uncertainty: [...]}`
+- `backend/tests/test_uncertainty.py` — 37 tests covering: entropy 0 for certain prediction, entropy 1 for uniform, single/empty-label edge cases, Gaussian kernel properties (sums to 1, symmetric, odd length), smoothing preserves length and clips to [0,1], `score_uncertainty` length contracts, length mismatch raises, `compute_boundary_scores` shape, `propose(include_uncertainty=True)` field presence and `to_dict` keys, route 200/400/404

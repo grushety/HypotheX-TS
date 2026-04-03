@@ -77,6 +77,29 @@ class BoundaryProposal:
     config: BoundaryProposerConfig
 
 
+def compute_boundary_scores(
+    values: np.ndarray | list[list[float]] | list[float],
+    config: BoundaryProposerConfig | dict[str, object] | None = None,
+) -> np.ndarray:
+    """Return the raw boundary score array for the given series.
+
+    The score at each timestep reflects how likely a segment boundary falls at
+    that position (based on mean-shift and slope-shift between adjacent
+    windows).  Scores are normalised to [0, 1] relative to the strongest
+    candidate in the series.
+
+    Args:
+        values: Raw time-series (1-D or 2-D).
+        config: Proposer config (uses defaults if None).
+
+    Returns:
+        np.ndarray of shape ``(series_length,)`` with values in [0, 1].
+    """
+    proposer_config = config if isinstance(config, BoundaryProposerConfig) else BoundaryProposerConfig.from_mapping(config)
+    series = _normalize_series(values)
+    return _compute_boundary_scores(series, proposer_config)
+
+
 def propose_boundaries(
     values: np.ndarray | list[list[float]] | list[float],
     config: BoundaryProposerConfig | dict[str, object] | None = None,

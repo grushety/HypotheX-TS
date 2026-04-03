@@ -11,6 +11,8 @@ from app.services.datasets import (
 from app.services.inference import InferenceAdapterError, InferenceServiceError, PredictionService, SampleSelectionError
 from app.services.models import ModelArtifactNotFoundError, ModelRegistry, ModelRegistryError
 from app.services.suggestion import build_default_support_segments
+from app.services.suggestion.boundary_proposal import compute_boundary_scores
+from app.services.suggestion.uncertainty import score_uncertainty
 from app.services.suggestions import BoundarySuggestionService, SuggestionServiceError
 
 benchmarks_bp = Blueprint("benchmarks", __name__)
@@ -222,6 +224,48 @@ def fetch_suggestion():
         return jsonify({"error": str(exc)}), 400
 
     return jsonify(suggestion.to_dict())
+
+
+@benchmarks_bp.get("/api/benchmarks/suggestion/uncertainty")
+def fetch_uncertainty():
+    dataset_name = request.args.get("dataset")
+    split = request.args.get("split")
+    sample_index_raw = request.args.get("sample_index")
+
+    if not dataset_name or not split or sample_index_raw is None:
+        return (
+            jsonify({"error": "Query parameters 'dataset', 'split', and 'sample_index' are required."}),
+            400,
+        )
+
+    try:
+        sample_index = int(sample_index_raw)
+    except ValueError:
+        return jsonify({"error": "Query parameter 'sample_index' must be an integer."}), 400
+
+    try:
+        sample = _get_dataset_registry().load_sample(dataset_name, split, sample_index)
+        suggestion = _get_boundary_suggestion_service().propose(
+            series_id=f"{dataset_name}:{split}:{sample_index}",
+            values=sample["values"],
+            suggestion_id=f"suggestion-{dataset_name}-{split}-{sample_index}",
+            support_segments=build_default_support_segments(),
+        )
+        raw_scores = compute_boundary_scores(sample["values"])
+        uncertainty = score_uncertainty(sample["values"], suggestion.provisionalSegments, raw_scores)
+    except DatasetNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except DatasetSampleSelectionError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except (DatasetRegistryError, SuggestionServiceError) as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify(
+        {
+            "boundary_uncertainty": list(uncertainty.boundary_uncertainty),
+            "segment_uncertainty": list(uncertainty.segment_uncertainty),
+        }
+    )
 
 
 def _serialize_dataset_summary(summary):

@@ -86,6 +86,7 @@ class BoundarySuggestionService:
         suggestion_id: str | None = None,
         proposer_config: Mapping[str, Any] | BoundaryProposerConfig | None = None,
         support_segments: list[LabeledSupportSegment] | tuple[LabeledSupportSegment, ...] | None = None,
+        include_uncertainty: bool = False,
     ) -> SuggestionProposal:
         if not series_id:
             raise SuggestionServiceError("Suggestion proposal requires a non-empty series_id.")
@@ -110,6 +111,18 @@ class BoundarySuggestionService:
             raise SuggestionServiceError(str(exc)) from exc
 
         smoothed_segments = smooth_provisional_segments(labeled_segments, config=self._smoothing_config).segments
+
+        boundary_uncertainty = None
+        segment_uncertainty = None
+        if include_uncertainty:
+            from app.services.suggestion.boundary_proposal import compute_boundary_scores  # noqa: PLC0415
+            from app.services.suggestion.uncertainty import score_uncertainty  # noqa: PLC0415
+
+            raw_scores = compute_boundary_scores(values, config)
+            uncertainty = score_uncertainty(values, smoothed_segments, raw_scores)
+            boundary_uncertainty = uncertainty.boundary_uncertainty
+            segment_uncertainty = uncertainty.segment_uncertainty
+
         return SuggestionProposal(
             suggestionId=suggestion_id or f"suggestion-{series_id}",
             seriesId=series_id,
@@ -120,6 +133,8 @@ class BoundarySuggestionService:
             provisionalSegments=smoothed_segments,
             proposerName=self._proposer_name,
             proposerConfig=config,
+            boundary_uncertainty=boundary_uncertainty,
+            segment_uncertainty=segment_uncertainty,
         )
 
     def _to_mapping(self) -> dict[str, object]:
