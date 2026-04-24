@@ -1,0 +1,34 @@
+# Shape classifier thresholds — SEG-008
+# Loaded by RuleBasedShapeClassifier; fallback hardcoded defaults match these values.
+version: "1.0.0"
+
+thresholds:
+  # slope_rel = slope*(n-1)/range; 1.0 = perfect ramp
+  slope: 0.5
+
+  # Variance ceiling for plateau gate
+  var: 0.02
+
+  # ACF peak value for periodicity gate (cycle gate lower bound)
+  per: 0.55
+
+  # Peak z-score for spike gate
+  peak: 2.5
+
+  # Step magnitude (mean shift) for step gate
+  step: 0.4
+
+  # Context contrast for spike gate
+  ctx: 0.35
+
+  # Sign consistency (fraction of monotone steps) for trend gate
+  sign: 0.65
+
+  # Residual-to-line ratio for trend / plateau gates
+  lin: 0.12
+
+  # Transition time (fraction of segment in transition band) for step gate
+  trans: 0.3
+
+  # Max spike length (samples)
+  spike_max_len: 20

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+
+import numpy as np
 from dataclasses import dataclass
 from typing import Any
 
@@ -117,6 +119,8 @@ class BoundarySuggestionService:
         proposer_config: Mapping[str, Any] | BoundaryProposerConfig | None = None,
         support_segments: list[LabeledSupportSegment] | tuple[LabeledSupportSegment, ...] | None = None,
         include_uncertainty: bool = False,
+        use_llm_cold_start: bool = False,
+        labeler: str = "prototype",
     ) -> SuggestionProposal:
         if not series_id:
             raise SuggestionServiceError("Suggestion proposal requires a non-empty series_id.")
@@ -136,6 +140,7 @@ class BoundarySuggestionService:
                 values=values,
                 proposal=proposal,
                 support_segments=support_segments,
+                use_llm_cold_start=use_llm_cold_start,
             )
         except (PrototypeClassifierError, SegmentEncodingError) as exc:
             raise SuggestionServiceError(str(exc)) from exc
@@ -165,6 +170,7 @@ class BoundarySuggestionService:
             proposerConfig=config,
             boundary_uncertainty=boundary_uncertainty,
             segment_uncertainty=segment_uncertainty,
+            labeler=labeler,
         )
 
     def adapt(
@@ -251,6 +257,37 @@ class BoundarySuggestionService:
             drift_report=drift_report,
         )
 
+    def _label_segments_with_llm(
+        self,
+        values: list[list[float]] | list[float],
+        segments: tuple[ProvisionalSegment, ...],
+    ) -> tuple[ProvisionalSegment, ...]:
+        """Label provisional segments using the LLM cold-start labeler.
+
+        Called only when ``use_llm_cold_start=True`` and no support segments were
+        provided.  Falls back to ``"other"`` with confidence 0.0 if the model is
+        unavailable (see ``LlmSegmentLabeler.label_segment``).
+        """
+        from app.services.suggestion.llm_labeler import LlmSegmentLabeler  # noqa: PLC0415
+
+        labeler = LlmSegmentLabeler.get_instance()
+        labeled: list[ProvisionalSegment] = []
+        for seg in segments:
+            seg_values = slice_series(values, seg.startIndex, seg.endIndex)
+            result = labeler.label_segment(seg_values, self._classifier.active_labels)
+            labeled.append(
+                ProvisionalSegment(
+                    segmentId=seg.segmentId,
+                    startIndex=seg.startIndex,
+                    endIndex=seg.endIndex,
+                    provenance=seg.provenance,
+                    label=result.label,
+                    confidence=round(result.confidence, 6),
+                    labelScores=None,
+                )
+            )
+        return tuple(labeled)
+
     def _to_mapping(self) -> dict[str, object]:
         return {
             "window_size": self._proposer_config.window_size,
@@ -259,15 +296,67 @@ class BoundarySuggestionService:
             "max_boundaries": self._proposer_config.max_boundaries,
         }
 
+    def _label_segments_with_rule_classifier(
+        self,
+        values: list[list[float]] | list[float],
+        segments: tuple[ProvisionalSegment, ...],
+    ) -> tuple[ProvisionalSegment, ...]:
+        """Label provisional segments using the deterministic rule-based classifier.
+
+        Invoked when use_llm_cold_start=False and no support segments exist (cold start).
+        Maps the 7-primitive shape vocabulary to domain active chunk types.
+        """
+        from app.services.suggestion.rule_classifier import RuleBasedShapeClassifier  # noqa: PLC0415
+
+        # Map rule classifier's 7-primitive labels to domain active chunk types.
+        _PRIMITIVE_TO_DOMAIN: dict[str, str] = {
+            "plateau":   "plateau",
+            "trend":     "trend",
+            "step":      "transition",
+            "spike":     "spike",
+            "cycle":     "periodic",
+            "transient": "event",
+            "noise":     "plateau",  # noise → closest domain fallback
+        }
+        active = set(self._classifier.active_labels)
+
+        clf = RuleBasedShapeClassifier()
+        series_1d = np.asarray(values, dtype=np.float64).ravel()
+        labeled: list[ProvisionalSegment] = []
+        for seg in segments:
+            seg_values = slice_series(values, seg.startIndex, seg.endIndex).ravel()
+            ctx_pre = series_1d[max(0, seg.startIndex - 10): seg.startIndex]
+            ctx_post = series_1d[seg.endIndex + 1: seg.endIndex + 11]
+            result = clf.classify_shape(seg_values, ctx_pre, ctx_post)
+            raw_label = result.label
+            domain_label = _PRIMITIVE_TO_DOMAIN.get(raw_label, raw_label)
+            if domain_label not in active:
+                domain_label = list(self._classifier.active_labels)[0]
+            labeled.append(
+                ProvisionalSegment(
+                    segmentId=seg.segmentId,
+                    startIndex=seg.startIndex,
+                    endIndex=seg.endIndex,
+                    provenance=seg.provenance,
+                    label=domain_label,
+                    confidence=round(result.confidence, 6),
+                    labelScores=None,
+                )
+            )
+        return tuple(labeled)
+
     def _classify_segments(
         self,
         *,
         values: list[list[float]] | list[float],
         proposal,
         support_segments: list[LabeledSupportSegment] | tuple[LabeledSupportSegment, ...] | None,
+        use_llm_cold_start: bool = False,
     ) -> tuple[ProvisionalSegment, ...]:
         if not support_segments:
-            return proposal.provisionalSegments
+            if use_llm_cold_start:
+                return self._label_segments_with_llm(values, proposal.provisionalSegments)
+            return self._label_segments_with_rule_classifier(values, proposal.provisionalSegments)
 
         prototypes = self._classifier.build_prototypes(support_segments)
         labeled_segments = []
