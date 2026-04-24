@@ -81,6 +81,7 @@ const uncertaintyPayload = ref(null);
 const adaptLoading = ref(false);
 const adaptError = ref("");
 const adaptVersionId = ref(null);
+const selectedLabeler = ref("prototype");
 let compatibilityRequestId = 0;
 
 const selectedSegment = computed(() =>
@@ -144,6 +145,8 @@ const comparisonState = computed(() =>
     adaptLoading: adaptLoading.value,
     adaptError: adaptError.value,
     adaptVersionId: adaptVersionId.value,
+    selectedLabeler: selectedLabeler.value,
+    suggestionLabeler: suggestionPayload.value?.labeler ?? null,
   }),
 );
 
@@ -163,6 +166,7 @@ function clearSuggestionState() {
   adaptLoading.value = false;
   adaptError.value = "";
   adaptVersionId.value = null;
+  selectedLabeler.value = "prototype";
 }
 
 async function loadSample() {
@@ -380,6 +384,7 @@ async function handleRequestSuggestion() {
       selectedDatasetName.value,
       selectedSplit.value,
       selectedSampleIndex.value,
+      selectedLabeler.value,
     );
     suggestionPayload.value = payload;
     proposalSegments.value = createProposalSegments(payload);
@@ -528,6 +533,10 @@ async function handleRunOperation(request) {
   operationConstraintResult.value = result.constraintResult;
   editFeedback.value = "";
   editConstraintResult.value = null;
+}
+
+function handleUpdateLabeler(labeler) {
+  selectedLabeler.value = labeler;
 }
 
 async function handleAdaptModel() {
@@ -777,6 +786,7 @@ onMounted(() => {
           @accept-suggestion="handleAcceptSuggestion"
           @override-suggestion="handleOverrideSuggestion"
           @adapt-model="handleAdaptModel"
+          @update-labeler="handleUpdateLabeler"
         />
 
         <div class="session-stats-panel">

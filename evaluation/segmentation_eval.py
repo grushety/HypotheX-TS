@@ -41,6 +41,8 @@ _OUTPUT_PATH = _RESULTS_DIR / "segmentation_eval.json"
 # Make backend/app importable without installing as a package.
 sys.path.insert(0, str(_PROJECT_ROOT / "backend"))
 
+from app.core.domain_config import load_domain_config  # noqa: E402
+
 import numpy as np
 
 from app.services.datasets import DatasetRegistry
@@ -50,6 +52,7 @@ from app.services.suggestion.prototype_classifier import (
     build_default_support_segments,
 )
 from app.services.suggestion.segment_encoder import SegmentEncoderConfig
+from app.services.suggestion.llm_labeler import LlmSegmentLabeler, LlmSegmentLabelerConfig
 
 # Maximum number of consecutive test samples to concatenate per dataset.
 # Keeps the evaluation tractable even for large datasets (e.g. Wafer).
@@ -230,7 +233,7 @@ def derive_true_segments(
 def evaluate_dataset(
     dataset_name: str,
     registry: DatasetRegistry,
-    classifier: PrototypeChunkClassifier,
+    classifier: PrototypeChunkClassifier | LlmSegmentLabeler,
     *,
     n_samples: int = _MAX_SAMPLES,
     tolerance: int = 3,
@@ -262,7 +265,15 @@ def evaluate_dataset(
     )
 
     # Proposed segmentation via boundary proposer.
-    bp_config = BoundaryProposerConfig()
+    # Scale config to the concatenated series.
+    # min_segment_length >= sample_length//2 prevents the proposer from
+    # finding spurious within-sample boundaries.
+    bp_config = BoundaryProposerConfig(
+        window_size=max(sample_length // 4, 10),
+        min_segment_length=max(sample_length // 2, 5),
+        score_threshold=0.30,
+        max_boundaries=n,  # at most one boundary per sample
+    )
     proposal = propose_boundaries(series_1d, bp_config)
 
     # Extract raw boundary positions.
@@ -271,16 +282,25 @@ def evaluate_dataset(
         for seg in proposal.provisionalSegments[:-1]
     ]
 
-    # Classify segments (requires support prototypes).
-    support = build_default_support_segments(classifier.active_labels)
-    prototypes = classifier.build_prototypes(support)
+    # Classify segments.
+    active_labels: tuple[str, ...]
+    prototypes: dict | None = None
+    if isinstance(classifier, LlmSegmentLabeler):
+        active_labels = tuple(load_domain_config().active_chunk_types)
+    else:
+        active_labels = classifier.active_labels
+        support = build_default_support_segments(active_labels)
+        prototypes = classifier.build_prototypes(support)
 
     proposed_segs: list[Segment] = []
     for ps in proposal.provisionalSegments:
         from app.services.suggestion.segment_encoder import slice_series  # noqa: PLC0415
         seg_values = slice_series(series_1d, ps.startIndex, ps.endIndex)
         try:
-            clf = classifier.classify_segment(seg_values, prototypes=prototypes)
+            if isinstance(classifier, LlmSegmentLabeler):
+                clf = classifier.label_segment(seg_values, active_labels)
+            else:
+                clf = classifier.classify_segment(seg_values, prototypes=prototypes)
             label = clf.label
         except Exception:  # noqa: BLE001
             label = "unknown"
@@ -300,8 +320,10 @@ def evaluate_dataset(
         "boundary_f1": bf1,
         "label_accuracy": round(la, 6),
         "label_accuracy_note": (
-            "Compares semantic labels (trend/plateau/…) against dataset class labels; "
-            "near-zero is expected and does not indicate model failure."
+            "Compares semantic shape labels (trend/plateau/…) against dataset class labels; "
+            "near-zero is expected because the model vocabulary (shape) differs from the "
+            "dataset vocabulary (class index).  This metric validates label consistency, "
+            "not class discrimination."
         ),
     }
 
@@ -357,22 +379,41 @@ def main() -> None:
         default=3,
         help="Tolerance window (±timesteps) for boundary matching.",
     )
+    parser.add_argument(
+        "--labeler",
+        type=str,
+        choices=["prototype", "llm"],
+        default="prototype",
+        help="Segment labeler backend: 'prototype' (default) or 'llm'.",
+    )
+    parser.add_argument(
+        "--llm-model-path",
+        type=str,
+        default=None,
+        dest="llm_model",
+        help="Path to a GGUF model file for --labeler llm (default: auto-detect from benchmarks/models/llm_labeler/).",
+    )
     args = parser.parse_args()
 
     print("Loading dataset registry …")
     registry = DatasetRegistry()
 
-    encoder_config = SegmentEncoderConfig()
-    classifier = PrototypeChunkClassifier(encoder_config=encoder_config)
+    if args.labeler == "llm":
+        classifier: PrototypeChunkClassifier | LlmSegmentLabeler = LlmSegmentLabeler(
+            LlmSegmentLabelerConfig(model_path=args.llm_model)
+        )
+        encoder_type = "llm:llama-cpp"
+    else:
+        encoder_config = SegmentEncoderConfig()
+        classifier = PrototypeChunkClassifier(encoder_config=encoder_config)
+        # Detect which encoder is active.
+        try:
+            from app.services.suggestion.tcn_encoder import load_tcn_encoder  # noqa: PLC0415
 
-    # Detect which encoder is active.
-    try:
-        from app.services.suggestion.tcn_encoder import load_tcn_encoder  # noqa: PLC0415
-
-        tcn = load_tcn_encoder()
-        encoder_type = "tcn" if tcn is not None else "heuristic"
-    except Exception:  # noqa: BLE001
-        encoder_type = "heuristic"
+            tcn = load_tcn_encoder()
+            encoder_type = "tcn" if tcn is not None else "heuristic"
+        except Exception:  # noqa: BLE001
+            encoder_type = "heuristic"
 
     print(f"Active encoder: {encoder_type}\n")
 

@@ -6,7 +6,7 @@ defineProps({
   },
 });
 
-const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-suggestion", "adapt-model"]);
+const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-suggestion", "adapt-model", "update-labeler"]);
 </script>
 
 <template>
@@ -18,6 +18,22 @@ const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-s
       </div>
       <div class="comparison-header-actions">
         <span class="surface-tag">{{ state.artifactLabel }}</span>
+        <div class="comparison-labeler-toggle" role="group" aria-label="Labeler selector">
+          <button
+            :class="state.selectedLabeler === 'prototype' ? 'comparison-button' : 'comparison-button-secondary'"
+            type="button"
+            @click="emit('update-labeler', 'prototype')"
+          >
+            Prototype
+          </button>
+          <button
+            :class="state.selectedLabeler === 'llm' ? 'comparison-button' : 'comparison-button-secondary'"
+            type="button"
+            @click="emit('update-labeler', 'llm')"
+          >
+            LLM (Phi-4)
+          </button>
+        </div>
         <button
           class="comparison-button comparison-button-secondary"
           type="button"
@@ -58,6 +74,10 @@ const emit = defineEmits(["request-suggestion", "accept-suggestion", "override-s
     <p v-if="state.adaptError" class="comparison-adapt-error">{{ state.adaptError }}</p>
 
     <p class="comparison-summary">{{ state.message }}</p>
+
+    <p v-if="state.hasProposal && state.suggestionLabeler" class="comparison-summary">
+      <span class="surface-tag">via {{ state.suggestionLabeler === "llm" ? "LLM" : "prototype" }}</span>
+    </p>
 
     <ul v-if="state.hasProposal" class="comparison-list">
       <li

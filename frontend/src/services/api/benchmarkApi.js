@@ -116,11 +116,12 @@ export async function fetchBenchmarkPrediction(
   return payload;
 }
 
-export async function fetchBenchmarkSuggestion(datasetName, split, sampleIndex, fetchImpl = fetch) {
+export async function fetchBenchmarkSuggestion(datasetName, split, sampleIndex, labeler = "prototype", fetchImpl = fetch) {
   const params = new URLSearchParams({
     dataset: datasetName,
     split,
     sample_index: String(sampleIndex),
+    labeler,
   });
   const response = await fetchImpl(`/api/benchmarks/suggestion?${params.toString()}`);
   const payload = await readJsonResponse(response, "Benchmark suggestion");

@@ -40,6 +40,48 @@ test("createModelComparisonState reports a clean match when segments align", () 
   assert.equal(state.message, "Current segmentation matches the loaded proposal baseline.");
 });
 
+test("createModelComparisonState defaults selectedLabeler to prototype", () => {
+  const state = createModelComparisonState({
+    currentSegments: [],
+    proposalSegments: [],
+    selectedArtifact: null,
+  });
+
+  assert.equal(state.selectedLabeler, "prototype");
+});
+
+test("createModelComparisonState passes through selectedLabeler", () => {
+  const state = createModelComparisonState({
+    currentSegments: [],
+    proposalSegments: [],
+    selectedArtifact: null,
+    selectedLabeler: "llm",
+  });
+
+  assert.equal(state.selectedLabeler, "llm");
+});
+
+test("createModelComparisonState passes through suggestionLabeler", () => {
+  const state = createModelComparisonState({
+    currentSegments: [],
+    proposalSegments: [{ id: "seg-001", start: 0, end: 9, label: "trend" }],
+    selectedArtifact: null,
+    suggestionLabeler: "llm",
+  });
+
+  assert.equal(state.suggestionLabeler, "llm");
+});
+
+test("createModelComparisonState suggestionLabeler defaults to null", () => {
+  const state = createModelComparisonState({
+    currentSegments: [],
+    proposalSegments: [],
+    selectedArtifact: null,
+  });
+
+  assert.equal(state.suggestionLabeler, null);
+});
+
 test("createModelComparisonState exposes suggestion action availability", () => {
   const state = createModelComparisonState({
     currentSegments: [],

@@ -206,13 +206,19 @@ def fetch_suggestion():
     except ValueError:
         return jsonify({"error": "Query parameter 'sample_index' must be an integer."}), 400
 
+    labeler_param = request.args.get("labeler", "prototype")
+    use_llm = labeler_param == "llm"
+    labeler_value = "llm" if use_llm else "prototype"
+
     try:
         sample = _get_dataset_registry().load_sample(dataset_name, split, sample_index)
         suggestion = _get_boundary_suggestion_service().propose(
             series_id=f"{dataset_name}:{split}:{sample_index}",
             values=sample["values"],
             suggestion_id=f"suggestion-{dataset_name}-{split}-{sample_index}",
-            support_segments=build_default_support_segments(),
+            support_segments=None if use_llm else build_default_support_segments(),
+            use_llm_cold_start=use_llm,
+            labeler=labeler_value,
         )
     except DatasetNotFoundError as exc:
         return jsonify({"error": str(exc)}), 404

@@ -11,7 +11,20 @@
       "Bash(python -m pytest backend/tests/test_prototype_classifier.py -x --tb=short -q)",
       "Bash(python -m pytest backend/tests/test_prototype_classifier.py::test_boundary_suggestion_service_serializes_classifier_output_into_contract -x --tb=long -s)",
       "Bash(python:*)",
-      "Bash(del \"benchmarks\\\\models\\\\tcn_encoder\\\\encoder.pt\")"
+      "Bash(del \"benchmarks\\\\models\\\\tcn_encoder\\\\encoder.pt\")",
+      "Bash(.venv/Scripts/python -m pytest backend/tests/test_llm_labeler.py -x --tb=short)",
+      "Bash(.venv/Scripts/python -m pytest backend/tests/ -x --tb=short)",
+      "Read(//mnt/c/Users/yulia/PycharmProjects/**)",
+      "Bash(python -c \"import scipy; print\\(scipy.__version__\\)\")",
+      "Bash(python -c \"import pycatch22; print\\('pycatch22 ok'\\)\")",
+      "Bash(.venv/Scripts/python -c \"import scipy; print\\(scipy.__version__\\)\")",
+      "Bash(.venv/Scripts/python -c \"import pycatch22; print\\('pycatch22 ok'\\)\")",
+      "PowerShell(head *)",
+      "PowerShell(python --version; python -c \"import scipy; print\\('scipy', scipy.__version__\\)\" 2>&1; python -c \"import pycatch22; print\\('pycatch22 ok'\\)\" 2>&1)",
+      "PowerShell(pip install *)",
+      "Bash(git -C \"C:/Users/yulia/PycharmProjects/HypotheX-TS\" add backend/app/services/suggestion/rule_classifier.py backend/app/services/suggestion/shape_thresholds.yaml backend/app/services/suggestions.py backend/requirements.txt backend/tests/test_rule_classifier.py backend/tests/fixtures/synthetic_shapes.py \"backend/tests/fixtures/__init__.py\")",
+      "Bash(git -C \"C:/Users/yulia/PycharmProjects/HypotheX-TS\" status --short)",
+      "Bash(git *)"
     ]
   }
 }

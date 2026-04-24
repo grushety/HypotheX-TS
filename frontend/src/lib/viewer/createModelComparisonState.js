@@ -41,6 +41,8 @@ export function createModelComparisonState({
   adaptLoading = false,
   adaptError = "",
   adaptVersionId = null,
+  selectedLabeler = "prototype",
+  suggestionLabeler = null,
 }) {
   const safeCurrentSegments = Array.isArray(currentSegments) ? currentSegments : [];
   const safeProposalSegments = Array.isArray(proposalSegments) ? proposalSegments : [];
@@ -69,6 +71,8 @@ export function createModelComparisonState({
     adaptLoading,
     adaptError,
     adaptVersionId,
+    selectedLabeler,
+    suggestionLabeler,
     message: suggestionError
       ? suggestionError
       : !hasProposal

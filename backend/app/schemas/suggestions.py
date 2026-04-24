@@ -19,6 +19,7 @@ class SuggestionProposal:
     proposerConfig: BoundaryProposerConfig
     boundary_uncertainty: tuple[float, ...] | None = None
     segment_uncertainty: tuple[float, ...] | None = None
+    labeler: str = "prototype"
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -44,4 +45,5 @@ class SuggestionProposal:
             payload["boundaryUncertainty"] = list(self.boundary_uncertainty)
         if self.segment_uncertainty is not None:
             payload["segmentUncertainty"] = list(self.segment_uncertainty)
+        payload["labeler"] = self.labeler
         return payload

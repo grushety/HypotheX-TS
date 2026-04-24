@@ -21,6 +21,7 @@ benchmarks/raw/archives/
 benchmarks/models/repos/
 benchmarks/models/weights/
 benchmarks/models/tcn_encoder/
+benchmarks/models/llm_labeler/
 !benchmarks/models/weights/
 !benchmarks/models/weights/fcn/
 !benchmarks/models/weights/fcn/GunPoint/

@@ -98,7 +98,7 @@ test("fetchBenchmarkPrediction rejects malformed payloads", async () => {
 });
 
 test("fetchBenchmarkSuggestion returns normalized suggestion payload", async () => {
-  const suggestion = await fetchBenchmarkSuggestion("GunPoint", "test", 0, async () => ({
+  const suggestion = await fetchBenchmarkSuggestion("GunPoint", "test", 0, "prototype", async () => ({
     ok: true,
     async json() {
       return {
@@ -110,6 +110,41 @@ test("fetchBenchmarkSuggestion returns normalized suggestion payload", async () 
 
   assert.equal(suggestion.provisionalSegments.length, 1);
   assert.equal(suggestion.candidateBoundaries[0].boundaryIndex, 12);
+});
+
+test("fetchBenchmarkSuggestion passes labeler param in query string", async () => {
+  let capturedUrl = "";
+  const suggestion = await fetchBenchmarkSuggestion("GunPoint", "test", 0, "llm", async (url) => {
+    capturedUrl = url;
+    return {
+      ok: true,
+      async json() {
+        return {
+          provisionalSegments: [],
+          candidateBoundaries: [],
+          labeler: "llm",
+        };
+      },
+    };
+  });
+
+  assert.ok(capturedUrl.includes("labeler=llm"));
+  assert.equal(suggestion.labeler, "llm");
+});
+
+test("fetchBenchmarkSuggestion defaults labeler to prototype", async () => {
+  let capturedUrl = "";
+  await fetchBenchmarkSuggestion("GunPoint", "test", 0, "prototype", async (url) => {
+    capturedUrl = url;
+    return {
+      ok: true,
+      async json() {
+        return { provisionalSegments: [], candidateBoundaries: [] };
+      },
+    };
+  });
+
+  assert.ok(capturedUrl.includes("labeler=prototype"));
 });
 
 test("fetchBenchmarkUncertainty returns boundary and segment uncertainty arrays", async () => {

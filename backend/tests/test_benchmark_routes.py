@@ -290,3 +290,47 @@ def test_suggestion_endpoint_returns_serializable_suggestion_payload(tmp_path):
     assert len(payload["provisionalSegments"]) >= 1
     assert "label" in payload["provisionalSegments"][0]
     assert "labelScores" in payload["provisionalSegments"][0]
+
+
+def test_suggestion_endpoint_default_labeler_is_prototype(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get("/api/benchmarks/suggestion?dataset=GunPoint&split=test&sample_index=0")
+
+    assert response.status_code == 200
+    assert response.get_json()["labeler"] == "prototype"
+
+
+def test_suggestion_endpoint_labeler_prototype_explicit(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get(
+        "/api/benchmarks/suggestion?dataset=GunPoint&split=test&sample_index=0&labeler=prototype"
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["labeler"] == "prototype"
+
+
+def test_suggestion_endpoint_labeler_llm_returns_llm_in_response(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get(
+        "/api/benchmarks/suggestion?dataset=GunPoint&split=test&sample_index=0&labeler=llm"
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["labeler"] == "llm"
+    assert len(payload["provisionalSegments"]) >= 1
+
+
+def test_suggestion_endpoint_unknown_labeler_defaults_to_prototype(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get(
+        "/api/benchmarks/suggestion?dataset=GunPoint&split=test&sample_index=0&labeler=unknown_xyz"
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["labeler"] == "prototype"
