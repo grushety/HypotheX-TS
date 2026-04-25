@@ -10,9 +10,14 @@ from app.core.domain_config import load_domain_config
 from app.schemas.suggestions import SuggestionProposal
 from app.services.suggestion.boundary_proposal import (
     BoundaryProposalError,
+    BoundaryCandidate,
+    BoundaryProposal,
     BoundaryProposerConfig,
     ProvisionalSegment,
-    propose_boundaries,
+)
+from app.services.suggestion.boundary_proposer import (
+    BoundaryProposer,
+    BoundaryProposerConfig as _NewBoundaryProposerConfig,
 )
 from app.services.suggestion.prototype_classifier import (
     LabeledSupportSegment,
@@ -82,6 +87,7 @@ class BoundarySuggestionService:
         encoder_config: SegmentEncoderConfig | Mapping[str, Any] | None = None,
         classifier_config: PrototypeClassifierConfig | Mapping[str, Any] | None = None,
         smoothing_config: DurationSmoothingConfig | None = None,
+        boundary_method: str = "pelt",
     ):
         self._proposer_name = proposer_name
         self._model_version = model_version
@@ -107,6 +113,7 @@ class BoundarySuggestionService:
             classifier_config=self._classifier_config,
         )
         self._smoothing_config = smoothing_config or build_duration_smoothing_config()
+        self._boundary_method = boundary_method
         # In-memory prototype state per session: {session_id: (PrototypeMemoryBank, update_count)}
         self._sessions: dict[str, tuple[PrototypeMemoryBank, int]] = {}
 
@@ -132,7 +139,7 @@ class BoundarySuggestionService:
         )
 
         try:
-            proposal = propose_boundaries(values, config)
+            proposal = self._run_boundary_proposer(values, config)
         except BoundaryProposalError as exc:
             raise SuggestionServiceError(str(exc)) from exc
         try:
@@ -256,6 +263,79 @@ class BoundarySuggestionService:
             prototypes_updated=tuple(prototypes_updated),
             drift_report=drift_report,
         )
+
+    def _run_boundary_proposer(
+        self,
+        values: list[list[float]] | list[float],
+        config: BoundaryProposerConfig,
+    ) -> BoundaryProposal:
+        """Run BoundaryProposer and convert output to BoundaryProposal format."""
+        arr = np.asarray(values, dtype=float)
+        if arr.ndim == 1:
+            channel_count = 1
+            series_length = int(arr.shape[0])
+        else:
+            if arr.shape[0] > arr.shape[1]:
+                arr = arr.T
+            channel_count = int(arr.shape[0])
+            series_length = int(arr.shape[1])
+
+        if series_length < 2:
+            raise BoundaryProposalError("Boundary proposer requires a series with at least 2 time steps.")
+
+        proposer = BoundaryProposer(
+            _NewBoundaryProposerConfig(
+                method=self._boundary_method,  # type: ignore[arg-type]
+                min_segment_length=config.min_segment_length,
+                max_cps=config.max_boundaries,
+            )
+        )
+        try:
+            new_candidates = proposer.propose(values)
+        except Exception as exc:
+            raise BoundaryProposalError(str(exc)) from exc
+
+        old_candidates = [
+            BoundaryCandidate(
+                boundaryIndex=bc.timestamp,
+                score=round(bc.score, 6),
+                confidence=round(min(1.0, max(0.0, bc.score)), 6),
+            )
+            for bc in new_candidates
+        ]
+        segments = self._build_provisional_segments(series_length, old_candidates)
+        return BoundaryProposal(
+            seriesLength=series_length,
+            channelCount=channel_count,
+            candidateBoundaries=tuple(old_candidates),
+            provisionalSegments=tuple(segments),
+            config=config,
+        )
+
+    @staticmethod
+    def _build_provisional_segments(
+        series_length: int,
+        boundaries: list[BoundaryCandidate],
+    ) -> list[ProvisionalSegment]:
+        segments: list[ProvisionalSegment] = []
+        start = 0
+        for i, bc in enumerate(sorted(boundaries, key=lambda b: b.boundaryIndex), start=1):
+            segments.append(
+                ProvisionalSegment(
+                    segmentId=f"segment-{i:03d}",
+                    startIndex=start,
+                    endIndex=bc.boundaryIndex - 1,
+                )
+            )
+            start = bc.boundaryIndex
+        segments.append(
+            ProvisionalSegment(
+                segmentId=f"segment-{len(segments) + 1:03d}",
+                startIndex=start,
+                endIndex=series_length - 1,
+            )
+        )
+        return segments
 
     def _label_segments_with_llm(
         self,

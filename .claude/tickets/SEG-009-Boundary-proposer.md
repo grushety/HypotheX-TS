@@ -1,6 +1,6 @@
 # SEG-009 — Boundary proposer (ClaSP / PELT / BOCPD)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** —
 
 ---
@@ -70,7 +70,11 @@ def propose_boundaries(X, method='clasp', max_cps=None, min_segment_length=None)
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this on completion. -->
 
+- `backend/app/services/suggestion/boundary_proposer.py` — `BoundaryProposer`, `BoundaryCandidate`, `BoundaryProposerConfig`; three backends: `_propose_clasp` (claspy + numpy fallback), `_propose_pelt` (ruptures), `_propose_bocpd` (NIG conjugate prior); helpers: `_clasp_profile`, `_binary_segmentation`, `_bocpd_change_probs`, `_log_student_t_vec`
+- `backend/app/services/suggestions.py` — `boundary_method='pelt'` parameter on `BoundarySuggestionService`; `_run_boundary_proposer` and `_build_provisional_segments` replace `propose_boundaries` call; imports updated
+- `backend/requirements.txt` — added `ruptures>=1.1.0`
+- `backend/tests/test_boundary_proposer.py` — 26 tests: input normalisation, empty/short input, unknown-method raises, PELT/BOCPD/ClaSP backends, sorted output, min_segment_length, max_cps, BOCPD hazard parameterisation, profile shape, score range, frozen dataclass
+- `backend/scripts/debug_boundary_proposer.py` — diagnostic script; PELT achieves F1=1.00 on 3-regime 90-sample fixture at tolerance 5 %
 
 ---
