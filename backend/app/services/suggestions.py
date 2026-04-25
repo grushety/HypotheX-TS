@@ -8,6 +8,7 @@ from typing import Any
 
 from app.core.domain_config import load_domain_config
 from app.schemas.suggestions import SuggestionProposal
+from app.services.suggestion.duration_smoother import DurationRuleSmoother
 from app.services.suggestion.boundary_proposal import (
     BoundaryProposalError,
     BoundaryCandidate,
@@ -113,6 +114,10 @@ class BoundarySuggestionService:
             classifier_config=self._classifier_config,
         )
         self._smoothing_config = smoothing_config or build_duration_smoothing_config()
+        self._duration_smoother = DurationRuleSmoother(
+            L_min_per_class=dict(self._smoothing_config.per_label_min_lengths),
+            default_min_length=self._smoothing_config.default_min_length,
+        )
         self._boundary_method = boundary_method
         # In-memory prototype state per session: {session_id: (PrototypeMemoryBank, update_count)}
         self._sessions: dict[str, tuple[PrototypeMemoryBank, int]] = {}
@@ -152,7 +157,7 @@ class BoundarySuggestionService:
         except (PrototypeClassifierError, SegmentEncodingError) as exc:
             raise SuggestionServiceError(str(exc)) from exc
 
-        smoothed_segments = smooth_provisional_segments(labeled_segments, config=self._smoothing_config).segments
+        smoothed_segments = self._duration_smoother.smooth(labeled_segments)
 
         boundary_uncertainty = None
         segment_uncertainty = None

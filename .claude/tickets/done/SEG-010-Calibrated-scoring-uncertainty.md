@@ -82,3 +82,18 @@ def uncertainty_margin(scores: dict, delta: float = 0.15) -> bool:
 
 
 ---
+SEG-010 is done. Here's what was shipped:                                                                                                    
+                                                                                          
+  ShapeLabel.uncertain: bool — populated by uncertainty_margin(per_class_scores, delta), which fires when the top-2 gate gap falls below       
+  uncertainty_delta (Platt 1999 margin criterion).                                                                                             
+   
+  uncertainty_margin(scores, delta=0.15) — module-level function, exported for use by UI layers.                                               
+                                                                                                                                             
+  shape_thresholds.yaml — uncertainty_delta: 0.15 added under thresholds:.
+
+  backend/scripts/calibrate_shape_thresholds.py — offline calibration tool: reads labeled CSV, applies q=0.10 lower-bound / q=0.90 upper-bound
+  robust percentiles per class, writes YAML with version, calibration_date, dataset_checksum. Deterministic given a fixed dataset.
+
+  benchmarks/datasets/shape_calibration/shape_calibration_data.csv — 350 labeled synthetic examples (50 per class, seed=42).
+
+  backend/tests/test_calibration.py — 26 tests covering edge cases, YAML loading, calibration structure, and determinism. All 396 tests pass.

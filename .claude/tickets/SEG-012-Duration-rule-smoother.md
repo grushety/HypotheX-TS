@@ -1,6 +1,6 @@
 # SEG-012 — Duration-rule smoother (HSMM-lite)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-008 or SEG-011 classifier output; OP-040 rule table (for label compatibility)
 
 ---
@@ -71,7 +71,10 @@ def choose_merge_target(s, left, right, compat_rule_table):
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this on completion. -->
+
+- `backend/app/services/suggestion/duration_smoother.py` — `DurationRuleSmoother` dataclass with `smooth(segments) -> tuple[ProvisionalSegment, ...]`; per-class min lengths for 7-primitive vocabulary (plateau=20, trend=15, step=3, spike=1, cycle=20, transient=10, noise=5) plus domain-label aliases; iterative merge loop with guaranteed termination; label-compatibility scoring via classifier label-score distribution + same-label bonus + length tiebreaker; deterministic left-wins tiebreak
+- `backend/app/services/suggestions.py` — imported `DurationRuleSmoother`; `BoundarySuggestionService.__init__` builds `self._duration_smoother` from domain-config min lengths; `propose()` calls `self._duration_smoother.smooth(labeled_segments)` replacing direct `smooth_provisional_segments()` call
+- `backend/tests/test_duration_smoother.py` — 30 tests covering: L_min defaults, edge cases (empty/single), basic left/right merge, time-coverage preservation, compatibility scoring, equal-score left tiebreak, multiple consecutive short segments, post-smooth invariants (renumbering, sort order, all segments ≥ L_min), service integration
 
 
 ---
