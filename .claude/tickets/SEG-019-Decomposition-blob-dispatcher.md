@@ -1,6 +1,6 @@
 # SEG-019 — Decomposition blob schema + method dispatcher
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** — (foundational)
 
 ---
@@ -95,7 +95,14 @@ def dispatch_fitter(shape_label: str, domain_hint: str | None = None) -> Callabl
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this on completion. -->
 
+- `backend/app/models/decomposition.py` — `DecompositionBlob` dataclass; `to_json`/`from_json` with base64-encoded arrays (bit-identical round-trip); `reassemble()` sums components; recursive `_serialize_value`/`_deserialize_value` helpers handle nested arrays in coefficients
+- `backend/app/models/segment.py` — `Segment` SQLAlchemy model with `decomposition_json: JSON` column
+- `backend/app/models/__init__.py` — added `Segment` import so `db.create_all()` picks it up
+- `backend/app/services/decomposition/__init__.py` — package init
+- `backend/app/services/decomposition/dispatcher.py` — `FITTER_REGISTRY`, `register_fitter` decorator, `dispatch_fitter` with auto-discovery via `pkgutil.iter_modules`; dispatch table covers all 7 shapes × domain hints; plugin extensibility: drop a file in `fitters/`, no other changes needed
+- `backend/app/services/decomposition/fitters/` — 9 stub fitters: `constant.py`, `delta.py`, `etm.py`, `stl.py`, `mstl.py`, `bfast.py`, `landtrendr.py`, `eckhardt.py`, `gratsid.py`, `noise_model.py`; each uses `@register_fitter`; all stubs produce valid blobs where `reassemble()` recovers X within tolerance
+- `backend/migrations/add_segment_table.py` — migration script (safe for existing DBs; adds column if missing)
+- `backend/tests/test_decomposition.py` — 83 tests: reassemble, JSON round-trip (bit-identical + allclose), serialisation helpers, registration, dispatch for all 7 shapes × 5 domain hints, unknown-shape KeyError, end-to-end blob validity + reassemble + JSON round-trip for all 7 shapes
 
 ---
