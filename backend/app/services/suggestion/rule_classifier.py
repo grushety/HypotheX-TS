@@ -48,6 +48,8 @@ _DEFAULT_THRESHOLDS: dict[str, float] = {
     # trans = fraction of segment in the "transition band" (near the centre)
     "trans": 0.3,
     "spike_max_len": 20.0,
+    # margin: top-2 gate gap below this → uncertain flag set (Platt 1999)
+    "uncertainty_delta": 0.15,
 }
 
 
@@ -59,11 +61,26 @@ class ShapeLabel:
         label:            Argmax shape class from the 7-primitive vocabulary.
         confidence:       Softmax probability of the argmax class, in [0, 1].
         per_class_scores: Raw gate scores before softmax, keyed by shape name.
+        uncertain:        True when top-2 gate gap < uncertainty_delta (Platt 1999).
     """
 
     label: str
     confidence: float
     per_class_scores: dict[str, float]
+    uncertain: bool = False
+
+
+def uncertainty_margin(scores: dict, delta: float = 0.15) -> bool:
+    """Return True when the top-2 gate score gap is below delta.
+
+    A small gap means two classes are nearly tied — the classifier is uncertain.
+    Ref: Platt (1999) "Probabilistic outputs for SVMs", p. 61-74;
+         Niculescu-Mizil & Caruana (2005) ICML — margin-based confidence.
+    """
+    sorted_q = sorted(scores.values(), reverse=True)
+    if len(sorted_q) < 2:
+        return False
+    return (sorted_q[0] - sorted_q[1]) < delta
 
 
 class RuleBasedShapeClassifier:
@@ -82,6 +99,7 @@ class RuleBasedShapeClassifier:
     def __init__(self, thresholds_path: str | pathlib.Path | None = None) -> None:
         path = pathlib.Path(thresholds_path) if thresholds_path else _YAML_PATH
         self._thresholds = _load_thresholds(path)
+        self._uncertainty_delta = float(self._thresholds.get("uncertainty_delta", 0.15))
 
     # ------------------------------------------------------------------
     # Public API
@@ -144,6 +162,7 @@ class RuleBasedShapeClassifier:
             label=label,
             confidence=float(conf),
             per_class_scores=dict(q),
+            uncertain=uncertainty_margin(q, self._uncertainty_delta),
         )
 
 

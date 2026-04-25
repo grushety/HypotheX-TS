@@ -1,6 +1,6 @@
 # SEG-010 — Calibrated shape scoring + uncertainty margin
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-008 primitives; validation dataset
 
 ---
@@ -73,7 +73,12 @@ def uncertainty_margin(scores: dict, delta: float = 0.15) -> bool:
 - [ ] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this on completion. -->
+
+- `backend/app/services/suggestion/rule_classifier.py` — added `uncertain: bool = False` to `ShapeLabel`; added module-level `uncertainty_margin(scores, delta)` function; added `"uncertainty_delta": 0.15` to `_DEFAULT_THRESHOLDS`; `RuleBasedShapeClassifier.__init__` now reads `self._uncertainty_delta` from loaded thresholds; `classify_shape()` sets `uncertain` flag via `uncertainty_margin`
+- `backend/app/services/suggestion/shape_thresholds.yaml` — added `uncertainty_delta: 0.15` threshold entry
+- `backend/scripts/calibrate_shape_thresholds.py` — calibration script: reads labeled CSV, computes gate primitives per class, applies robust percentiles (q=0.10 lower-bound / q=0.90 upper-bound), writes YAML with version, calibration_date, dataset_checksum; deterministic given fixed dataset
+- `benchmarks/datasets/shape_calibration/shape_calibration_data.csv` — 350 labeled synthetic examples (50 per class, seed=42) used as calibration validation set
+- `backend/tests/test_calibration.py` — 26 tests covering `uncertainty_margin` edge cases, `ShapeLabel.uncertain` field, YAML `uncertainty_delta` loading, calibration script structure/determinism/positive-finite-values
 
 
 ---

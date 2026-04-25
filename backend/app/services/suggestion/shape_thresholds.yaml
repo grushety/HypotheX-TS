@@ -32,3 +32,7 @@ thresholds:
 
   # Max spike length (samples)
   spike_max_len: 20
+
+  # Uncertainty margin: top-2 gate gap below this value sets ShapeLabel.uncertain=True
+  # Ref: Platt (1999); Niculescu-Mizil & Caruana (2005)
+  uncertainty_delta: 0.15
