@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
 import HistoryPanel from "../components/history/HistoryPanel.vue";
-import OperationPalette from "../components/operations/OperationPalette.vue";
+import OperationPalette from "../components/palette/OperationPalette.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
 import WarningPanel from "../components/warnings/WarningPanel.vue";
 import { AVAILABLE_SEGMENT_LABELS } from "../lib/segments/updateSegmentLabel";
@@ -25,6 +25,7 @@ import {
   downloadInteractionLogExport,
 } from "../lib/export/createInteractionLogExport";
 import { createOperationPaletteState } from "../lib/operations/createOperationPaletteState";
+import { createTieredPaletteState } from "../lib/operations/createTieredPaletteState";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
 import {
   executeMoveBoundaryAction,
@@ -82,6 +83,7 @@ const adaptLoading = ref(false);
 const adaptError = ref("");
 const adaptVersionId = ref(null);
 const selectedLabeler = ref("prototype");
+const pendingOpName = ref(null);
 let compatibilityRequestId = 0;
 
 const selectedSegment = computed(() =>
@@ -132,6 +134,12 @@ const operationPaletteState = computed(() =>
     operationRegistry: operationRegistry.value,
     feedback: operationFeedback.value,
   }),
+);
+const tieredPaletteSelectedIds = computed(() =>
+  selectedSegmentId.value ? [selectedSegmentId.value] : [],
+);
+const tieredPaletteActiveShape = computed(
+  () => selectedSegment.value?.shape ?? selectedSegment.value?.label ?? null,
 );
 const comparisonState = computed(() =>
   createModelComparisonState({
@@ -535,6 +543,38 @@ async function handleRunOperation(request) {
   editConstraintResult.value = null;
 }
 
+async function handleOpInvoked({ tier, op_name }) {
+  if (tier === 0) {
+    pendingOpName.value = op_name;
+    try {
+      if (op_name === 'split') {
+        const splitIndex = operationPaletteState.value.suggestedSplitIndex;
+        if (splitIndex != null) {
+          await handleRunOperation({ type: 'split', segmentId: selectedSegmentId.value, splitIndex });
+        } else {
+          operationFeedback.value = 'Split: no valid split point for this segment.';
+        }
+      } else if (op_name === 'merge') {
+        const left = operationPaletteState.value.leftMergeTarget;
+        const right = operationPaletteState.value.rightMergeTarget;
+        if (left) {
+          await handleRunOperation({ type: 'merge', leftSegmentId: left.id, rightSegmentId: selectedSegmentId.value });
+        } else if (right) {
+          await handleRunOperation({ type: 'merge', leftSegmentId: selectedSegmentId.value, rightSegmentId: right.id });
+        } else {
+          operationFeedback.value = 'Merge: no adjacent segment available.';
+        }
+      } else {
+        operationFeedback.value = `${op_name}: not yet wired to backend.`;
+      }
+    } finally {
+      pendingOpName.value = null;
+    }
+  } else {
+    operationFeedback.value = `${op_name} (tier ${tier}): not yet implemented.`;
+  }
+}
+
 function handleUpdateLabeler(labeler) {
   selectedLabeler.value = labeler;
 }
@@ -776,8 +816,10 @@ onMounted(() => {
         </div>
 
         <OperationPalette
-          :state="operationPaletteState"
-          @run-operation="handleRunOperation"
+          :selected-segment-ids="tieredPaletteSelectedIds"
+          :active-shape="tieredPaletteActiveShape"
+          :pending-op="pendingOpName"
+          @op-invoked="handleOpInvoked"
         />
 
         <ModelComparisonPanel

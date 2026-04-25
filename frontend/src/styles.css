@@ -1030,6 +1030,102 @@ h3 {
   color: #41526a;
 }
 
+/* Tiered operation palette (UI-005) */
+
+.tiered-palette {
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.tier-row {
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(18, 32, 51, 0.08);
+}
+
+.tier-row-multi {
+  background: rgba(43, 111, 141, 0.06);
+}
+
+.tier-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #41526a;
+  margin-bottom: 8px;
+}
+
+.tier-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.tier-placeholder {
+  font-size: 0.78rem;
+  color: #7a92a8;
+  font-style: italic;
+}
+
+.op-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid rgba(43, 111, 141, 0.3);
+  border-radius: 10px;
+  background: #fff;
+  color: #1d4f68;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+  white-space: nowrap;
+}
+
+.op-button:hover:not(:disabled) {
+  background: #d6eaf5;
+}
+
+.op-button:focus-visible {
+  outline: 2px solid #2b6f8d;
+  outline-offset: 2px;
+}
+
+.op-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.op-button-loading {
+  cursor: wait;
+}
+
+.op-button-icon {
+  font-size: 0.85rem;
+}
+
+.op-button-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(43, 111, 141, 0.3);
+  border-top-color: #2b6f8d;
+  border-radius: 50%;
+  animation: op-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes op-spin {
+  to { transform: rotate(360deg); }
+}
+
 .sidebar-list {
   display: grid;
   gap: 14px;
