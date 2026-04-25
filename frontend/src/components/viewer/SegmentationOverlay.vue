@@ -1,8 +1,10 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from "vue";
 
-import { createSegmentationOverlayModel, SEGMENT_LABEL_STYLES } from "../../lib/segments/createSegmentationOverlayModel";
+import { createSegmentationOverlayModel } from "../../lib/segments/createSegmentationOverlayModel";
 import { getBoundaryStartFromClientX } from "../../lib/segments/getBoundaryStartFromClientX";
+import ShapeChip from "./ShapeChip.vue";
+import ShapeLegend from "./ShapeLegend.vue";
 
 const props = defineProps({
   segments: {
@@ -73,28 +75,25 @@ onBeforeUnmount(() => {
 <template>
   <div class="segmentation-overlay" aria-label="Segmentation overlay">
     <div ref="trackRef" class="segmentation-track">
-      <div
+      <ShapeChip
         v-for="(segment, spanIndex) in overlayModel.spans"
         :key="segment.id"
-        class="segment-span"
-        :class="[
-          `segment-span-${segment.label}`,
-          { 'segment-span-active': segment.id === selectedSegmentId },
-        ]"
+        :segment-id="segment.id"
+        :shape="segment.shape || segment.label"
+        :confidence="segment.confidence ?? null"
+        :method="segment.method ?? null"
+        :semantic-label="segment.semanticLabel ?? null"
+        :selected="segment.id === selectedSegmentId"
         :style="{
+          position: 'absolute',
+          top: '12px',
+          bottom: '12px',
           left: segment.left,
           width: segment.width,
           opacity: Math.max(0.35, 1 - (props.segmentUncertainty[spanIndex] ?? 0)),
         }"
-        role="button"
-        tabindex="0"
-        :aria-pressed="segment.id === selectedSegmentId"
-        @click="emit('select-segment', segment.id)"
-        @keydown.enter.prevent="emit('select-segment', segment.id)"
-        @keydown.space.prevent="emit('select-segment', segment.id)"
-      >
-        <span class="segment-label-pill">{{ segment.label }}</span>
-      </div>
+        @segment-selected="emit('select-segment', $event)"
+      />
 
       <div
         v-for="boundary in overlayModel.boundaries"
@@ -120,11 +119,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="segment-legend">
-      <div v-for="style in SEGMENT_LABEL_STYLES" :key="style.label" class="segment-legend-item">
-        <span class="segment-legend-swatch" :class="`segment-span-${style.label}`" />
-        <span>{{ style.label }}</span>
-      </div>
-    </div>
+    <ShapeLegend />
   </div>
 </template>
