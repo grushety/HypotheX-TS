@@ -29,6 +29,9 @@ class Segment:
     start_index: int
     end_index: int
     label: str
+    provenance: str = "user"
+    confidence: float | None = None
+    scope: str | None = None
     decomposition_dirty: bool = False
 
     @property
