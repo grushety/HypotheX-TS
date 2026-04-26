@@ -26,13 +26,9 @@ Implement the gating logic that enables/disables Tier-2 buttons based on the act
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — gating table snapshot, per-shape ops correct, multi-select intersection, disabled tooltip
-- [ ] Run `code-reviewer` agent — no blocking issues; gating table is authored once, used by palette and API validator
-- [ ] `git commit -m "UI-006: shape-gating logic for Tier-2 buttons"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-006: shape-gating logic for Tier-2 buttons"` ← hook auto-moves this file to `done/` on commit

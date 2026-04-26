@@ -75,14 +75,9 @@ def aggregate(segments, metric: str, aux: dict | None = None):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Eckhardt 2005 (BFI formula), Jönsson 2004 (SOS/EOS thresholds), Aki & Richards (M₀ formula). Confirm formulas match papers
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-033: aggregate (Tier-3) read-only summary metrics"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-033: aggregate (Tier-3) read-only summary metrics"` ← hook auto-moves this file to `done/` on commit

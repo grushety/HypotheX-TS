@@ -72,14 +72,9 @@ def enforce_conservation(X_all_segments, law: str, compensation_mode: str = 'loc
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Eckhardt 2005, Aki & Richards Ch. 3, De Zan 2015, Ansari 2018, Altamimi 2011. Confirm projection math matches the paper form (null-space projection for water balance; Schmidt-orthogonal NNR per Altamimi §3)
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-032: enforce_conservation (Tier-3) with 4 laws"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-032: enforce_conservation (Tier-3) with 4 laws"` ← hook auto-moves this file to `done/` on commit

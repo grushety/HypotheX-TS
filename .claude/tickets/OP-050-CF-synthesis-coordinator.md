@@ -85,14 +85,9 @@ def synthesize_counterfactual(
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent — confirm the decomposition-first architectural property: no Tier-2 op mutates `X` pointwise; compare qualitatively against Wachter 2017 (wCF), Delaney 2021 (Native Guide), Mothilal 2020 (DiCE) to confirm the architectural differentiator claimed in [[_project HypotheX-TS/HypotheX-TS - Novelty Positioning]] holds
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-050: CF synthesis coordinator (decomposition-first architecture)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-050: CF synthesis coordinator (decomposition-first architecture)"` ← hook auto-moves this file to `done/` on commit

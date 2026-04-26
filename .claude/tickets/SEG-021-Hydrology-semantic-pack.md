@@ -91,14 +91,9 @@ semantic_labels:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Eckhardt 2005, Tallaksen 1995, Wolter & Timlin 2011, Mantua & Hare 2002. Confirm each detector threshold is cited to its source paper (or labeled `empirical` with test-fixture justification); no thresholds invented without citation
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-021: hydrology semantic pack (baseflow, storm, ENSO, PDO)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-021: hydrology semantic pack (baseflow, storm, ENSO, PDO)"` ← hook auto-moves this file to `done/` on commit

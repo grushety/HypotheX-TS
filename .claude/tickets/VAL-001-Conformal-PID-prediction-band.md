@@ -74,14 +74,9 @@ class ConformalPIDValidator:
 - [ ] Tests: calibration determinism; PID update correctness vs Angelopoulos 2023 Eq. 4; band-check verdict thresholds; non-stationary widening; coverage on held-out
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper refs Stankevičiūtė 2021 and Angelopoulos 2023. Confirm: PID gains match Eq. 4; calibration uses split-CP residuals; coverage guarantee documented
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-001: conformal-PID prediction-band check (per-edit fast path)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-001: conformal-PID prediction-band check (per-edit fast path)"` ← hook auto-moves this file to `done/` on commit

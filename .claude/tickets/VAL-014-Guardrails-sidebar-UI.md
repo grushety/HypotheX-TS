@@ -32,13 +32,9 @@ Side-panel UI component that displays the 5 session-level Guardrails metrics (sh
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — row rendering, threshold pulse, dismiss, settings, aria
-- [ ] Run `code-reviewer` agent — no blocking issues; no colour-only communication; threshold rules consumed from backend, not duplicated in UI
-- [ ] `git commit -m "VAL-014: Guardrails sidebar UI component"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-014: Guardrails sidebar UI component"` ← hook auto-moves this file to `done/` on commit

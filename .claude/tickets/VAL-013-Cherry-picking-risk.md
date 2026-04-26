@@ -91,14 +91,9 @@ class CherryPickingDetector:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper ref Hinns et al. 2026 §3-4. Confirm: admissible CF sampling matches Hinns' E(x) definition (only valid CFs); utility function is documented and reproducible; KS-against-uniform null is the right test for "non-uniform display" hypothesis; this is correctly flagged as a publishable extension
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-013: cherry-picking risk score (TS adaptation of Hinns 2026)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-013: cherry-picking risk score (TS adaptation of Hinns 2026)"` ← hook auto-moves this file to `done/` on commit

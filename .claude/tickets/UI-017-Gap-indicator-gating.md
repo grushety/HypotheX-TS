@@ -26,13 +26,9 @@ Visually indicate data gaps on the timeline and disable ops that cannot run on g
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — hatched rendering, gating rule, fill workflow, filled badge
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "UI-017: gap indicator + missing-data gating for dense-data ops"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-017: gap indicator + missing-data gating for dense-data ops"` ← hook auto-moves this file to `done/` on commit

@@ -28,13 +28,9 @@ Extend the audit log panel to capture and display the new per-op fields: tier, c
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — new columns populated, filters work, export round-trips, undo sync
-- [ ] Run `code-reviewer` agent — no blocking issues; CSV export escapes correctly (no broken rows with commas in fields)
-- [ ] `git commit -m "UI-015: audit log extension for tiered ops"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-015: audit log extension for tiered ops"` ← hook auto-moves this file to `done/` on commit

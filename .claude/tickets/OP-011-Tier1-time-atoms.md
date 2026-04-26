@@ -73,14 +73,9 @@ def resample(X_seg, new_dt: float, old_dt: float = 1.0,
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Savitzky & Golay 1964 (SG params), Oppenheim Ch. 4 (anti-aliasing — filter applied BEFORE subsampling, not after). Confirm filter order correct
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-011: Tier-1 time atoms (time_shift/reverse_time/resample)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-011: Tier-1 time atoms (time_shift/reverse_time/resample)"` ← hook auto-moves this file to `done/` on commit

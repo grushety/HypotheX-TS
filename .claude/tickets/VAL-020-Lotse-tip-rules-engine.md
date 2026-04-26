@@ -169,14 +169,9 @@ class TipEngine:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: confirm Ceneda degrees correctly assigned per rule, modality-switch rule matches Upadhyay 2025 §6, max-3 + dismissible aligns with Amershi 2019 / Heer 2019
-- [ ] Run `code-reviewer` agent — no blocking issues; verify safe_eval sandbox cannot execute arbitrary code (security review of YAML rule loader)
-- [ ] `git commit -m "VAL-020: Lotse-based tip-rules engine"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-020: Lotse-based tip-rules engine"` ← hook auto-moves this file to `done/` on commit

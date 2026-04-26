@@ -124,19 +124,9 @@ def encode_blob_to_vector(blob) -> np.ndarray:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Wielopolski 2024 §3 (log-density-based score), §4 (training protocol — Adam, early stopping, log-likelihood loss), Durkan 2019 §3 (NSF coupling layers), Dinh 2017 (RealNVP fallback). Confirm:
-  - Loss is `−log p` averaged over batch (not per-sample sum)
-  - Per-dim standardisation is consistent train/test
-  - Plausibility threshold uses training-set 5th percentile (Wielopolski's choice), not arbitrary
-  - Variable-length coefficient handling (GrAtSiD) is documented, not silently dropped
-  - The TS-coefficient-space port is correctly flagged as publishable extension with explicit assumptions listed
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-033: PPCEF normalising-flow plausibility over decomposition coefficients (publishable port)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-033: PPCEF normalising-flow plausibility over decomposition coefficients (publishable port)"` ← hook auto-moves this file to `done/` on commit

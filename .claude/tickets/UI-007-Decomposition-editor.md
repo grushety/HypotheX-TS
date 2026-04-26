@@ -40,13 +40,9 @@ Moving a slider updates the bottom preview in real-time (< 100 ms on 10k-sample 
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — per-method subcomponent rendering, slider emission, debouncing, reset, undo/redo
-- [ ] Run `code-reviewer` agent — no blocking issues; no blob-mutation in frontend (all edits go through backend API)
-- [ ] `git commit -m "UI-007: decomposition editor (Screen D)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-007: decomposition editor (Screen D)"` ← hook auto-moves this file to `done/` on commit

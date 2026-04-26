@@ -74,14 +74,9 @@ def emit_label_chip(op_result: OpResult, relabel_result: RelabelResult):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent — event plumbing; confirm no op can bypass the chip emission for Tier-1/2/3 ops (grep test)
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-041: post-op label chip emission + event bus"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-041: post-op label chip emission + event bus"` ← hook auto-moves this file to `done/` on commit

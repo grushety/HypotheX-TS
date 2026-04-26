@@ -116,14 +116,9 @@ def iaaft_test(x_edit: np.ndarray, x_orig: np.ndarray,
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Schreiber & Schmitz 2000 Alg. 1 (verify alternating step structure), Lancaster 2018 §2.4 (convergence criterion), Bandt-Pompe 2002 Eq. 1 (permutation entropy formula). Confirm Edgington p-value correction is correctly applied; flag any discrepancy with paper
-- [ ] Run `code-reviewer` agent — no blocking issues; verify parallel surrogate generation seeds are deterministic and uncorrelated
-- [ ] `git commit -m "VAL-030: IAAFT surrogate test (slow-path)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-030: IAAFT surrogate test (slow-path)"` ← hook auto-moves this file to `done/` on commit

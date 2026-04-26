@@ -83,14 +83,9 @@ def replace_library_distshift(window_post, context, n_permutations=200):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper ref Gretton 2012 Theorem 6 (linear-time estimator). Confirm: pairs constructed correctly per Eq. 6; kernel median heuristic on combined sample; block permutation preserves autocorrelation
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-008: linear-time MMD distributional shift (replace_from_library)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-008: linear-time MMD distributional shift (replace_from_library)"` ← hook auto-moves this file to `done/` on commit

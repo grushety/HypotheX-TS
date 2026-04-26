@@ -117,14 +117,9 @@ def mbb_coefficient_ci(x: np.ndarray, decomposition_blob, coefficient_name: str,
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Politis-Romano 1994 Definition 2.1 (verify stationary-bootstrap geometric block-length distribution), Patton-Politis-White 2009 (verify *corrected* formula in use), Bergmeir-Hyndman-Benítez 2016 §2.2 (verify residual-bootstrap protocol). Cross-check against Lahiri 2003 Ch. 3 lower-bound recommendations on block length
-- [ ] Run `code-reviewer` agent — no blocking issues; verify `arch` version pinned to one with the corrected block-length formula
-- [ ] `git commit -m "VAL-031: full MBB B=999 with Politis-White-Patton block length (slow-path)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-031: full MBB B=999 with Politis-White-Patton block length (slow-path)"` ← hook auto-moves this file to `done/` on commit

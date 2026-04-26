@@ -36,13 +36,9 @@ HTML canvas that accepts mouse/touch input; output becomes the donor curve (norm
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — backend selector, sketchpad input, accept/reject, crossfade slider
-- [ ] Run `code-reviewer` agent — no blocking issues; backend-specific logic is in the API client, not the component
-- [ ] `git commit -m "UI-008: donor picker with 6 backends + sketchpad"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-008: donor picker with 6 backends + sketchpad"` ← hook auto-moves this file to `done/` on commit

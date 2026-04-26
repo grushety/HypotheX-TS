@@ -88,14 +88,9 @@ def replace_from_library(X_seg, donor_engine, target_class, crossfade_width=5):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Delaney 2021 (Native Guide NUN selection criterion), Bahri 2022 (SETS shapelet composition), Yeh 2016 (matrix-profile discord definition). Confirm each backend's selection rule matches its paper; no silent substitutions
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-012: replace_from_library + DonorEngine interface (3 backends)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-012: replace_from_library + DonorEngine interface (3 backends)"` ← hook auto-moves this file to `done/` on commit

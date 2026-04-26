@@ -67,14 +67,9 @@ def mute_zero(X_seg, blob, fill: Literal['zero', 'global_mean'] = 'zero', mu_glo
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent — elementary arithmetic; confirm pivot math matches formal definition and decomposition-aware variant does not double-apply the transform
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-010: Tier-1 amplitude atoms (scale/offset/mute_zero)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-010: Tier-1 amplitude atoms (scale/offset/mute_zero)"` ← hook auto-moves this file to `done/` on commit

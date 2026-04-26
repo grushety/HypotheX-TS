@@ -32,13 +32,9 @@ Render the operation palette in **four visually distinct tier rows**:
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — tier rendering, gating, multi-select intersection, keyboard all tested
-- [ ] Run `code-reviewer` agent — no blocking issues; no op-to-tier mapping duplicated across files (single source: `operationCatalog.js`)
-- [ ] `git commit -m "UI-005: tiered operation palette (Tier 0/1/2/3)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-005: tiered operation palette (Tier 0/1/2/3)"` ← hook auto-moves this file to `done/` on commit

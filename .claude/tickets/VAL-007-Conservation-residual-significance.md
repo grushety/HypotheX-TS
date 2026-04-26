@@ -84,14 +84,9 @@ def conservation_significance(r_pre, r_post) -> ConservationSignificance:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper refs Beucler 2021, Patil 2026, Politis-Romano 1994, Gretton 2012. Confirm: bootstrap is stationary block (not naive); MMD uses median-heuristic kernel; ratio test correctly bounds Type-I error; permutation null calibration documented
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-007: conservation-residual significance for enforce_conservation"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-007: conservation-residual significance for enforce_conservation"` ← hook auto-moves this file to `done/` on commit

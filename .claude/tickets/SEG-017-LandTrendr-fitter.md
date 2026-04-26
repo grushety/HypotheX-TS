@@ -77,14 +77,9 @@ def fit_landtrendr(X_seg, t,
 - [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper reference: Kennedy 2010 §2.3 (vertex finding, recovery detection, penalty). Confirm vertex-selection penalty matches paper; recovery threshold parameterized (not hardcoded to NBR)
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-017: LandTrendr piecewise-linear fitter for EO trajectories"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-017: LandTrendr piecewise-linear fitter for EO trajectories"` ← hook auto-moves this file to `done/` on commit

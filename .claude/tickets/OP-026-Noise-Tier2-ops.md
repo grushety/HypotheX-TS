@@ -88,14 +88,9 @@ def whiten(X_seg):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Chang 2000 (BayesShrink threshold formula), Rudin 1992 (TV regularization), Timmer 1995 (colored noise). Confirm denoising delegates to cited libraries; residual-preservation property asserted by test
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-026: Noise Tier-2 ops (5 ops)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-026: Noise Tier-2 ops (5 ops)"` ← hook auto-moves this file to `done/` on commit

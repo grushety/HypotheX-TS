@@ -96,14 +96,9 @@ def fit_etm(X_seg, t, known_steps=None, known_transients=None,
 - [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper reference: Bevis & Brown 2014 Eq. 1 and §2. Verify each component term (linear, Heaviside step, log/exp transient, harmonic) implemented per paper and coefficient names match paper convention
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-013: ETM decomposition fitter (Bevis-Brown 2014)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-013: ETM decomposition fitter (Bevis-Brown 2014)"` ← hook auto-moves this file to `done/` on commit

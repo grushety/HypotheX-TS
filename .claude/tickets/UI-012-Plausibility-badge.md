@@ -31,13 +31,9 @@ Per-op-card traffic-light badge (green / amber / red) based on three signals:
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — traffic-light rule, tooltip content, feature-flag gating
-- [ ] Run `code-reviewer` agent — no blocking issues; no colour-only communication
-- [ ] `git commit -m "UI-012: plausibility badge (range + residual + manifold)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-012: plausibility badge (range + residual + manifold)"` ← hook auto-moves this file to `done/` on commit

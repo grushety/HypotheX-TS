@@ -25,13 +25,9 @@ Side panel that lets the user choose an active domain pack (hydrology / seismo-g
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — pack selection, detector invocation, custom upload + validation, shadowing
-- [ ] Run `code-reviewer` agent — no blocking issues; pack YAML parsing uses a schema validator (ajv or yup), not hand-rolled
-- [ ] `git commit -m "UI-014: semantic-layer panel with 4 packs + custom upload"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-014: semantic-layer panel with 4 packs + custom upload"` ← hook auto-moves this file to `done/` on commit

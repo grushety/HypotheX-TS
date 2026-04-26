@@ -89,14 +89,9 @@ def fit_gratsid(X_seg, t,
 - [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper reference: Bedford & Bevis 2018 §3 (greedy selection criterion, basis library, stopping rule, duplicate-feature suppression). Confirm greedy does not produce duplicate basis functions from the same (t_ref, τ) family beyond paper's guidance
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-018: GrAtSiD fitter for geodesy transients (Bedford-Bevis 2018)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-018: GrAtSiD fitter for geodesy transients (Bedford-Bevis 2018)"` ← hook auto-moves this file to `done/` on commit

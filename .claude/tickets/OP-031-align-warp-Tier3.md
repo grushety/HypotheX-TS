@@ -73,14 +73,9 @@ def align_warp(segments, reference_seg, method: Literal['dtw', 'soft_dtw', 'shap
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Sakoe 1978 (DTW band), Cuturi 2017 (soft-DTW γ), Petitjean 2011 (DBA), Holder 2023 (ShapeDBA). Confirm tslearn calls match paper parameter semantics
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-031: align/warp Tier-3 (DTW/soft-DTW/ShapeDBA)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-031: align/warp Tier-3 (DTW/soft-DTW/ShapeDBA)"` ← hook auto-moves this file to `done/` on commit

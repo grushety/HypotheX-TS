@@ -81,14 +81,9 @@ class SupportBuffer:
 - [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Snell 2017 (ProtoNet update rule), Wang 2020 (few-shot buffer strategies). Confirm update rule = mean of L2-normalized embeddings (matches SEG-011); confidence gate is explicit; drift detection documented
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-020: few-shot support buffer with drift tracking"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-020: few-shot support buffer with drift tracking"` ← hook auto-moves this file to `done/` on commit

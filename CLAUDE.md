@@ -97,10 +97,26 @@ All tasks are tracked as ticket files in `.claude/tickets/`.
 
 ## Subagents (`.claude/agents/`)
 
+- `tester` — run pytest + node `--test`; report failures
+- `code-reviewer` — review the staged diff against CLAUDE.md architecture rules
 - `test-writer` — write pytest or Node tests for existing code
 - `algorithm-auditor` — verify implementation correctness against source + SotA web search
 - `api-validator` — verify route response shape matches schema contract
 - `doc-writer` — add docstrings/JSDoc; domain functions must cite source paper
+
+## Git Hooks
+
+A pre-commit hook auto-archives completed tickets to `.claude/tickets/done/` whenever a ticket's staged content has `**Status:** [x] Done`. The move is included in the same commit.
+
+One-time setup per clone, from repo root:
+```
+git config core.hooksPath scripts/hooks
+```
+On macOS / Linux additionally:
+```
+chmod +x scripts/hooks/pre-commit
+```
+Windows users do not need the chmod step — Git for Windows honours the Python shebang as long as `python3` is on PATH.
 
 ## Skills (`.claude/skills/`)
 

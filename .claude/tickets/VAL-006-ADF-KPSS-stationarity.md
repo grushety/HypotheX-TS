@@ -84,14 +84,9 @@ def _classify(adf_pre, adf_post, kpss_pre, kpss_post, alpha=0.05):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper refs Dickey-Fuller 1979, KPSS 1992, Zivot-Andrews 1992. Confirm: tests run on whitened residual not raw series; ADF lag order matches Schwert 1989 default; KPSS regression term ('c' constant, 'ct' constant+trend) configurable; ZA on raw post-edit series (not residual) per paper convention
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-006: ADF + KPSS joint stationarity tests (per-edit)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-006: ADF + KPSS joint stationarity tests (per-edit)"` ← hook auto-moves this file to `done/` on commit

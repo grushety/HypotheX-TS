@@ -105,14 +105,9 @@ semantic_labels:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Allen 1978 (STA/LTA), Bevis 2014, Bedford & Bevis 2018, Hooper 2012, Ansari 2018. Confirm detector wiring is paper-accurate and ETM/GrAtSiD features are consumed, not recomputed
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-022: seismo-geodesy semantic pack"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-022: seismo-geodesy semantic pack"` ← hook auto-moves this file to `done/` on commit

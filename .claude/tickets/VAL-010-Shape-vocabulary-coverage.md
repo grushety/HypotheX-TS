@@ -80,14 +80,9 @@ class ShapeVocabularyCoverageTracker:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper refs Wall 2022 (Attribute Coverage), Lumos 2022. Confirm: coverage definition matches Wall's attribute-coverage metric; Gini skewness used consistently
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-010: shape-vocabulary coverage (session-level)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-010: shape-vocabulary coverage (session-level)"` ← hook auto-moves this file to `done/` on commit

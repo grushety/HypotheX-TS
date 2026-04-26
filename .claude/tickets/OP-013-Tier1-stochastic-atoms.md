@@ -77,14 +77,9 @@ def add_uncertainty(X_seg, sigma: float, color: Literal['white', 'pink', 'red'] 
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Timmer & König 1995 PSD formula and `colorednoise` library alignment. Confirm fill strategies delegate to correct sub-components (STL from SEG-014, baseflow from SEG-016) rather than reimplementing
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-013: Tier-1 stochastic atoms (suppress/add_uncertainty)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-013: Tier-1 stochastic atoms (suppress/add_uncertainty)"` ← hook auto-moves this file to `done/` on commit

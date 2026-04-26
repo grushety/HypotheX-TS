@@ -108,14 +108,9 @@ semantic_labels:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Jönsson 2004 (phenology thresholds), Verbesselt 2010 (BFAST), Kennedy 2010 (LandTrendr), Yunjun 2019 (APS). Confirm thresholds match paper recommendations and are parameterized (not hardcoded)
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-023: remote-sensing semantic pack (phenology, disturbance, InSAR)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-023: remote-sensing semantic pack (phenology, disturbance, InSAR)"` ← hook auto-moves this file to `done/` on commit

@@ -62,14 +62,9 @@ def probe_invalidation_rate(model, x_prime, sigma=0.1, method='linearised'):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper ref Pawelczyk ICLR 2023. Verify Eq. 5 closed-form derivation matches; Monte-Carlo fallback uses i.i.d. Gaussian noise on standardised features; both methods agree within 0.05 on synthetic test
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-002: PROBE invalidation rate (linearised per-edit)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-002: PROBE invalidation rate (linearised per-edit)"` ← hook auto-moves this file to `done/` on commit

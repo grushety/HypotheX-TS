@@ -27,13 +27,9 @@ Visual budget bar showing the conservation-law residual before and after the cur
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — colour thresholds, hover tooltip, click breakdown, reactive update
-- [ ] Run `code-reviewer` agent — no blocking issues; no colour-only communication
-- [ ] `git commit -m "UI-010: constraint-budget bar with per-component breakdown"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-010: constraint-budget bar with per-component breakdown"` ← hook auto-moves this file to `done/` on commit

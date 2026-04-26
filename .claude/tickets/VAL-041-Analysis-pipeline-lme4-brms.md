@@ -167,22 +167,9 @@ per_condition_brier <- data %>%
 - [ ] Output ZIP `study/replication-package.zip` containing data, analysis scripts, lockfile, Dockerfile — for paper supplement
 
 ## Definition of Done
-- [ ] Run `methodology-auditor` agent with paper refs above. Confirm:
-  - Every formula matches VAL-040 §9 verbatim (snapshot test passes)
-  - Effect sizes are Westfall-Kenny-Judd 2014 d for mixed effects (NOT Cohen's d on raw means)
-  - TOST is two-tailed (Lakens 2017) — both `t1, p1` and `t2, p2` reported
-  - ROPE for Bayesian companion = ± 0.1 d as locked, not data-derived
-  - Brier score formula = `mean((p − y)^2)` with reliability diagram
-  - Bootstrap CIs use B = 999 (not 1000 — for two-sided 95 % CI rounding)
-  - All p-values reported alongside effect sizes
-  - Reproducibility test with diff tolerance is in CI
-- [ ] Run `code-reviewer` agent — no blocking issues; pinned versions, seeded RNG everywhere, gitignored cache
-- [ ] Replication package ZIP builds in CI
-- [ ] `git commit -m "VAL-041: pre-registered analysis pipeline (lme4 + brms + TOST + Brier)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-041: pre-registered analysis pipeline (lme4 + brms + TOST + Brier)"` ← hook auto-moves this file to `done/` on commit

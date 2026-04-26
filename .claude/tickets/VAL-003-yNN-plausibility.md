@@ -70,14 +70,9 @@ class YnnPlausibilityValidator:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper refs Pawelczyk CARLA 2021 (yNN definition), Sakoe & Chiba 1978 (band), Glacier 2024 (TS application). Confirm DTW band is paper-correct; LB_Keogh pruning preserves top-K correctness; K and band configurable
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-003: yNN k-NN plausibility under DTW (per-edit)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-003: yNN k-NN plausibility under DTW (per-edit)"` ← hook auto-moves this file to `done/` on commit

@@ -74,14 +74,9 @@ def fit_stl(X_seg, period=None, robust=True):
 - [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Cleveland 1990 §2-3 (inner/outer loop, seasonal smoothing parameters), Bandara 2021 (MSTL iteration). Confirm robust weight iteration enabled; period auto-detection uses documented spectral+ACF approach
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-014: STL/MSTL decomposition fitter for cycle segments"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "SEG-014: STL/MSTL decomposition fitter for cycle segments"` ← hook auto-moves this file to `done/` on commit

@@ -123,23 +123,9 @@ Any deviation from the registered protocol logged in `study/deviations.md` with 
 - [ ] Pilot data (N = 8 internal testers) used to calibrate difficulty bins is reported in an appendix
 
 ## Definition of Done
-- [ ] Run `methodology-auditor` agent with the paper references above. Confirm:
-  - Hypotheses are pre-stated, directional (or equivalence), and falsifiable
-  - Sample size is justified by a *a priori* power simulation (not retrospective)
-  - Exclusion criteria are pre-registered, not data-dependent
-  - Primary analysis is locked — exact formula, exact correction, exact α
-  - TOST equivalence bound (Lakens 2017) is stated as a SESOI in d-units, not p > 0.05
-  - Bayesian companion is informational, not gating (Kay 2016 design)
-  - Deviation logging procedure is in place
-  - All XAI Co-12 properties tested are explicit (Nauta 2023)
-  - The protocol does not test proxy tasks where the primary outcome should be objective task performance (Buçinca 2020)
-- [ ] Run `code-reviewer` agent — no blocking issues with the power-simulation R code; seed reproducibility verified
-- [ ] OSF link recorded in `study/README.md` with timestamp
-- [ ] `git tag preregistration-v1.0`; `git commit -m "VAL-040: pre-registered user-study spec v1.0 (locked)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-040: pre-registered user-study spec v1.0 (locked)"` ← hook auto-moves this file to `done/` on commit

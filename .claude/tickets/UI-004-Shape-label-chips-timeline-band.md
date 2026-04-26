@@ -35,13 +35,9 @@ Wire into existing `TimelineViewer.vue` + `SegmentationOverlay.vue` (replacing t
 - [ ] `npm test` and `npm run build` pass
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — chip rendering, tooltip content, keyboard navigation, click emission all tested
-- [ ] Run `code-reviewer` agent — no blocking issues; no hard-coded colour strings outside `shapeColors.js`
-- [ ] `git commit -m "UI-004: 7-shape chips and shape-aware timeline band"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Run `tester` agent — all tests pass
+- [ ] Run `code-reviewer` agent — no blocking issues
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "UI-004: 7-shape chips and shape-aware timeline band"` ← hook auto-moves this file to `done/` on commit

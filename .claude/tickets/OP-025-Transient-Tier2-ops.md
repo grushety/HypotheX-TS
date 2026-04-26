@@ -101,14 +101,9 @@ def convert_to_step(blob, feature_id):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Bevis 2014 (log/exp basis), Bedford & Bevis 2018 (GrAtSiD feature params). Confirm editing primitives match paper feature semantics
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-025: Transient Tier-2 ops (9 ops)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-025: Transient Tier-2 ops (9 ops)"` ← hook auto-moves this file to `done/` on commit

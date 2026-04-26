@@ -85,14 +85,9 @@ def replace_with_flat(blob):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Cleveland 1990 (STL seasonal edit), Oppenheim Ch. 11 (Hilbert transform), Verhoef 1996 (HANTS harmonics). Confirm phase shift preserves amplitude
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-024: Cycle Tier-2 ops (7 ops)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-024: Cycle Tier-2 ops (7 ops)"` ← hook auto-moves this file to `done/` on commit

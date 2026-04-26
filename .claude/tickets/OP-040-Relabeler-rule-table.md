@@ -120,14 +120,9 @@ def relabel(old_shape, operation, op_params, edited_series, classifier=None):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass; snapshot test asserts rule table bit-identical to Operation Vocabulary Research §6
-- [ ] Run `algorithm-auditor` agent — confirm every table entry matches the research doc §6; no rules invented locally
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-040: relabeler rule table (3 classes, ≥48 entries)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-040: relabeler rule table (3 classes, ≥48 entries)"` ← hook auto-moves this file to `done/` on commit

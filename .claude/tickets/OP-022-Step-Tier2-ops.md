@@ -73,14 +73,9 @@ def duplicate(blob, t_s, delta_t, delta_2, t):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Bevis 2014 Eq. 1 (Heaviside term correctness). Confirm coefficient edits reassemble correctly; convert_to_ramp honors ETM log/exp basis parameterization
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-022: Step Tier-2 ops (6 ops)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "OP-022: Step Tier-2 ops (6 ops)"` ← hook auto-moves this file to `done/` on commit

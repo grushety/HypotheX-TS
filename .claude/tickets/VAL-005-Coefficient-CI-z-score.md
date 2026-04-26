@@ -77,14 +77,9 @@ class CoefficientCIValidator:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper refs Politis & Romano 1994, Politis & White 2004, Bergmeir et al. 2016. Confirm: stationary bootstrap with geometric block lengths; block length matches Politis-White 2004 Eq. 3 with Patton 2009 correction; refit uses same method as original blob (no method substitution)
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-005: coefficient-CI z-score (per-edit fast path)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-005: coefficient-CI z-score (per-edit fast path)"` ← hook auto-moves this file to `done/` on commit

@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+"""Pre-commit hook: auto-archive completed tickets to .claude/tickets/done/.
+
+Scans staged ``.md`` files directly inside ``.claude/tickets/`` (not in subdirs).
+For each one whose staged content has ``**Status:** [x] Done`` in the header,
+the file is moved to ``.claude/tickets/done/`` via ``git mv`` so the rename is
+included in the same commit.
+
+Skips ``TICKET-TEMPLATE.md`` and any file already inside ``done/``.
+
+One-time setup per clone (from repo root):
+    git config core.hooksPath scripts/hooks
+
+On macOS / Linux additionally make the hook executable:
+    chmod +x scripts/hooks/pre-commit
+
+On Windows (Git for Windows / msysgit) the executable bit is not needed; the
+shebang is honoured by the bundled bash and ``python`` is invoked from PATH.
+"""
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path, PurePosixPath
+
+
+TICKETS_DIR_PARTS = (".claude", "tickets")
+TEMPLATE_NAME = "TICKET-TEMPLATE.md"
+DONE_SUBDIR = "done"
+
+
+def run(*args: str, check: bool = True) -> str:
+    result = subprocess.run(
+        args, capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
+    if check and result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode, args, result.stdout, result.stderr
+        )
+    return result.stdout
+
+
+def staged_md_tickets() -> list[str]:
+    """POSIX repo-relative paths of staged .md files directly in .claude/tickets/."""
+    out = run("git", "diff", "--cached", "--name-only", "--diff-filter=AM")
+    paths: list[str] = []
+    for line in out.splitlines():
+        path = line.strip().replace("\\", "/")
+        if not path.endswith(".md"):
+            continue
+        parts = PurePosixPath(path).parts
+        # Must be exactly .claude/tickets/<file>.md (3 components)
+        if len(parts) != 3:
+            continue
+        if parts[0] != TICKETS_DIR_PARTS[0] or parts[1] != TICKETS_DIR_PARTS[1]:
+            continue
+        if parts[2] == TEMPLATE_NAME:
+            continue
+        paths.append(path)
+    return paths
+
+
+def is_done(content: str) -> bool:
+    """Detect ``**Status:** [x] Done`` in the header (first 10 lines)."""
+    for line in content.splitlines()[:10]:
+        s = line.strip().lower()
+        if s.startswith("**status:**") and "[x]" in s and "done" in s:
+            return True
+    return False
+
+
+def main() -> int:
+    done_dir = Path(".claude") / "tickets" / DONE_SUBDIR
+    done_dir.mkdir(parents=True, exist_ok=True)
+
+    moved: list[tuple[str, str]] = []
+    for path in staged_md_tickets():
+        try:
+            content = run("git", "show", f":{path}")
+        except subprocess.CalledProcessError:
+            # File staged for deletion or unreadable — skip silently
+            continue
+        if not content:
+            continue
+        if not is_done(content):
+            continue
+
+        target = f".claude/tickets/{DONE_SUBDIR}/{Path(path).name}"
+        if Path(target).exists():
+            print(
+                f"[pre-commit] skip {path}: {target} already exists",
+                file=sys.stderr,
+            )
+            continue
+
+        try:
+            run("git", "mv", path, target)
+        except subprocess.CalledProcessError as exc:
+            print(
+                f"[pre-commit] git mv failed for {path}: {exc.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return 1
+
+        moved.append((path, target))
+        print(f"[pre-commit] auto-moved {path} -> {target}")
+
+    if moved:
+        print(f"[pre-commit] {len(moved)} ticket(s) archived to done/")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

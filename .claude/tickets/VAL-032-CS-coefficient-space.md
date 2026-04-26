@@ -110,18 +110,9 @@ def cs_coefficient_space(
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Dutta 2022 §3 Def. 1 (CS formula), §4.2 (κ choice), Hamman 2023 §3 (analytic bound, if implemented), Pawelczyk 2023 (PROBE comparison). Confirm:
-  - CS = μ − κσ (NOT μ + κσ — sign error would invalidate the metric)
-  - Invalidation rate is the proportion that flips prediction (NOT 1 − validity)
-  - Per-coefficient noise model is calibrated, documented, and not arbitrary
-  - The TS-coefficient-space transplant is correctly flagged as a publishable extension with explicit assumptions listed
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-032: CS in decomposition coefficient space (publishable transplant of Dutta 2022)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-032: CS in decomposition coefficient space (publishable transplant of Dutta 2022)"` ← hook auto-moves this file to `done/` on commit

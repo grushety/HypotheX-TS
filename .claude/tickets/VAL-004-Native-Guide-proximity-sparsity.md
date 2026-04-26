@@ -69,14 +69,9 @@ def native_guide_validate(x, x_prime, dataset_thresholds) -> NativeGuideResult:
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper ref Delaney et al. ICCBR 2021. Confirm proximity uses DTW with band per Native Guide §3.2; sparsity definition matches paper Eq. 1; NUN-percentile threshold documented
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-004: Native-Guide proximity & sparsity (per-edit)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-004: Native-Guide proximity & sparsity (per-edit)"` ← hook auto-moves this file to `done/` on commit

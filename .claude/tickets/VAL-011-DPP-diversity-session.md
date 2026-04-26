@@ -69,14 +69,9 @@ def dpp_log_det_diversity(cfs: list[CFResult], kernel: str = 'dtw_rbf'):
 - [ ] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper refs Mothilal 2020, Kulesza & Taskar 2012. Confirm: DPP definition matches Kulesza 2012 §2; kernel positivity guaranteed; numerical regularisation documented; Schur-complement incremental update is mathematically correct
+- [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "VAL-011: DPP log-det diversity of accepted CFs (session-level)"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this on completion. -->
-
-
----
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "VAL-011: DPP log-det diversity of accepted CFs (session-level)"` ← hook auto-moves this file to `done/` on commit
