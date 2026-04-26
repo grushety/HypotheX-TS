@@ -10,52 +10,53 @@ test('no selection — tier0 and tier1 buttons are all disabled', () => {
 });
 
 test('single selection — tier0 and tier1 buttons are enabled', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: 'plateau' });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['plateau'] });
   for (const btn of state.tier0.buttons) assert.equal(btn.enabled, true, `tier0 ${btn.op_name} should be enabled`);
   for (const btn of state.tier1.buttons) assert.equal(btn.enabled, true, `tier1 ${btn.op_name} should be enabled`);
 });
 
 test('plateau shape → tier2 has exactly 5 buttons', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: 'plateau' });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['plateau'] });
   assert.equal(state.tier2.buttons.length, 5);
 });
 
 test('cycle shape → tier2 has exactly 7 buttons', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: 'cycle' });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['cycle'] });
   assert.equal(state.tier2.buttons.length, 7);
 });
 
 test('tier2 buttons are enabled on single select', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: 'plateau' });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['plateau'] });
   for (const btn of state.tier2.buttons) assert.equal(btn.enabled, true, `${btn.op_name} should be enabled`);
 });
 
-test('multi-select → tier2 disabled flag set, intersectionTooltip present', () => {
+test('multi-select different shapes → tier2 disabled flag set, intersectionTooltip present', () => {
   const state = createTieredPaletteState({
     selectedSegmentIds: ['seg-1', 'seg-2'],
-    activeShape: 'plateau',
+    selectedShapes: ['plateau', 'step'],
   });
   assert.equal(state.tier2.disabled, true);
   assert.ok(typeof state.tier2.intersectionTooltip === 'string' && state.tier2.intersectionTooltip.length > 0);
 });
 
-test('multi-select → tier2 buttons all disabled', () => {
+test('multi-select different shapes → tier2 buttons all disabled', () => {
   const state = createTieredPaletteState({
     selectedSegmentIds: ['seg-1', 'seg-2'],
-    activeShape: 'cycle',
+    selectedShapes: ['cycle', 'noise'],
   });
+  assert.ok(state.tier2.buttons.length > 0, 'union should produce buttons');
   for (const btn of state.tier2.buttons) {
     assert.equal(btn.enabled, false, `${btn.op_name} should be disabled in multi-select`);
   }
 });
 
 test('single select, no shape → tier2 has no buttons', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: null });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: [] });
   assert.equal(state.tier2.buttons.length, 0);
 });
 
 test('unknown shape → tier2 has no buttons', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: 'unknown_shape' });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['unknown_shape'] });
   assert.equal(state.tier2.buttons.length, 0);
 });
 
@@ -103,7 +104,7 @@ test('tier labels match expected strings', () => {
 });
 
 test('single select with no shape — tier2 not disabled (no multi-select)', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: null });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: [] });
   assert.equal(state.tier2.disabled, false);
   assert.equal(state.tier2.intersectionTooltip, null);
 });
@@ -123,7 +124,7 @@ test('state has id fields on all tiers', () => {
 });
 
 test('no pendingOp — all buttons have loading: false', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], activeShape: 'plateau' });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['plateau'] });
   const all = [
     ...state.tier0.buttons,
     ...state.tier1.buttons,
@@ -136,7 +137,7 @@ test('no pendingOp — all buttons have loading: false', () => {
 test('pendingOp = plateau_flatten → that tier2 button has loading: true', () => {
   const state = createTieredPaletteState({
     selectedSegmentIds: ['seg-1'],
-    activeShape: 'plateau',
+    selectedShapes: ['plateau'],
     pendingOp: 'plateau_flatten',
   });
   const flattenBtn = state.tier2.buttons.find((b) => b.op_name === 'plateau_flatten');
@@ -171,7 +172,7 @@ test('multi-select — non-requiresMultiSelect tier3 ops are disabled', () => {
 });
 
 test('multi-select with no shape — tier2 still disabled with tooltip', () => {
-  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1', 'seg-2'], activeShape: null });
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1', 'seg-2'], selectedShapes: [] });
   assert.equal(state.tier2.disabled, true);
   assert.ok(typeof state.tier2.intersectionTooltip === 'string' && state.tier2.intersectionTooltip.length > 0);
 });
@@ -180,4 +181,108 @@ test('no selection — tier2 not disabled and intersectionTooltip is null', () =
   const state = createTieredPaletteState({ selectedSegmentIds: [] });
   assert.equal(state.tier2.disabled, false);
   assert.equal(state.tier2.intersectionTooltip, null);
+});
+
+// ─── disabledTooltip field on tier2 buttons ───────────────────────────────────
+
+test('single select plateau: tier2 buttons have disabledTooltip null (all enabled)', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['plateau'] });
+  for (const btn of state.tier2.buttons) {
+    assert.equal(btn.disabledTooltip, null, `${btn.op_name} should have null disabledTooltip when enabled`);
+  }
+});
+
+test('multi-select plateau+step: tier2 buttons have non-null disabledTooltip', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1', 'seg-2'],
+    selectedShapes: ['plateau', 'step'],
+  });
+  for (const btn of state.tier2.buttons) {
+    assert.ok(btn.disabledTooltip !== null, `${btn.op_name} should have a disabledTooltip when disabled`);
+    assert.ok(typeof btn.disabledTooltip === 'string' && btn.disabledTooltip.length > 0,
+      `${btn.op_name} disabledTooltip should be a non-empty string`);
+  }
+});
+
+test('tier2 buttons always carry disabledTooltip field (never undefined)', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['cycle'] });
+  for (const btn of state.tier2.buttons) {
+    assert.ok('disabledTooltip' in btn, `${btn.op_name} is missing disabledTooltip field`);
+  }
+});
+
+// ─── Per-shape tier2 button op_name snapshots ─────────────────────────────────
+
+test('single select trend: tier2 has exactly 6 buttons with correct op_names', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['trend'] });
+  assert.equal(state.tier2.buttons.length, 6);
+  const names = state.tier2.buttons.map((b) => b.op_name);
+  assert.deepEqual(names, ['trend_change_slope', 'trend_reverse', 'trend_scale', 'trend_add_noise', 'trend_detrend', 'trend_fit_piecewise']);
+});
+
+test('single select step: tier2 has exactly 5 buttons with correct op_names', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['step'] });
+  assert.equal(state.tier2.buttons.length, 5);
+  const names = state.tier2.buttons.map((b) => b.op_name);
+  assert.deepEqual(names, ['step_adjust_height', 'step_smooth', 'step_scale', 'step_add_noise', 'step_remove']);
+});
+
+test('single select spike: tier2 has exactly 5 buttons with correct op_names', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['spike'] });
+  assert.equal(state.tier2.buttons.length, 5);
+  const names = state.tier2.buttons.map((b) => b.op_name);
+  assert.deepEqual(names, ['spike_scale', 'spike_widen', 'spike_narrow', 'spike_remove', 'spike_add']);
+});
+
+test('single select transient: tier2 has exactly 5 buttons with correct op_names', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['transient'] });
+  assert.equal(state.tier2.buttons.length, 5);
+  const names = state.tier2.buttons.map((b) => b.op_name);
+  assert.deepEqual(names, ['transient_scale', 'transient_shift_onset', 'transient_change_duration', 'transient_smooth_onset', 'transient_sharpen_onset']);
+});
+
+test('single select noise: tier2 has exactly 5 buttons with correct op_names', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['noise'] });
+  assert.equal(state.tier2.buttons.length, 5);
+  const names = state.tier2.buttons.map((b) => b.op_name);
+  assert.deepEqual(names, ['noise_rescale', 'noise_filter', 'noise_change_distribution', 'noise_add_periodic', 'noise_denoise']);
+});
+
+test('single select plateau: all tier2 buttons have enabled true', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['plateau'] });
+  for (const btn of state.tier2.buttons) {
+    assert.equal(btn.enabled, true, `${btn.op_name} should be enabled`);
+  }
+});
+
+test('single select trend: all tier2 buttons have enabled true', () => {
+  const state = createTieredPaletteState({ selectedSegmentIds: ['seg-1'], selectedShapes: ['trend'] });
+  for (const btn of state.tier2.buttons) {
+    assert.equal(btn.enabled, true, `${btn.op_name} should be enabled`);
+  }
+});
+
+// ─── Multi-select union of tier2 buttons ──────────────────────────────────────
+
+test('multi-select plateau+step: tier2 buttons contain union of both shapes ops', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1', 'seg-2'],
+    selectedShapes: ['plateau', 'step'],
+  });
+  const names = new Set(state.tier2.buttons.map((b) => b.op_name));
+  for (const op of ['plateau_flatten', 'plateau_add_noise', 'plateau_scale', 'plateau_remove_drift', 'plateau_add_seasonal']) {
+    assert.ok(names.has(op), `${op} should be in tier2 union buttons`);
+  }
+  for (const op of ['step_adjust_height', 'step_smooth', 'step_scale', 'step_add_noise', 'step_remove']) {
+    assert.ok(names.has(op), `${op} should be in tier2 union buttons`);
+  }
+  assert.equal(state.tier2.buttons.length, 10, 'union of plateau(5) + step(5) = 10 buttons');
+});
+
+test('multi-select same shape twice: tier2 shows that shape ops without duplicates', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1', 'seg-2'],
+    selectedShapes: ['cycle', 'cycle'],
+  });
+  assert.equal(state.tier2.buttons.length, 7, 'deduplication: cycle appears once = 7 buttons');
 });

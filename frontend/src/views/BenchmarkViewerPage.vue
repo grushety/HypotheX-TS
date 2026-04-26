@@ -138,9 +138,10 @@ const operationPaletteState = computed(() =>
 const tieredPaletteSelectedIds = computed(() =>
   selectedSegmentId.value ? [selectedSegmentId.value] : [],
 );
-const tieredPaletteActiveShape = computed(
-  () => selectedSegment.value?.shape ?? selectedSegment.value?.label ?? null,
-);
+const tieredPaletteSelectedShapes = computed(() => {
+  const shape = selectedSegment.value?.shape ?? selectedSegment.value?.label ?? null;
+  return shape ? [shape] : [];
+});
 const comparisonState = computed(() =>
   createModelComparisonState({
     currentSegments: sample.value?.segments ?? [],
@@ -817,7 +818,7 @@ onMounted(() => {
 
         <OperationPalette
           :selected-segment-ids="tieredPaletteSelectedIds"
-          :active-shape="tieredPaletteActiveShape"
+          :selected-shapes="tieredPaletteSelectedShapes"
           :pending-op="pendingOpName"
           @op-invoked="handleOpInvoked"
         />

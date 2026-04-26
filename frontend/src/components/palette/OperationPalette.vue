@@ -10,9 +10,9 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  activeShape: {
-    type: String,
-    default: null,
+  selectedShapes: {
+    type: Array,
+    default: () => [],
   },
   pendingOp: {
     type: String,
@@ -25,7 +25,7 @@ const emit = defineEmits(['op-invoked']);
 const paletteState = computed(() =>
   createTieredPaletteState({
     selectedSegmentIds: props.selectedSegmentIds,
-    activeShape: props.activeShape,
+    selectedShapes: props.selectedShapes,
     pendingOp: props.pendingOp,
   }),
 );
@@ -130,6 +130,7 @@ function handleRowArrows(event, tierIndex) {
           :op="btn"
           :enabled="btn.enabled"
           :loading="btn.loading"
+          :disabled-tooltip="btn.disabledTooltip ?? null"
           @invoked="emit('op-invoked', $event)"
         />
         <span

@@ -12,6 +12,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  disabledTooltip: {
+    type: String,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['invoked']);
@@ -32,6 +36,7 @@ function invoke() {
     :disabled="!enabled || loading"
     :aria-label="op.label"
     :aria-busy="loading || undefined"
+    :title="!enabled && disabledTooltip ? disabledTooltip : undefined"
     @click="invoke"
     @keydown.enter.prevent="invoke"
   >

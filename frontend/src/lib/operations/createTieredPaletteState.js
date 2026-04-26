@@ -1,20 +1,48 @@
 import { TIER_0_OPS, TIER_1_OPS, TIER_2_OPS, TIER_3_OPS } from './operationCatalog.js';
+import { createShapeGatingState } from '../viewer/shapeGating.js';
 
 export function createTieredPaletteState({
   selectedSegmentIds = [],
-  activeShape = null,
+  selectedShapes = [],
   pendingOp = null,
 } = {}) {
   const isSingleSelect = selectedSegmentIds.length === 1;
   const isMultiSelect = selectedSegmentIds.length > 1;
+
+  const gating = createShapeGatingState(selectedShapes);
 
   function makeButton(op) {
     const enabled = op.requiresMultiSelect ? isMultiSelect : isSingleSelect;
     return { ...op, enabled, loading: pendingOp === op.op_name };
   }
 
-  const shapeOps = isSingleSelect && activeShape != null ? (TIER_2_OPS[activeShape] ?? []) : [];
-  const tier2AllDisabled = isMultiSelect;
+  // Build the Tier-2 op list: single-select shows active shape's ops;
+  // multi-select shows the union so shape-gating can enable/disable individually.
+  let shapeOps = [];
+  if (isSingleSelect && selectedShapes.length >= 1) {
+    shapeOps = TIER_2_OPS[selectedShapes[0]] ?? [];
+  } else if (isMultiSelect && selectedShapes.length > 0) {
+    const seen = new Set();
+    for (const shape of selectedShapes) {
+      for (const op of TIER_2_OPS[shape] ?? []) {
+        if (!seen.has(op.op_name)) {
+          seen.add(op.op_name);
+          shapeOps.push(op);
+        }
+      }
+    }
+  }
+
+  const tier2Buttons = shapeOps.map((op) => ({
+    ...op,
+    enabled: gating.isEnabled(op.op_name),
+    loading: pendingOp === op.op_name,
+    disabledTooltip: gating.tooltipIfDisabled(op.op_name),
+  }));
+
+  const tier2Disabled =
+    isMultiSelect &&
+    (tier2Buttons.length === 0 || tier2Buttons.every((b) => !b.enabled));
 
   return {
     tier0: {
@@ -30,14 +58,10 @@ export function createTieredPaletteState({
     tier2: {
       id: 'tier-2',
       label: 'Tier 2: shape-specific',
-      buttons: shapeOps.map((op) => ({
-        ...op,
-        enabled: !tier2AllDisabled,
-        loading: pendingOp === op.op_name,
-      })),
-      disabled: tier2AllDisabled,
-      intersectionTooltip: tier2AllDisabled
-        ? 'Multiple segments selected — shape-specific ops require a single segment'
+      buttons: tier2Buttons,
+      disabled: tier2Disabled,
+      intersectionTooltip: tier2Disabled
+        ? 'Multiple segments selected — no shared shape-specific operations'
         : null,
     },
     tier3: {
