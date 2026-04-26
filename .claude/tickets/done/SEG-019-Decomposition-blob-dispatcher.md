@@ -106,3 +106,21 @@ def dispatch_fitter(shape_label: str, domain_hint: str | None = None) -> Callabl
 - `backend/tests/test_decomposition.py` — 83 tests: reassemble, JSON round-trip (bit-identical + allclose), serialisation helpers, registration, dispatch for all 7 shapes × 5 domain hints, unknown-shape KeyError, end-to-end blob validity + reassemble + JSON round-trip for all 7 shapes
 
 ---
+# SEG-019 is done. Here's a summary:                                                                                                           
+                                                                                          
+  DecompositionBlob (app/models/decomposition.py) — central data structure for all fitters and Tier-2 ops. to_json/from_json uses              
+  base64-encoded array payloads for bit-identical round-trips; reassemble() sums all named components.                                         
+             
+  Segment model (app/models/segment.py) — SQLAlchemy model with decomposition_json: JSON column; auto-created by db.create_all() on next app   
+  start. Migration script provided for existing databases.  
+
+  Dispatcher (app/services/decomposition/dispatcher.py) — FITTER_REGISTRY dict + @register_fitter decorator + dispatch_fitter(shape_label,
+  domain_hint). Auto-discovers fitter modules via pkgutil.iter_modules on first call — dropping a new file in fitters/ is all that's needed to
+  add a fitter.
+
+  9 stub fitters (fitters/ subpackage) — Constant, Delta, ETM, STL, MSTL, BFAST, LandTrendr, Eckhardt, GrAtSiD, NoiseModel; all produce valid
+  blobs where reassemble() recovers X and JSON round-trip is lossless.
+
+  83 tests cover: reassemble, JSON round-trip (bit-identical + rtol=1e-12), serialisation helpers, registration, dispatch for all 7 shapes × 5
+  domain hints, unknown-shape KeyError, and end-to-end blob validity per shape.
+

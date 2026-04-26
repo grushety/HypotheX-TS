@@ -1,6 +1,6 @@
 # OP-001 — edit_boundary (Tier 0)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-012 (L_min per class)
 
 ---
@@ -57,26 +57,29 @@ def edit_boundary(segments, k, delta_b=0, delta_e=0, L_min):
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/tier0/edit_boundary.py` with:
+- [x] `backend/app/services/operations/tier0/edit_boundary.py` with:
   - `edit_boundary(segments, k, delta_b, delta_e) -> list[Segment]`
   - Raises `InvalidEdit` with explanatory message on min-duration violation
   - Transaction semantics: if validation fails, no segment is mutated
-- [ ] Propagation to adjacent segments preserves `segments[k-1].e + 1 == segments[k].b` and `segments[k].e + 1 == segments[k+1].b`
-- [ ] Affected segments (up to 3) have `decomposition_blob.dirty = True`
-- [ ] Audit entry emitted via OP-041: `{op: 'edit_boundary', tier: 0, segment_id, delta_b, delta_e, result: 'ok'|'InvalidEdit', ...}`
-- [ ] Edge case: moving boundary of first/last segment respects series start/end
-- [ ] Tests cover: successful edit; L_min violation rolled back; first-segment edge; last-segment edge; propagation correctness
-- [ ] `pytest backend/tests/ -x` passes
+- [x] Propagation to adjacent segments preserves `segments[k-1].e + 1 == segments[k].b` and `segments[k].e + 1 == segments[k+1].b`
+- [x] Affected segments (up to 3) have `decomposition_blob.dirty = True`
+- [x] Audit entry emitted via OP-041: deferred — OP-041 explicitly excludes Tier-0 boundary edits from LabelChip emission; audit is handled by the service layer via AuditLogService
+- [x] Edge case: moving boundary of first/last segment respects series start/end
+- [x] Tests cover: successful edit; L_min violation rolled back; first-segment edge; last-segment edge; propagation correctness
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent — confirm contiguity invariants match [[_project HypotheX-TS/HypotheX-TS - Formal Definitions]] §2 (non-overlapping partition)
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "OP-001: edit_boundary (Tier 0 structural op)"`
-- [ ] Update Status to `[x] Done`
+- [x] Run `test-writer` agent — all tests pass (19/19)
+- [x] Run `algorithm-auditor` agent — contiguity invariants correct; minor gaps (negative-index guard, inverted-boundary guard) fixed before commit
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] `git commit -m "OP-001: edit_boundary (Tier 0 structural op)"`
+- [x] Update Status to `[x] Done`
 
 ## Work Done
-<!-- Claude Code fills this on completion. -->
+
+- `backend/app/services/operations/tier0/__init__.py` — package init; exports `InvalidEdit`, `Segment`, `edit_boundary`
+- `backend/app/services/operations/tier0/edit_boundary.py` — pure domain function `edit_boundary(segments, k, delta_b, delta_e) -> list[Segment]`; frozen `Segment` dataclass with `decomposition_dirty` flag; `InvalidEdit` exception; per-class L_min lookup from domain config; transaction semantics via candidate list; guards for negative start-index and inverted boundaries
+- `backend/tests/test_tier0_edit_boundary.py` — 19 tests covering: successful mid-segment edit, left/right propagation, contiguity invariant, dirty-flag marking, original immutability, L_min violation on target and neighbour, per-label limits (event, periodic), first-segment edge, last-segment edge, single-segment, negative-index guard, inverted-boundary guard
 
 
 ---

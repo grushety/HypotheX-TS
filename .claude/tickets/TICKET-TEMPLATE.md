@@ -19,8 +19,7 @@ What needs to be done and why.
 ## Definition of Done
 - [ ] Run `tester` agent — all tests pass
 - [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "TICKET-X: short description"`
-- [ ] Update Status to `[x] Done`
-
-## Work Done
-<!-- Claude Code fills this in when marking the ticket done. List files changed and one-line reason for each. -->
+- [ ] Add "Result Report" in the ticket
+- [ ] Add very short context for feature into `.claude/skills/context/context.md`
+- [ ] Update Status to `[x] Done` and all criteria to `[x]`
+- [ ] `git commit -m "TICKET-X: short description"` ← hook auto-moves this file to `done/` on commit

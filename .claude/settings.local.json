@@ -24,7 +24,17 @@
       "PowerShell(pip install *)",
       "Bash(git -C \"C:/Users/yulia/PycharmProjects/HypotheX-TS\" add backend/app/services/suggestion/rule_classifier.py backend/app/services/suggestion/shape_thresholds.yaml backend/app/services/suggestions.py backend/requirements.txt backend/tests/test_rule_classifier.py backend/tests/fixtures/synthetic_shapes.py \"backend/tests/fixtures/__init__.py\")",
       "Bash(git -C \"C:/Users/yulia/PycharmProjects/HypotheX-TS\" status --short)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "PowerShell(python -c \"import claspy; print\\('claspy ok'\\)\" 2>&1; python -c \"import ruptures; print\\('ruptures ok'\\)\" 2>&1)",
+      "Bash(.venv/Scripts/python -c \"import ruptures; print\\('ruptures', ruptures.__version__\\)\")",
+      "Bash(.venv/Scripts/python -c \"import scipy; print\\('scipy', scipy.__version__\\)\")",
+      "Bash(.venv/Scripts/python *)",
+      "Bash(../.venv/Scripts/python -c ' *)",
+      "Bash(PYTHONPATH=. ../.venv/Scripts/python *)",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\yulia\\\\PycharmProjects\\\\HypotheX-TS\\\\backend\" -Depth 2 | Where-Object {$_.PSIsContainer} | Select-Object FullName)",
+      "Bash(python3 -c \"import numpy; print\\('numpy ok'\\)\")",
+      "Bash(node --test --test-isolation=none src/lib/viewer/shapeColors.test.js)"
     ]
   }
 }

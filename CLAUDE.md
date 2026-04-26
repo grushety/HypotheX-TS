@@ -70,15 +70,30 @@ HypotheX-TS/
 - **Never delete or rewrite working tests** without explicit request
 - **Always run tests after any code change**
 - **Checkpoint before large refactors:** `git add -A && git commit -m "checkpoint: before <change>"`
+- **ALWAYS run `tester` agent → `code-reviewer` agent → commit `<PREFIX>-NNN: description`** when a ticket is done
 
-## Git and Ticket Workflow
+## Ticket Authoring Rule
 
-- Branch per ticket: `hts/HTS-NNN-short-description`; never commit to main
-- Commit format: `HTS-NNN: short description` or `UI-NNN: short description` for UI-series tickets
-- Tickets authored in **claude.ai desktop**, copied into `.claude/tickets/` by project owner
-- Claude Code reads tickets, never creates them
-- One ticket at a time — mark done before starting next
-- When done: `test-writer` → `algorithm-auditor` (if domain code changed) → `api-validator` (if routes changed) → commit → update ticket status → check all done criteria → fill in `## Work Done` with files changed and one-line reason each
+Tickets are authored in claude.ai (desktop chat) and copy-pasted by Yulia into `.claude/tickets/`.
+Claude Code NEVER creates or edits ticket files.
+Claude Code reads ticket files to understand the task, then implements the code.
+Claude Code NEVER writes implementation code in ticket descriptions.
+Tickets describe WHAT to do, not HOW — no Vue templates, no CSS blocks, no JS code snippets.
+Claude Code reads the existing source files and decides the implementation itself.
+
+## Ticket Workflow
+
+All tasks are tracked as ticket files in `.claude/tickets/`.
+
+- Each ticket is a markdown file: `<PREFIX>-NNN-Short-Title.md` where prefix is one of `SEG`, `OP`, `UI`, `VAL`, `HTS` — use `TICKET-TEMPLATE.md` as the base
+- Branch per ticket: `hts/<prefix>-nnn-short-description`; never commit to main
+- Ticket contains: problem description, goal, acceptance criteria, and a **Definition of Done** checklist
+- **When you finish a ticket:** mark it done by updating `Status: [ ] Done` → `Status: [x] Done` in the ticket file, and tick all completed Acceptance Criteria and Definition of Done items
+- **Do not start work without a ticket** — if something is unclear, ask before creating new files or making changes
+- **One ticket at a time** — complete and mark done before starting the next
+- **After finishing a ticket:** run `tester` agent, then `code-reviewer` agent, then commit: `git commit -m "<PREFIX>-NNN: short description"`
+- The git hook auto-moves the ticket file to `done/` on commit
+- Current open tickets: see `.claude/tickets/`
 
 ## Subagents (`.claude/agents/`)
 
@@ -92,6 +107,7 @@ HypotheX-TS/
 - `domain-concepts` — segment formalism, operations, constraint status, audit schema. **Load before any segmentation / constraint / audit work.**
 - `research-algorithms` — algorithm sources, equations, SotA status. **Load before any domain algorithm work.**
 - `backend-patterns` — Flask layering, DI, frozen dataclasses, lru_cache, exception hierarchy.
+- `context` — running log of feature-level changes; appended one short paragraph per finished ticket (DoD step).
 
 ## Reference Docs
 
