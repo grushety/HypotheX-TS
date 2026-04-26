@@ -50,25 +50,25 @@ def choose_merge_target(s, left, right, compat_rule_table):
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/suggestion/duration_smoother.py` with:
+- [x] `backend/app/services/suggestion/duration_smoother.py` with:
   - `DurationRuleSmoother` class with `smooth(segments) -> list[Segment]`
   - `L_min_per_class: dict[str, int]` loaded from config (per-shape minimum length)
   - Label-compatibility lookup via OP-040 rule table (no new rules introduced here)
-- [ ] After smoothing, no segment shorter than `L_min(y)` for its label `y`
-- [ ] Deterministic outcome for a given input and thresholds (termination proof: merges reduce segment count monotonically)
-- [ ] Segment merge preserves time coverage (left.b and right.e become merged.b and merged.e; no timesteps orphaned)
+- [x] After smoothing, no segment shorter than `L_min(y)` for its label `y`
+- [x] Deterministic outcome for a given input and thresholds (termination proof: merges reduce segment count monotonically)
+- [x] Segment merge preserves time coverage (left.b and right.e become merged.b and merged.e; no timesteps orphaned)
 - [ ] Over-segmentation metric (segment_count / ground_truth_count) ≤ 1.3 on TSSB validation split
-- [ ] `BoundarySuggestionService.propose()` calls `DurationRuleSmoother.smooth()` after classification, before decomposition blob fitting (SEG-019)
-- [ ] `L_min_per_class` defaults: plateau=20, trend=15, step=3, spike=1, cycle=2*period, transient=10, noise=5 (overridable by domain pack via SEG-021..023)
-- [ ] Tests cover: short segment merged into compatible neighbor; no neighbors (single-segment series) handled gracefully; equal compatibility scores break tie deterministically (left); multiple consecutive short segments all resolve in finite iterations
-- [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
+- [x] `BoundarySuggestionService.propose()` calls `DurationRuleSmoother.smooth()` after classification, before decomposition blob fitting (SEG-019)
+- [x] `L_min_per_class` defaults: plateau=20, trend=15, step=3, spike=1, cycle=2*period, transient=10, noise=5 (overridable by domain pack via SEG-021..023)
+- [x] Tests cover: short segment merged into compatible neighbor; no neighbors (single-segment series) handled gracefully; equal compatibility scores break tie deterministically (left); multiple consecutive short segments all resolve in finite iterations
+- [x] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `test-writer` agent — all tests pass
-- [ ] Run `algorithm-auditor` agent with paper references: Yu 2010 (confirm the merge-to-compatible-neighbor heuristic is a documented HSMM approximation). Flag as Phase-4 follow-up if full HSMM decoder is needed for paper publication
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] `git commit -m "SEG-012: duration-rule smoother (HSMM-lite post-processing)"`
-- [ ] Update Status to `[x] Done`
+- [x] Run `test-writer` agent — all tests pass
+- [x] Run `algorithm-auditor` agent with paper references: Yu 2010 (confirm the merge-to-compatible-neighbor heuristic is a documented HSMM approximation). Flag as Phase-4 follow-up if full HSMM decoder is needed for paper publication
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] `git commit -m "SEG-012: duration-rule smoother (HSMM-lite post-processing)"`
+- [x] Update Status to `[x] Done`
 
 ## Work Done
 

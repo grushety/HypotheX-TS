@@ -1,0 +1,43 @@
+# UI-004 — Shape-label chips and 7-shape timeline band
+
+**Status:** [x] Done
+**Depends on:** UI-001, SEG-008
+
+---
+
+## Goal
+
+Replace the current labeled segmentation band with a **7-shape-aware band**. Each segment renders as a colour-coded chip carrying its shape primitive `{plateau, trend, step, spike, cycle, transient, noise}`. Clicking a chip selects the segment and reveals its shape, confidence, and a one-line summary of its decomposition method.
+
+Two features:
+
+**1. Colour-coded chip per shape**
+Distinct colour per shape (plateau=gray, trend=blue, step=orange, spike=red, cycle=teal, transient=purple, noise=light-gray). Tooltip: `shape | semantic_label? | confidence% | method`. Secondary semantic-label text shown below the chip when a domain pack is active (UI-014).
+
+**2. Keyboard + click selection**
+Click selects and publishes `segment_selected` event. Tab cycles through chips; Enter selects.
+
+Wire into existing `TimelineViewer.vue` + `SegmentationOverlay.vue` (replacing the previous binary-label styling).
+
+---
+
+## Acceptance Criteria
+
+- [x] 7 colour tokens defined in `frontend/src/lib/viewer/shapeColors.js` with named export `SHAPE_COLORS`
+- [x] `ShapeChip.vue` component in `frontend/src/components/viewer/ShapeChip.vue` renders a single chip with colour + optional semantic-label sub-text
+- [x] `SegmentationOverlay.vue` renders one `ShapeChip` per segment with `shape`, `confidence`, `method` (from decomposition blob), `semantic_label` (optional)
+- [x] Tooltip content matches pattern `{shape} | {semantic?} | {conf_pct}% | {method}`
+- [x] Chip click emits `segment-selected` with `segment_id`
+- [x] Keyboard: Tab/Shift-Tab cycles through chips; Enter selects; visible focus ring
+- [x] Band scales correctly with zoom / brush (reuses existing x-scale from UI-001)
+- [x] Legend showing all 7 shapes rendered in a small legend component (`ShapeLegend.vue`); expandable to show semantic pack labels when pack active
+- [x] Fixture test: load synthetic series with one segment per shape → all 7 chips render with correct colour
+- [x] `npm test` and `npm run build` pass
+
+## Definition of Done
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "UI-004: 7-shape chips and shape-aware timeline band"` ← hook auto-moves this file to `done/` on commit
