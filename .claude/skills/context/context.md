@@ -6,6 +6,10 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## SEG-014 STL/MSTL decomposition fitter (Cleveland 1990 / Bandara 2021)
+
+Replaced stubs in `backend/app/services/decomposition/fitters/stl.py` and `mstl.py` with full implementations via statsmodels (requires `statsmodels>=0.14` in requirements.txt). `detect_dominant_period(X)` in `stl.py` returns `int` (single period) or `list[int]` (multiple) via FFT + ACF. Two non-obvious gotchas: (1) statsmodels MSTL sorts periods internally, so `valid_periods` must be sorted before naming `seasonal_{T}` columns or you get mislabeled components; (2) MSTL crashes with `UnboundLocalError` when `2*period >= n` for all requested periods — handled by an underdetermined fallback in `_fit_mstl_1d`. Dispatches: `("cycle", None)` → STL, `("cycle", "multi-period")` → MSTL. Tests: `backend/tests/test_stl_mstl_fitter.py` (37 tests).
+
 ## SEG-013 ETM decomposition fitter (Bevis-Brown 2014)
 
 Replaced the linear-trend stub in `backend/app/services/decomposition/fitters/etm.py` with the full Bevis-Brown (2014) Eq. 1 ETM model: x₀ + linear rate + Heaviside steps + log/exp transients + sinusoidal harmonics, fitted via `np.linalg.lstsq`. `build_etm_design_matrix(t, known_steps, known_transients, harmonic_periods)` returns `(A, labels)` where labels follow Bevis-Brown naming (`x0`, `linear_rate`, `step_at_{t_s}`, `log_{t_r}_tau{τ}`, `sin_{T}`, etc.). Graceful underdetermined fallback (n < p) returns a constant-mean blob with `fit_metadata["underdetermined"] = True`. Multivariate (n, d) input fits channels independently and stacks. Registered as `"ETM"` and dispatched for `trend`, `step`, and `transient` shapes. Tests: `backend/tests/test_etm_fitter.py` (29 tests).
