@@ -1,6 +1,6 @@
 # SEG-020 — Few-shot prototype update from user corrections
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-011 (prototype classifier)
 
 ---
@@ -66,24 +66,28 @@ class SupportBuffer:
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/suggestion/support_buffer.py` with:
+- [x] `backend/app/services/suggestion/support_buffer.py` with:
   - `SupportBuffer` class as above
   - `AcceptResult` frozen dataclass: `accepted`, `reason`, `prototypes_updated`, `drift`
   - Bounded memory per class (default 50, configurable via `SupportBufferConfig`)
-- [ ] Confidence gate enforced at `accept_correction`; sub-threshold corrections logged but not buffered
-- [ ] Prototype recompute triggered every `n_update` accepted corrections (default 5)
-- [ ] Drift metric = `max_y ‖μ_y^new − μ_y^old‖` over classes present in both versions
-- [ ] Drift exceeding `drift_threshold` logs a warning and emits a drift event consumed by UI-002
-- [ ] Non-destructive: `prev_prototypes` retained so UI can offer rollback
-- [ ] Encoder weights frozen online (MVP assumption; documented in docstring)
-- [ ] Buffer state serializable to/from JSON for session persistence
-- [ ] Tests cover: confidence gating, buffer cap enforcement (FIFO eviction), trigger frequency, drift computation, rollback via `prev_prototypes`, JSON round-trip
-- [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
+- [x] Confidence gate enforced at `accept_correction`; sub-threshold corrections logged but not buffered
+- [x] Prototype recompute triggered every `n_update` accepted corrections (default 5)
+- [x] Drift metric = `max_y ‖μ_y^new − μ_y^old‖` over classes present in both versions
+- [x] Drift exceeding `drift_threshold` logs a warning and emits a drift event consumed by UI-002
+- [x] Non-destructive: `prev_prototypes` retained so UI can offer rollback
+- [x] Encoder weights frozen online (MVP assumption; documented in docstring)
+- [x] Buffer state serializable to/from JSON for session persistence
+- [x] Tests cover: confidence gating, buffer cap enforcement (FIFO eviction), trigger frequency, drift computation, rollback via `prev_prototypes`, JSON round-trip
+- [x] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "SEG-020: few-shot support buffer with drift tracking"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "SEG-020: few-shot support buffer with drift tracking"` ← hook auto-moves this file to `done/` on commit
+
+## Result Report
+
+`SupportBuffer` added at `backend/app/services/suggestion/support_buffer.py`. Maintains per-class `deque(maxlen=cap_per_class)` buffers for all 7 shape primitives. `accept_correction()` gates on confidence and label validity, then appends to the deque (FIFO eviction automatic via `deque.maxlen`) and increments `total_accepted`. Every `n_update` accepted corrections it calls `classifier.fit_prototypes(all_support)` and computes drift as `max_y ‖μ_y^new − μ_y^old‖₂`; drift > `drift_threshold` emits a `logging.WARNING`. `prev_prototypes` property exposes a copy of pre-update prototypes for rollback. `to_dict()`/`from_dict()` serialise buffer segments and config; prototype vectors are not persisted (recomputed from segments). 28 new tests; all pass. Exported from `suggestion/__init__.py`.

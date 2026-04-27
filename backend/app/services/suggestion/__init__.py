@@ -23,8 +23,12 @@ from .prototype_classifier import (
     SupportSegment,
 )
 from .segment_encoder import SegmentEmbedding, SegmentEncoderConfig, SegmentEncodingError, encode_segment, normalize_series
+from .support_buffer import AcceptResult, SupportBuffer, SupportBufferConfig
 
 __all__ = [
+    "AcceptResult",
+    "SupportBuffer",
+    "SupportBufferConfig",
     "BoundaryCandidate",
     "BoundaryProposal",
     "BoundaryProposalError",
