@@ -6,6 +6,10 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## OP-021 Trend Tier-2 ops (6 ops)
+
+Created `backend/app/services/operations/tier2/trend.py` with `flatten`, `change_slope`, `reverse_direction`, `linearise`, `extrapolate`, `add_acceleration`. Dispatches by `blob.method` ('ETM' or 'LandTrendr'). Key gotchas: (1) `flatten` delegates to `change_slope(alpha=0)` — both guaranteed identical; (2) `linearise` uses Theil-Sen (Sen 1968) and stores residual in `blob.residual` only (not in components) so `reassemble()` = fitted line, not original signal; (3) `extrapolate` uses absolute-t convention `x0 + rate*t_ext`, not `t_ext-t_ext[0]` — the reviewer caught a bug here that masked in zero-start tests; (4) LandTrendr flatten/change_slope(0) collapses to Constant method to avoid intercept_1≠intercept_2 step artifact. Relabeling: flatten/change_slope(0) → DETERMINISTIC('plateau'); others → PRESERVED('trend'). AuditEvent deferred to OP-041. 47 tests.
+
 ## OP-020 Plateau Tier-2 ops (5 ops)
 
 Created `backend/app/services/operations/tier2/` package and `plateau.py` with `raise_lower`, `invert`, `replace_with_trend`, `replace_with_cycle`, `tilt_detrend`. All ops return `Tier2OpResult(frozen=True, eq=False, tier=2)`. The three mutating ops (`raise_lower`, `replace_with_trend`, `replace_with_cycle`) deepcopy the blob internally — callers never need to deepcopy. `replace_with_trend` transitions blob to `ETM` method (x0 + linear_rate components, Bevis & Brown 2014 Eq. 1); `replace_with_cycle` transitions to `STL` method (trend + seasonal + residual, Cleveland et al. 1990). Relabeling: PRESERVED for raise_lower/invert/tilt_detrend; DETERMINISTIC('trend'/'cycle') for replace ops. AuditEvent deferred to OP-041; UI gating deferred to UI-006. 50 tests in `test_plateau_ops.py`.
