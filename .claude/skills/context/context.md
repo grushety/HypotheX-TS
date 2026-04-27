@@ -6,6 +6,10 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## OP-020 Plateau Tier-2 ops (5 ops)
+
+Created `backend/app/services/operations/tier2/` package and `plateau.py` with `raise_lower`, `invert`, `replace_with_trend`, `replace_with_cycle`, `tilt_detrend`. All ops return `Tier2OpResult(frozen=True, eq=False, tier=2)`. The three mutating ops (`raise_lower`, `replace_with_trend`, `replace_with_cycle`) deepcopy the blob internally — callers never need to deepcopy. `replace_with_trend` transitions blob to `ETM` method (x0 + linear_rate components, Bevis & Brown 2014 Eq. 1); `replace_with_cycle` transitions to `STL` method (trend + seasonal + residual, Cleveland et al. 1990). Relabeling: PRESERVED for raise_lower/invert/tilt_detrend; DETERMINISTIC('trend'/'cycle') for replace ops. AuditEvent deferred to OP-041; UI gating deferred to UI-006. 50 tests in `test_plateau_ops.py`.
+
 ## OP-013 Tier-1 stochastic atoms (suppress / add_uncertainty)
 
 `suppress` and `add_uncertainty` in `backend/app/services/operations/tier1/stochastic.py`. `suppress` supports five fill strategies: `linear` (linspace between context means), `spline` (CubicSpline on ctx_pre/ctx_post anchors), `stl_trend` (delegates to statsmodels STL, requires `aux['period']`; falls back to linear with WARNING when series too short), `climatology` (DOY-lookup from dict or array; raises ValueError with context on missing key/OOB), `baseflow` (delegates to SEG-016 Eckhardt fitter). Domain-hint defaults: `remote_sensing → climatology`, `hydrology → baseflow`, else `linear`. `add_uncertainty` injects white/pink/red colored noise (Timmer & König 1995) via `colorednoise.powerlaw_psd_gaussian`, scaled to σ by std-normalization; seed-reproducible. Both return `StochasticOpResult(frozen=True, eq=False)`. Relabeling: `suppress → RECLASSIFY_VIA_SEGMENTER`, `add_uncertainty → PRESERVED`. AuditEvent emission deferred to OP-041 (same gap as OP-010/011/012). New dep: `colorednoise>=0.2`. 53 tests in `test_stochastic_ops.py`.

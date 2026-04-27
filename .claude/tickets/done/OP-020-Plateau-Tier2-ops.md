@@ -1,6 +1,6 @@
 # OP-020 — Plateau Tier-2 ops (5 ops)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-019 (blob), OP-010 (scale/offset primitives), OP-040 (relabeler)
 
 ---
@@ -62,20 +62,24 @@ def tilt_detrend(blob, beta_local, t):
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/tier2/plateau.py` with all 5 ops
-- [ ] `raise_lower` supports both additive `delta` and multiplicative `alpha` (exactly one required, else raise)
-- [ ] `replace_with_trend` mutates blob method to `'ETM'` and emits OP-040 DETERMINISTIC(trend)
-- [ ] `replace_with_cycle` mutates blob method to `'STL'` and emits OP-040 DETERMINISTIC(cycle)
-- [ ] `tilt_detrend` preserves plateau shape (residual has zero local slope post-op)
-- [ ] Each op is a pure function taking a `DecompositionBlob` (deepcopied in tests) and returning the reassembled edited series
-- [ ] UI-006 gates these ops visible only when active segment has `shape='plateau'`
-- [ ] Tests per op: synthetic plateau blob, apply op with known params, reassembled signal matches expected
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/tier2/plateau.py` with all 5 ops
+- [x] `raise_lower` supports both additive `delta` and multiplicative `alpha` (exactly one required, else raise)
+- [x] `replace_with_trend` mutates blob method to `'ETM'` and emits OP-040 DETERMINISTIC(trend)
+- [x] `replace_with_cycle` mutates blob method to `'STL'` and emits OP-040 DETERMINISTIC(cycle)
+- [x] `tilt_detrend` preserves plateau shape (residual has zero local slope post-op)
+- [x] Each op is a pure function taking a `DecompositionBlob` (deepcopied internally; caller's blob unchanged) and returning the reassembled edited series
+- [ ] UI-006 gates these ops visible only when active segment has `shape='plateau'` — deferred to UI-006 ticket
+- [x] Tests per op: synthetic plateau blob, apply op with known params, reassembled signal matches expected
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-020: Plateau Tier-2 ops (5 ops)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass (50 new, 810 full suite)
+- [x] Run `code-reviewer` agent — 2 blocking issues fixed (internal deepcopy, empty-components guard)
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-020: Plateau Tier-2 ops (5 ops)"` ← hook auto-moves this file to `done/` on commit
+
+## Result Report
+
+Created `backend/app/services/operations/tier2/plateau.py` and the new `tier2/` package. Implements `raise_lower` (delta or alpha), `invert`, `replace_with_trend` (ETM), `replace_with_cycle` (STL), `tilt_detrend`. All three mutating ops deepcopy the blob internally — caller's blob is never modified. `_level` helper guards against empty-components blobs. `replace_with_cycle` validates period > 0. Relabeling: raise_lower/invert/tilt_detrend → PRESERVED('plateau'); replace_with_trend → DETERMINISTIC('trend'); replace_with_cycle → DETERMINISTIC('cycle'). AuditEvent deferred to OP-041. UI gating deferred to UI-006. 50 tests in `test_plateau_ops.py`.
