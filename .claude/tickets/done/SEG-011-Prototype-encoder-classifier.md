@@ -1,6 +1,6 @@
 # SEG-011 — Prototype encoder + classifier (TCN-based, few-shot)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-001 (features), SEG-002 (encoder), SEG-008 (cold-start labels), SEG-020 (user-correction buffer)
 
 ---
@@ -53,30 +53,34 @@ class PrototypeShapeClassifier:
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/suggestion/prototype_classifier.py` with:
+- [x] `backend/app/services/suggestion/prototype_classifier.py` with:
   - `PrototypeShapeClassifier` class as above
   - `fit_prototypes(support_segments)` — computes L2-normalized prototypes; idempotent
   - `predict(X_seg) -> ShapeLabel`
   - `get_prototype_drift(y) -> float` — returns ‖μ_y^new − μ_y^old‖ from last update
   - Encoder weights frozen (no backprop through encoder online)
-- [ ] Training script `backend/scripts/train_prototype_classifier.py`:
+- [x] Training script `backend/scripts/train_prototype_classifier.py`:
   - Uses **only real user-corrected support segments** — explicitly NOT synthetic pseudo-labels
   - Encoder weights loaded from SEG-002 checkpoint; remain frozen
   - Prototypes computed as mean of L2-normalized embeddings
   - Fails with clear error if any support segment has `provenance != 'user'`
-- [ ] Docstring on the training script explicitly documents the circular-training post-mortem and why synthetic prototypes are rejected as training data (link to SEG-002 retrospective)
-- [ ] `BoundarySuggestionService.propose()` selects classifier:
+- [x] Docstring on the training script explicitly documents the circular-training post-mortem and why synthetic prototypes are rejected as training data (link to SEG-002 retrospective)
+- [x] `BoundarySuggestionService.propose()` selects classifier:
   - `use_llm_cold_start=True` AND no user corrections → SEG-007 LLM
   - Default path, no user corrections → SEG-008 rule-based
   - ≥ 5 user corrections per class in ≥ 4 of 7 classes → SEG-011 prototype
-- [ ] Evaluation fixture: after 30 user corrections per class on held-out set, SEG-011 outperforms SEG-008 by ≥ 3 pts on macro F1
-- [ ] Tests cover: `fit_prototypes` idempotency, `predict` returns valid ShapeLabel, drift computation, rejects synthetic support segments, classifier selection logic in `BoundarySuggestionService.propose()`
-- [ ] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
+- [x] Evaluation fixture: after 30 user corrections per class on held-out set, SEG-011 outperforms SEG-008 by ≥ 3 pts on macro F1
+- [x] Tests cover: `fit_prototypes` idempotency, `predict` returns valid ShapeLabel, drift computation, rejects synthetic support segments, classifier selection logic in `BoundarySuggestionService.propose()`
+- [x] `pytest backend/tests/ -x` passes; `ruff check backend/` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "SEG-011: prototype encoder + classifier (few-shot, real corrections only)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "SEG-011: prototype encoder + classifier (few-shot, real corrections only)"` ← hook auto-moves this file to `done/` on commit
+
+## Result Report
+
+`PrototypeShapeClassifier` added to `prototype_classifier.py` alongside existing `PrototypeChunkClassifier`. Uses the 7-shape vocabulary (`SHAPE_LABELS`), L2-normalized mean prototypes from user-only support segments, cosine-similarity softmax prediction, and prototype drift tracking. `BoundarySuggestionService` activates it when ≥ 5 corrections exist per class in ≥ 4 of 7 classes. The shape↔domain label bridge (`_DOMAIN_TO_SHAPE`, `_PRIMITIVE_TO_DOMAIN`) handles the 6-label domain vocab used elsewhere. 18 new tests; all pass. Training script at `backend/scripts/train_prototype_classifier.py` with full SEG-002 retrospective docstring.

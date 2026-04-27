@@ -7,6 +7,11 @@ import numpy as np
 from app.core.domain_config import load_domain_config
 from app.services.suggestion.segment_encoder import SegmentEncoderConfig, SegmentEncodingError, encode_segment
 
+# The canonical 7 shape primitives (vocabulary v2, April 2026).
+SHAPE_LABELS: tuple[str, ...] = (
+    "plateau", "trend", "step", "spike", "cycle", "transient", "noise"
+)
+
 
 class PrototypeClassifierError(RuntimeError):
     """Raised when prototype classification cannot be completed safely."""
@@ -288,3 +293,165 @@ def _softmax_probabilities(similarities: dict[str, float], temperature: float) -
         raise PrototypeClassifierError("Prototype classifier could not normalize similarity scores.")
     probabilities = weights / denominator
     return {label: float(probability) for label, probability in zip(labels, probabilities, strict=True)}
+
+
+# ---------------------------------------------------------------------------
+# SEG-011: PrototypeShapeClassifier — few-shot, real corrections only
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SupportSegment:
+    """A user-corrected labeled segment used as training support for SEG-011.
+
+    Only segments with provenance='user' are accepted by PrototypeShapeClassifier.
+    Synthetic support is rejected to prevent circular training (see SEG-002
+    retrospective: pseudo-label-trained TCN learned nothing beyond the heuristic
+    encoder because training targets were derived from the same heuristic).
+
+    Attributes:
+        shape_label: One of the 7 shape primitives (SHAPE_LABELS).
+        values:      Raw segment signal (1-D), immutable tuple.
+        provenance:  Must be 'user' for training; any other value is rejected.
+    """
+
+    shape_label: str
+    values: tuple[float, ...]
+    provenance: str = "user"
+
+
+class PrototypeShapeClassifier:
+    """Prototype-based few-shot shape classifier over the 7 shape primitives.
+
+    Classifies segments by cosine similarity to per-class prototype vectors
+    computed as the L2-normalised mean of support segment embeddings.
+    The encoder (TCN from SEG-002, or heuristic fallback) remains frozen during
+    online use — no gradient updates propagate through the encoder.
+
+    Source:
+        Snell et al. (2017) "Prototypical Networks for Few-shot Learning",
+        NeurIPS 2017, arXiv:1703.05175.
+        Eq. (1): μ_c = (1/|S_c|) Σ_{x∈S_c} f_φ(x)  [prototype computation]
+        Eq. (2): p_φ(y=k|x) ∝ exp(−d(z, μ_k))        [cosine classification]
+    """
+
+    SHAPE_LABELS: tuple[str, ...] = SHAPE_LABELS
+
+    def __init__(
+        self,
+        *,
+        encoder_config: SegmentEncoderConfig | None = None,
+        temperature: float = 0.1,
+    ) -> None:
+        self._encoder_config = encoder_config or SegmentEncoderConfig()
+        self._temperature = temperature
+        self._prototypes: dict[str, np.ndarray] = {}
+        self._previous_prototypes: dict[str, np.ndarray] = {}
+
+    @property
+    def prototypes(self) -> dict[str, np.ndarray]:
+        """Read-only view of the currently fitted prototype vectors."""
+        return dict(self._prototypes)
+
+    def fit_prototypes(
+        self,
+        support_segments: list[SupportSegment] | tuple[SupportSegment, ...],
+    ) -> None:
+        """Compute L2-normalised class prototypes from labeled support segments.
+
+        Idempotent: calling twice with identical support produces identical prototypes.
+        Rejects any segment with provenance != 'user' — synthetic segments cause
+        circular training (see SEG-002 retrospective in train_prototype_classifier.py).
+
+        Source: Snell et al. (2017) Eq. (1): μ_c = mean(L2_norm(f_φ(x)) for x in S_c).
+        """
+        for seg in support_segments:
+            if seg.provenance != "user":
+                raise PrototypeClassifierError(
+                    f"PrototypeShapeClassifier requires provenance='user'; "
+                    f"received '{seg.provenance}' for label '{seg.shape_label}'. "
+                    f"Synthetic prototypes are rejected to prevent circular training "
+                    f"(SEG-002 retrospective)."
+                )
+            if seg.shape_label not in self.SHAPE_LABELS:
+                raise PrototypeClassifierError(
+                    f"Unknown shape label '{seg.shape_label}'. "
+                    f"Valid labels: {self.SHAPE_LABELS}."
+                )
+
+        by_class: dict[str, list[np.ndarray]] = {}
+        for seg in support_segments:
+            try:
+                raw_emb = encode_segment(seg.values, self._encoder_config).as_array()
+            except SegmentEncodingError as exc:
+                raise PrototypeClassifierError(str(exc)) from exc
+            normalized = _normalize(raw_emb)
+            by_class.setdefault(seg.shape_label, []).append(normalized)
+
+        self._previous_prototypes = {k: v.copy() for k, v in self._prototypes.items()}
+
+        new_prototypes: dict[str, np.ndarray] = {}
+        for y, embeddings in by_class.items():
+            stacked = np.stack(embeddings, axis=0)
+            mean_emb = np.mean(stacked, axis=0)
+            new_prototypes[y] = _normalize(mean_emb)
+
+        self._prototypes = new_prototypes
+
+    def predict(
+        self,
+        X_seg: list[float] | tuple[float, ...] | np.ndarray,
+    ) -> object:
+        """Classify a segment's shape by cosine similarity to fitted prototypes.
+
+        Returns a ShapeLabel (imported lazily to avoid circular imports).
+
+        Source: Snell et al. (2017) Eq. (2): logit_k = dot(z, μ_k) / τ,
+        p(y=k|x) = softmax(logits)[k].
+        """
+        if not self._prototypes:
+            raise PrototypeClassifierError(
+                "PrototypeShapeClassifier has no fitted prototypes; "
+                "call fit_prototypes() first."
+            )
+        if self._temperature <= 0:
+            raise PrototypeClassifierError("Temperature must be > 0.")
+
+        try:
+            raw_emb = encode_segment(X_seg, self._encoder_config).as_array()
+        except SegmentEncodingError as exc:
+            raise PrototypeClassifierError(str(exc)) from exc
+        z = _normalize(raw_emb)
+
+        logits: dict[str, float] = {
+            y: float(np.dot(z, mu)) / self._temperature
+            for y, mu in self._prototypes.items()
+        }
+        probabilities = _softmax_probabilities(logits, temperature=1.0)
+        label = max(logits, key=logits.__getitem__)
+
+        from app.services.suggestion.rule_classifier import ShapeLabel, uncertainty_margin  # noqa: PLC0415
+
+        return ShapeLabel(
+            label=label,
+            confidence=probabilities[label],
+            per_class_scores=logits,
+            uncertain=uncertainty_margin(probabilities),
+        )
+
+    def get_prototype_drift(self, y: str) -> float:
+        """Return ‖μ_y^new − μ_y^old‖₂ since the last fit_prototypes call.
+
+        Returns 0.0 when y had no prototype before the most recent update.
+        Raises PrototypeClassifierError when y has no current prototype.
+        """
+        new_proto = self._prototypes.get(y)
+        if new_proto is None:
+            raise PrototypeClassifierError(
+                f"No fitted prototype for label '{y}'. "
+                f"Fitted labels: {sorted(self._prototypes)}."
+            )
+        old_proto = self._previous_prototypes.get(y)
+        if old_proto is None:
+            return 0.0
+        return float(np.linalg.norm(new_proto - old_proto))

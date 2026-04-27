@@ -18,6 +18,9 @@ from .prototype_classifier import (
     PrototypeClassifierConfig,
     PrototypeClassifierError,
     PrototypeUpdateResult,
+    PrototypeShapeClassifier,
+    SHAPE_LABELS,
+    SupportSegment,
 )
 from .segment_encoder import SegmentEmbedding, SegmentEncoderConfig, SegmentEncodingError, encode_segment, normalize_series
 
@@ -36,10 +39,13 @@ __all__ = [
     "PrototypeClassifierConfig",
     "PrototypeClassifierError",
     "PrototypeUpdateResult",
+    "PrototypeShapeClassifier",
+    "SHAPE_LABELS",
     "SegmentEmbedding",
     "SegmentEncoderConfig",
     "SegmentEncodingError",
     "encode_segment",
     "normalize_series",
     "propose_boundaries",
+    "SupportSegment",
 ]

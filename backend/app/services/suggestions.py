@@ -26,6 +26,8 @@ from app.services.suggestion.prototype_classifier import (
     PrototypeClassifierConfig,
     PrototypeClassifierError,
     PrototypeMemoryBank,
+    PrototypeShapeClassifier,
+    SupportSegment,
     build_default_support_segments,
 )
 from app.services.suggestion.segment_encoder import (
@@ -38,6 +40,32 @@ from app.services.suggestion.segment_encoder import (
 
 class SuggestionServiceError(RuntimeError):
     """Raised when suggestion generation cannot be completed safely."""
+
+
+# Mapping from the 7-shape primitive vocabulary (rule_classifier / SEG-011) to domain labels.
+_PRIMITIVE_TO_DOMAIN: dict[str, str] = {
+    "plateau":   "plateau",
+    "trend":     "trend",
+    "step":      "transition",
+    "spike":     "spike",
+    "cycle":     "periodic",
+    "transient": "event",
+    "noise":     "plateau",
+}
+
+# Reverse: domain labels → shape labels (for SEG-011 prototype threshold check).
+_DOMAIN_TO_SHAPE: dict[str, str] = {
+    "plateau":    "plateau",
+    "trend":      "trend",
+    "spike":      "spike",
+    "event":      "transient",
+    "transition": "step",
+    "periodic":   "cycle",
+}
+
+# SEG-011 activation threshold: ≥ 5 corrections per class in ≥ 4 of 7 shape classes.
+_PROTO_MIN_CORRECTIONS: int = 5
+_PROTO_MIN_CLASSES: int = 4
 
 
 @dataclass(frozen=True)
@@ -113,6 +141,7 @@ class BoundarySuggestionService:
             encoder_config=self._encoder_config,
             classifier_config=self._classifier_config,
         )
+        self._shape_classifier = PrototypeShapeClassifier(encoder_config=self._encoder_config)
         self._smoothing_config = smoothing_config or build_duration_smoothing_config()
         self._duration_smoother = DurationRuleSmoother(
             L_min_per_class=dict(self._smoothing_config.per_label_min_lengths),
@@ -393,16 +422,6 @@ class BoundarySuggestionService:
         """
         from app.services.suggestion.rule_classifier import RuleBasedShapeClassifier  # noqa: PLC0415
 
-        # Map rule classifier's 7-primitive labels to domain active chunk types.
-        _PRIMITIVE_TO_DOMAIN: dict[str, str] = {
-            "plateau":   "plateau",
-            "trend":     "trend",
-            "step":      "transition",
-            "spike":     "spike",
-            "cycle":     "periodic",
-            "transient": "event",
-            "noise":     "plateau",  # noise → closest domain fallback
-        }
         active = set(self._classifier.active_labels)
 
         clf = RuleBasedShapeClassifier()
@@ -443,6 +462,11 @@ class BoundarySuggestionService:
                 return self._label_segments_with_llm(values, proposal.provisionalSegments)
             return self._label_segments_with_rule_classifier(values, proposal.provisionalSegments)
 
+        if _should_use_prototype_shape_classifier(support_segments):
+            return self._label_segments_with_shape_classifier(
+                values, proposal.provisionalSegments, support_segments
+            )
+
         prototypes = self._classifier.build_prototypes(support_segments)
         labeled_segments = []
         for provisional_segment in proposal.provisionalSegments:
@@ -460,6 +484,77 @@ class BoundarySuggestionService:
                 )
             )
         return tuple(labeled_segments)
+
+    def _label_segments_with_shape_classifier(
+        self,
+        values: list[list[float]] | list[float],
+        segments: tuple[ProvisionalSegment, ...],
+        support_segments: list[LabeledSupportSegment] | tuple[LabeledSupportSegment, ...],
+    ) -> tuple[ProvisionalSegment, ...]:
+        """Label segments using SEG-011 PrototypeShapeClassifier.
+
+        Activated when ≥ 5 user corrections per class exist in ≥ 4 of the 7 shape
+        primitives.  Domain labels in support_segments are mapped to shape labels
+        before fitting; shape predictions are mapped back to domain labels for the
+        ProvisionalSegment contract.
+        """
+        shape_support: list[SupportSegment] = [
+            SupportSegment(
+                shape_label=_DOMAIN_TO_SHAPE.get(seg.label, seg.label),
+                values=seg.values,
+                provenance="user",
+            )
+            for seg in support_segments
+        ]
+
+        try:
+            self._shape_classifier.fit_prototypes(shape_support)
+        except PrototypeClassifierError as exc:
+            raise SuggestionServiceError(str(exc)) from exc
+
+        active = set(self._classifier.active_labels)
+        labeled: list[ProvisionalSegment] = []
+        for seg in segments:
+            seg_values = slice_series(values, seg.startIndex, seg.endIndex)
+            try:
+                result = self._shape_classifier.predict(seg_values)
+            except PrototypeClassifierError as exc:
+                raise SuggestionServiceError(str(exc)) from exc
+
+            domain_label = _PRIMITIVE_TO_DOMAIN.get(result.label, result.label)
+            if domain_label not in active:
+                domain_label = list(self._classifier.active_labels)[0]
+
+            labeled.append(
+                ProvisionalSegment(
+                    segmentId=seg.segmentId,
+                    startIndex=seg.startIndex,
+                    endIndex=seg.endIndex,
+                    provenance=seg.provenance,
+                    label=domain_label,
+                    confidence=round(result.confidence, 6),
+                    labelScores=None,
+                )
+            )
+        return tuple(labeled)
+
+
+def _should_use_prototype_shape_classifier(
+    support_segments: list[LabeledSupportSegment] | tuple[LabeledSupportSegment, ...],
+) -> bool:
+    """Return True when ≥ 5 corrections per class exist in ≥ 4 of the 7 shape primitives.
+
+    Domain labels are mapped to shape labels before counting so that the threshold
+    is expressed against the canonical 7-shape vocabulary used by SEG-011.
+    """
+    shape_counts: dict[str, int] = {}
+    for seg in support_segments:
+        shape = _DOMAIN_TO_SHAPE.get(seg.label, seg.label)
+        shape_counts[shape] = shape_counts.get(shape, 0) + 1
+    classes_above_threshold = sum(
+        1 for count in shape_counts.values() if count >= _PROTO_MIN_CORRECTIONS
+    )
+    return classes_above_threshold >= _PROTO_MIN_CLASSES
 
 
 def build_duration_smoothing_config() -> DurationSmoothingConfig:
