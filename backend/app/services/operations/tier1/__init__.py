@@ -9,10 +9,18 @@ from .replace_from_library import (
     replace_from_library,
     SETSDonor,
 )
+from .stochastic import (
+    StochasticOpResult,
+    add_uncertainty,
+    default_suppress_strategy,
+    suppress,
+)
 from .time import TimeOpResult, resample, reverse_time, time_shift
 
 __all__ = [
+    "add_uncertainty",
     "AmplitudeOpResult",
+    "default_suppress_strategy",
     "DiscordDonor",
     "DonorCandidate",
     "DonorEngine",
@@ -26,6 +34,8 @@ __all__ = [
     "reverse_time",
     "scale",
     "SETSDonor",
+    "StochasticOpResult",
+    "suppress",
     "TimeOpResult",
     "time_shift",
 ]

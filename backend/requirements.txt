@@ -13,3 +13,4 @@ ruptures>=1.1.0
 statsmodels>=0.14
 tslearn>=0.6
 stumpy>=1.12
+colorednoise>=0.2

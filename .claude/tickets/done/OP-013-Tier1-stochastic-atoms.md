@@ -1,6 +1,6 @@
 # OP-013 — Tier 1 stochastic atoms: suppress, add_uncertainty
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-014 (STL trend fill), SEG-016 (Eckhardt baseflow fill)
 
 ---
@@ -66,20 +66,28 @@ def add_uncertainty(X_seg, sigma: float, color: Literal['white', 'pink', 'red'] 
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/tier1/stochastic.py` with `suppress` and `add_uncertainty`
-- [ ] `suppress` supports all 5 fill strategies: `linear`, `spline`, `stl_trend`, `climatology`, `baseflow`
-- [ ] `add_uncertainty` supports white (normal), pink (1/f), red (Brownian) via Timmer–König power-law-PSD generator
-- [ ] Deterministic mode: when `seed` is provided, output is bit-identical across runs
-- [ ] Fill strategy `stl_trend` delegates to SEG-014; `baseflow` delegates to SEG-016 — no fill logic duplicated
-- [ ] Default fill strategy per domain hint: `climatology` for remote-sensing, `baseflow` for hydrology, `linear` otherwise
-- [ ] `colorednoise` added to `backend/requirements.txt`
-- [ ] Tests cover: each fill strategy reproduces expected output on fixture; `add_uncertainty` white-noise variance matches σ²; seed reproducibility; spectral test for pink/red noise (slope of log-log PSD)
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/tier1/stochastic.py` with `suppress` and `add_uncertainty`
+- [x] `suppress` supports all 5 fill strategies: `linear`, `spline`, `stl_trend`, `climatology`, `baseflow`
+- [x] `add_uncertainty` supports white (normal), pink (1/f), red (Brownian) via Timmer–König power-law-PSD generator
+- [x] Deterministic mode: when `seed` is provided, output is bit-identical across runs
+- [x] Fill strategy `stl_trend` delegates to SEG-014; `baseflow` delegates to SEG-016 — no fill logic duplicated
+- [x] Default fill strategy per domain hint: `climatology` for remote-sensing, `baseflow` for hydrology, `linear` otherwise
+- [x] `colorednoise` added to `backend/requirements.txt`
+- [x] Tests cover: each fill strategy reproduces expected output on fixture; `add_uncertainty` white-noise variance matches σ²; seed reproducibility; spectral test for pink/red noise (slope of log-log PSD)
+- [x] `pytest backend/tests/ -x` passes
+
+## Known gaps / deferred
+
+- **AuditEvent emission**: `suppress` and `add_uncertainty` do not emit `AuditEvent` directly. All Tier-1 atoms are pure functions; audit emission is the responsibility of the orchestration layer. This is consistent with `amplitude.py` and `time.py` (OP-010/011). Tracked for resolution in OP-041 (relabeler + label chip), which wires the orchestration layer that calls Tier-1 atoms and emits events.
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-013: Tier-1 stochastic atoms (suppress/add_uncertainty)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass (53 passed, 758 full suite)
+- [x] Run `code-reviewer` agent — no blocking issues (3 fixed: frozen DTO, climatology error handling, audit deferral recorded)
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-013: Tier-1 stochastic atoms (suppress/add_uncertainty)"` ← hook auto-moves this file to `done/` on commit
+
+## Result Report
+
+Implemented `suppress` (5 fill strategies) and `add_uncertainty` (white/pink/red noise) in `tier1/stochastic.py`. 53 tests pass. Reviewer fixes applied: `StochasticOpResult` is now `frozen=True, eq=False`; climatology dict/array lookups raise `ValueError` on missing key/OOB; zero-fill in colored-noise path logs a WARNING. AuditEvent emission deferred to OP-041 (consistent with sibling OP-010/011/012 atoms).

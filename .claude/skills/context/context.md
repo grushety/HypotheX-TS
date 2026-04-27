@@ -6,6 +6,10 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## OP-013 Tier-1 stochastic atoms (suppress / add_uncertainty)
+
+`suppress` and `add_uncertainty` in `backend/app/services/operations/tier1/stochastic.py`. `suppress` supports five fill strategies: `linear` (linspace between context means), `spline` (CubicSpline on ctx_pre/ctx_post anchors), `stl_trend` (delegates to statsmodels STL, requires `aux['period']`; falls back to linear with WARNING when series too short), `climatology` (DOY-lookup from dict or array; raises ValueError with context on missing key/OOB), `baseflow` (delegates to SEG-016 Eckhardt fitter). Domain-hint defaults: `remote_sensing → climatology`, `hydrology → baseflow`, else `linear`. `add_uncertainty` injects white/pink/red colored noise (Timmer & König 1995) via `colorednoise.powerlaw_psd_gaussian`, scaled to σ by std-normalization; seed-reproducible. Both return `StochasticOpResult(frozen=True, eq=False)`. Relabeling: `suppress → RECLASSIFY_VIA_SEGMENTER`, `add_uncertainty → PRESERVED`. AuditEvent emission deferred to OP-041 (same gap as OP-010/011/012). New dep: `colorednoise>=0.2`. 53 tests in `test_stochastic_ops.py`.
+
 ## SEG-014 STL/MSTL decomposition fitter (Cleveland 1990 / Bandara 2021)
 
 Replaced stubs in `backend/app/services/decomposition/fitters/stl.py` and `mstl.py` with full implementations via statsmodels (requires `statsmodels>=0.14` in requirements.txt). `detect_dominant_period(X)` in `stl.py` returns `int` (single period) or `list[int]` (multiple) via FFT + ACF. Two non-obvious gotchas: (1) statsmodels MSTL sorts periods internally, so `valid_periods` must be sorted before naming `seasonal_{T}` columns or you get mislabeled components; (2) MSTL crashes with `UnboundLocalError` when `2*period >= n` for all requested periods — handled by an underdetermined fallback in `_fit_mstl_1d`. Dispatches: `("cycle", None)` → STL, `("cycle", "multi-period")` → MSTL. Tests: `backend/tests/test_stl_mstl_fitter.py` (37 tests).
