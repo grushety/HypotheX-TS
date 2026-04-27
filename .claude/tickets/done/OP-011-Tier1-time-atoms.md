@@ -1,6 +1,6 @@
 # OP-011 — Tier 1 time atoms: time_shift, reverse_time, resample
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** —
 
 ---
@@ -62,20 +62,24 @@ def resample(X_seg, new_dt: float, old_dt: float = 1.0,
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/tier1/time.py` with `time_shift`, `reverse_time`, `resample`
-- [ ] `time_shift` preserves series length; edges tapered (taper_width configurable, default 5)
-- [ ] `reverse_time` is involutive: `reverse_time(reverse_time(X)) == X`
-- [ ] `resample` supports SG, linear, and antialiased decimation
-- [ ] Antialiased decimation applies low-pass filter BEFORE subsampling (verified by unit test on synthetic signal with high-frequency component above Nyquist)
-- [ ] Unit tests assert no aliasing artefacts on test signal `sin(2π·0.4·t)` decimated by 2
-- [ ] Invalid inputs (negative `new_dt`, unknown method) raise `ValueError`
-- [ ] Tests cover: time_shift roll + taper; reverse involution; resample ratio < 1 (downsample) and > 1 (upsample); anti-aliasing test; unknown method rejection
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/tier1/time.py` with `time_shift`, `reverse_time`, `resample`
+- [x] `time_shift` preserves series length; edges tapered (taper_width configurable, default 5)
+- [x] `reverse_time` is involutive: `reverse_time(reverse_time(X)) == X`
+- [x] `resample` supports SG, linear, and antialiased decimation
+- [x] Antialiased decimation applies low-pass filter BEFORE subsampling (verified by unit test on synthetic signal with high-frequency component above Nyquist)
+- [x] Unit tests assert no aliasing artefacts on test signal `sin(2π·0.4·t)` decimated by 2
+- [x] Invalid inputs (negative `new_dt`, unknown method) raise `ValueError`
+- [x] Tests cover: time_shift roll + taper; reverse involution; resample ratio < 1 (downsample) and > 1 (upsample); anti-aliasing test; unknown method rejection
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-011: Tier-1 time atoms (time_shift/reverse_time/resample)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-011: Tier-1 time atoms (time_shift/reverse_time/resample)"` ← hook auto-moves this file to `done/` on commit
+
+## Result Report
+
+`time_shift`, `reverse_time`, `resample` implemented in `backend/app/services/operations/tier1/time.py`. All return `TimeOpResult(values, op_name, relabel=PRESERVED, tier=1)`. `time_shift` uses `np.roll` + configurable linear taper on the wrap-around edge. `reverse_time` is `arr[::-1].copy()` — involutive by construction. `resample` dispatches to three back-ends: `antialiased` (scipy `decimate` FIR LPF before downsampling, `resample_poly` for upsampling), `sg` (Savitzky-Golay smooth + `np.interp`), `linear` (raw `np.interp`). Anti-aliasing test verifies that `sin(2π·0.4·t)` decimated 2× loses >10× energy vs linear path. 35 tests; all pass.
