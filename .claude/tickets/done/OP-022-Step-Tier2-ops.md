@@ -1,6 +1,6 @@
 # OP-022 — Step Tier-2 ops (6 ops)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-013 (ETM Heaviside coefficients), OP-040 (relabeler)
 
 ---
@@ -63,19 +63,23 @@ def duplicate(blob, t_s, delta_t, delta_2, t):
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/tier2/step.py` with all 6 ops
-- [ ] All ops edit ETM step coefficients directly (asserted by test: raw signal outside the step is byte-identical pre/post)
-- [ ] `convert_to_ramp` emits OP-040 DETERMINISTIC(transient)
-- [ ] `duplicate` triggers a re-segmentation hint (two steps within one segment suggest splitting)
-- [ ] `scale_magnitude(α=0)` and `de_jump` produce bit-identical reassembled signals (asserted)
-- [ ] Step epoch `t_s` must exist in blob.coefficients (else raise)
-- [ ] Tests cover each op with synthetic ETM step fixture; coefficient-level edit test; `duplicate` triggers split hint
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/tier2/step.py` with all 6 ops
+- [x] All ops edit ETM step coefficients directly (asserted by test: raw signal outside the step is byte-identical pre/post)
+- [x] `convert_to_ramp` emits OP-040 DETERMINISTIC(transient)
+- [x] `duplicate` triggers a re-segmentation hint (two steps within one segment suggest splitting)
+- [x] `scale_magnitude(α=0)` and `de_jump` produce bit-identical reassembled signals (asserted)
+- [x] Step epoch `t_s` must exist in blob.coefficients (else raise)
+- [x] Tests cover each op with synthetic ETM step fixture; coefficient-level edit test; `duplicate` triggers split hint
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-022: Step Tier-2 ops (6 ops)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-022: Step Tier-2 ops (6 ops)"` ← hook auto-moves this file to `done/` on commit
+
+## Result Report
+
+56 tests in `test_step_ops.py`. Reviewer found 1 blocking issue fixed: `duplicate` raised no error on `delta_t=0`, silently overwriting the original step's amplitude — fixed with a `ValueError` guard. Dead test assertion removed. All 56 tests pass.
