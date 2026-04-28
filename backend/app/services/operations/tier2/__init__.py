@@ -1,3 +1,12 @@
+from .cycle import (
+    amplify_amplitude,
+    change_harmonic_content,
+    change_period,
+    dampen_amplitude,
+    deseasonalise_remove,
+    phase_shift,
+    replace_with_flat,
+)
 from .plateau import (
     Tier2OpResult,
     invert,
@@ -34,6 +43,13 @@ from .trend import (
 __all__ = [
     "add_acceleration",
     "amplify",
+    "amplify_amplitude",
+    "change_harmonic_content",
+    "change_period",
+    "dampen_amplitude",
+    "deseasonalise_remove",
+    "phase_shift",
+    "replace_with_flat",
     "change_slope",
     "clip_cap",
     "convert_to_ramp",
