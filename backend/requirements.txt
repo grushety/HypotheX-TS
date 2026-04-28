@@ -14,3 +14,5 @@ statsmodels>=0.14
 tslearn>=0.6
 stumpy>=1.12
 colorednoise>=0.2
+PyWavelets>=1.4
+scikit-image>=0.22

@@ -1,3 +1,10 @@
+from .noise import (
+    amplify as amplify_noise,
+    change_color,
+    inject_synthetic,
+    suppress_denoise,
+    whiten,
+)
 from .cycle import (
     amplify_amplitude,
     change_harmonic_content,
@@ -53,6 +60,11 @@ from .trend import (
 
 __all__ = [
     "add_acceleration",
+    "amplify_noise",
+    "change_color",
+    "inject_synthetic",
+    "suppress_denoise",
+    "whiten",
     "amplify",
     "amplify_transient",
     "change_decay_constant",
