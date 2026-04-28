@@ -1,6 +1,6 @@
 # OP-025 — Transient Tier-2 ops (9 ops)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-013 (ETM log/exp basis), SEG-018 (GrAtSiD features), OP-040 (relabeler)
 
 ---
@@ -90,20 +90,24 @@ def convert_to_step(blob, feature_id):
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/tier2/transient.py` with all 9 ops
-- [ ] All ops edit transient features in blob; no pointwise raw-signal mutation (asserted by test: raw signal before/after feature's t_ref window is byte-identical for non-overlapping features)
-- [ ] `convert_to_step` emits OP-040 DETERMINISTIC(step)
-- [ ] `remove` emits OP-040 RECLASSIFY
-- [ ] Works with both ETM log/exp coefficients (SEG-013) and GrAtSiD feature list (SEG-018); dispatcher by `blob.method`
-- [ ] Unit tests with synthetic `log(1 + (t − 60)/20) × amplitude=5` fixture: each edit recovers expected coefficient within 5 %
-- [ ] `replace_shape` re-fits amplitude to preserve energy when basis changes
-- [ ] Tests cover: each op; ETM vs GrAtSiD dispatch; `duplicate` adds a second feature; `convert_to_step` removes from features + adds to steps
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/tier2/transient.py` with all 9 ops
+- [x] All ops edit transient features in blob; no pointwise raw-signal mutation (asserted by test: raw signal before/after feature's t_ref window is byte-identical for non-overlapping features)
+- [x] `convert_to_step` emits OP-040 DETERMINISTIC(step)
+- [x] `remove` emits OP-040 RECLASSIFY
+- [x] Works with both ETM log/exp coefficients (SEG-013) and GrAtSiD feature list (SEG-018); dispatcher by `blob.method`
+- [x] Unit tests with synthetic `log(1 + (t − 60)/20) × amplitude=5` fixture: each edit recovers expected coefficient within 5 %
+- [x] `replace_shape` re-fits amplitude to preserve energy when basis changes
+- [x] Tests cover: each op; ETM vs GrAtSiD dispatch; `duplicate` adds a second feature; `convert_to_step` removes from features + adds to steps
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-025: Transient Tier-2 ops (9 ops)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-025: Transient Tier-2 ops (9 ops)"` ← hook auto-moves this file to `done/` on commit
+
+## Result Report
+
+Created `backend/app/services/operations/tier2/transient.py` with all 9 ops. Dispatches by `blob.method` ('ETM' vs 'GrAtSiD'). Key gotchas caught and fixed during review: (1) GrAtSiD full-features `amplify`/`remove` require `t` parameter — without it the component array is stale after coefficient mutation; (2) all GrAtSiD full-features ops recompute `components['transient']` as sum of ALL features (not just the modified one); (3) `replace_shape` GrAtSiD uses a unit-basis-vector OLS refit to avoid NaN/Inf when feature amplitude is zero; (4) `convert_to_step` GrAtSiD uses `pop(int(feature_id))` not `list.remove()` to avoid value-equality collision on duplicate features; (5) `replace_shape` GrAtSiD rejects `new_basis='both'` (GrAtSiD features are single-type). 91 tests in `test_transient_ops.py`.

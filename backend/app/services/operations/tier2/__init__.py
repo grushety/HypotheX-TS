@@ -31,6 +31,17 @@ from .step import (
     scale_magnitude,
     shift_in_time,
 )
+from .transient import (
+    amplify as amplify_transient,
+    change_decay_constant,
+    change_duration,
+    convert_to_step,
+    dampen,
+    duplicate as duplicate_transient,
+    remove as remove_transient,
+    replace_shape,
+    shift_time as shift_time_transient,
+)
 from .trend import (
     add_acceleration,
     change_slope,
@@ -43,6 +54,15 @@ from .trend import (
 __all__ = [
     "add_acceleration",
     "amplify",
+    "amplify_transient",
+    "change_decay_constant",
+    "change_duration",
+    "convert_to_step",
+    "dampen",
+    "duplicate_transient",
+    "remove_transient",
+    "replace_shape",
+    "shift_time_transient",
     "amplify_amplitude",
     "change_harmonic_content",
     "change_period",
