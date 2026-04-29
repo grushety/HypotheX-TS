@@ -1,6 +1,6 @@
 # OP-040 — Relabeler rule table (3 classes)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-008 (classifier for RECLASSIFY path); consumed by all Tier-1/2/3 ops
 
 ---
@@ -110,19 +110,19 @@ def relabel(old_shape, operation, op_params, edited_series, classifier=None):
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/relabeler/rule_table.py` with complete `RULE_TABLE` (≥ 48 entries covering all Tier-1/2 ops plus Tier-0)
-- [ ] `backend/app/services/operations/relabeler/relabeler.py` with `relabel()` and `RelabelResult` dataclass
-- [ ] Amplitude-threshold-crossing cases (e.g. `alpha=0`) handled via `_param_predicate()` lookup that falls back to `None` key if no specific predicate matches
-- [ ] `RECLASSIFY_VIA_SEGMENTER` path invokes SEG-008 classifier and returns `confidence` from classifier output
-- [ ] Never silently relabels: every relabel returns a `RelabelResult` with explicit `rule_class` field
-- [ ] Every rule in the table verified against [[HypotheX-TS - Operation Vocabulary Research]] §6 (no rules invented locally)
-- [ ] Tests cover: every (old_shape, operation) pair returns an expected rule; `alpha=0` predicate dispatch; wildcard (`*`) for Tier-0; unknown rule raises
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/relabeler/rule_table.py` with complete `RULE_TABLE` (≥ 48 entries covering all Tier-1/2 ops plus Tier-0)
+- [x] `backend/app/services/operations/relabeler/relabeler.py` with `relabel()` and `RelabelResult` dataclass
+- [x] Amplitude-threshold-crossing cases (e.g. `alpha=0`) handled via `_param_predicate()` lookup that falls back to `None` key if no specific predicate matches
+- [x] `RECLASSIFY_VIA_SEGMENTER` path invokes SEG-008 classifier and returns `confidence` from classifier output
+- [x] Never silently relabels: every relabel returns a `RelabelResult` with explicit `rule_class` field
+- [x] Every rule in the table verified against [[HypotheX-TS - Operation Vocabulary Research]] §6 (no rules invented locally)
+- [x] Tests cover: every (old_shape, operation) pair returns an expected rule; `alpha=0` predicate dispatch; wildcard (`*`) for Tier-0; unknown rule raises
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-040: relabeler rule table (3 classes, ≥48 entries)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-040: relabeler rule table (3 classes, ≥48 entries)"` ← hook auto-moves this file to `done/` on commit

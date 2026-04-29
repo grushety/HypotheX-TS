@@ -6,6 +6,10 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## OP-040 Relabeler rule table (3 classes, 61 entries)
+
+Created `backend/app/services/operations/relabeler/rule_table.py` with `RULE_TABLE` (61 entries, ≥48 required) and `_param_predicate()`. Updated `relabeler.py` with `relabel()` as the primary entry point and `default_relabeler()` as a backward-compat wrapper. Key design: the lookup chain is 4-step — (shape,op,pred) → (\*,op,pred) → (shape,op,None) → (\*,op,None). Step 2 is the critical addition: without it, shape-specific PRESERVED rules (e.g. `('cycle','scale',None)`) would shadow wildcard predicate rules (e.g. `('*','scale','alpha=0')`), causing alpha=0 cases to return PRESERVED instead of DETERMINISTIC. `RuleBasedShapeClassifier` is constructed via a lazy module-level singleton `_get_default_classifier()` to satisfy the DI rule. RECLASSIFY_VIA_SEGMENTER without `edited_series` returns a confidence=0 stub with a warning. 95 tests in `test_relabeler.py`.
+
 ## OP-021 Trend Tier-2 ops (6 ops)
 
 Created `backend/app/services/operations/tier2/trend.py` with `flatten`, `change_slope`, `reverse_direction`, `linearise`, `extrapolate`, `add_acceleration`. Dispatches by `blob.method` ('ETM' or 'LandTrendr'). Key gotchas: (1) `flatten` delegates to `change_slope(alpha=0)` — both guaranteed identical; (2) `linearise` uses Theil-Sen (Sen 1968) and stores residual in `blob.residual` only (not in components) so `reassemble()` = fitted line, not original signal; (3) `extrapolate` uses absolute-t convention `x0 + rate*t_ext`, not `t_ext-t_ext[0]` — the reviewer caught a bug here that masked in zero-start tests; (4) LandTrendr flatten/change_slope(0) collapses to Constant method to avoid intercept_1≠intercept_2 step artifact. Relabeling: flatten/change_slope(0) → DETERMINISTIC('plateau'); others → PRESERVED('trend'). AuditEvent deferred to OP-041. 47 tests.
