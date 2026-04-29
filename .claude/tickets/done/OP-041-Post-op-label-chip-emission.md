@@ -1,6 +1,6 @@
 # OP-041 — Post-op label chip emission
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** OP-040 (relabeler)
 
 ---
@@ -64,19 +64,19 @@ def emit_label_chip(op_result: OpResult, relabel_result: RelabelResult):
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/relabeler/label_chip.py` with `LabelChip` dataclass and `emit_label_chip()`
-- [ ] Event bus (simple in-process pub/sub) in `backend/app/services/events.py`; UI-013 subscribes
-- [ ] Chip emitted for every Tier-1/2/3 op that passes through OP-040 (exactly one chip per op)
-- [ ] Chip NOT emitted for pure Tier-0 boundary edits (edit_boundary); IS emitted for split/merge (they change shape possibilities)
-- [ ] Persisted in audit log with all 10 fields (id, segment, op_id, op_name, tier, pre, post, confidence, rule, timestamp)
-- [ ] Order-preserving delivery: subscribers receive chips in emission order (FIFO)
-- [ ] Tests cover: chip emitted for each op type; not emitted for edit_boundary; all 10 fields populated; subscriber receives event; FIFO order
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/relabeler/label_chip.py` with `LabelChip` dataclass and `emit_label_chip()`
+- [x] Event bus (simple in-process pub/sub) in `backend/app/services/events.py`; UI-013 subscribes
+- [x] Chip emitted for every Tier-1/2/3 op that passes through OP-040 (exactly one chip per op)
+- [x] Chip NOT emitted for pure Tier-0 boundary edits (edit_boundary); IS emitted for split/merge (they change shape possibilities)
+- [x] Persisted in audit log with all 10 fields (id, segment, op_id, op_name, tier, pre, post, confidence, rule, timestamp)
+- [x] Order-preserving delivery: subscribers receive chips in emission order (FIFO)
+- [x] Tests cover: chip emitted for each op type; not emitted for edit_boundary; all 10 fields populated; subscriber receives event; FIFO order
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-041: post-op label chip emission + event bus"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-041: post-op label chip emission + event bus"` ← hook auto-moves this file to `done/` on commit
