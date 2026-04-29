@@ -1,6 +1,6 @@
 # OP-050 — CF synthesis coordinator (decomposition-first)
 
-**Status:** [ ] Done
+**Status:** [x] Done
 **Depends on:** SEG-013..018 (fitters), OP-020..026 (Tier-2 ops), OP-040 (relabeler), OP-051 (compensation), OP-032 (conservation)
 
 ---
@@ -72,22 +72,22 @@ def synthesize_counterfactual(
 
 ## Acceptance Criteria
 
-- [ ] `backend/app/services/operations/cf_coordinator.py` with `synthesize_counterfactual()` and `CFResult` dataclass
-- [ ] **Architectural property:** no Tier-2 op path mutates `X` pointwise at the raw-signal level — asserted by a grep test in CI (`tests/test_architecture.py` greps for forbidden patterns like `X[i] += ` outside Tier-1 atoms)
-- [ ] Fails fast with clear error if segment has no decomposition blob (prompts user/UI to run OP-030 first)
-- [ ] Signal-space CF (via Tier-1 `replace_from_library`) is an explicit separate code path, not automatic fallback
-- [ ] Constraint projection delegates to OP-051; residual exposed in `CFResult` and surfaced to UI-010 budget bar
-- [ ] Relabel invoked on every result; `CFResult.new_shape` populated
-- [ ] `CFResult.edit_space` field is always literally `'coefficient'` for decomposition-first path (used by paper-benchmark comparator)
-- [ ] Unit test: CF synthesis on plateau segment with `raise_lower(delta=+5)` → reassembled signal = original + 5 exactly (coefficient-level, no residual drift)
-- [ ] Integration test: full round-trip UI → OP-050 → edited series + audit log entry + label chip + constraint badge
-- [ ] Tests cover: missing-blob error; constraint projection triggered; relabel invoked; `edit_space == 'coefficient'` invariant; comparison ablation vs a pointwise-L1 baseline on fixture (decomposition-first produces smaller L∞ off-segment error)
-- [ ] `pytest backend/tests/ -x` passes
+- [x] `backend/app/services/operations/cf_coordinator.py` with `synthesize_counterfactual()` and `CFResult` dataclass
+- [x] **Architectural property:** no Tier-2 op path mutates `X` pointwise at the raw-signal level — asserted by a grep test in CI (`tests/test_architecture.py` greps for forbidden patterns like `X[i] += ` outside Tier-1 atoms)
+- [x] Fails fast with clear error if segment has no decomposition blob (prompts user/UI to run OP-030 first)
+- [x] Signal-space CF (via Tier-1 `replace_from_library`) is an explicit separate code path, not automatic fallback
+- [x] Constraint projection delegates to OP-051; residual exposed in `CFResult` and surfaced to UI-010 budget bar
+- [x] Relabel invoked on every result; `CFResult.new_shape` populated
+- [x] `CFResult.edit_space` field is always literally `'coefficient'` for decomposition-first path (used by paper-benchmark comparator)
+- [x] Unit test: CF synthesis on plateau segment with `raise_lower(delta=+5)` → reassembled signal = original + 5 exactly (coefficient-level, no residual drift)
+- [x] Integration test: full round-trip UI → OP-050 → edited series + audit log entry + label chip + constraint badge
+- [x] Tests cover: missing-blob error; constraint projection triggered; relabel invoked; `edit_space == 'coefficient'` invariant; comparison ablation vs a pointwise-L1 baseline on fixture (decomposition-first produces smaller L∞ off-segment error)
+- [x] `pytest backend/tests/ -x` passes
 
 ## Definition of Done
-- [ ] Run `tester` agent — all tests pass
-- [ ] Run `code-reviewer` agent — no blocking issues
-- [ ] Add "Result Report" in the ticket
-- [ ] Add very short context for feature into `.claude/skills/context/context.md`
-- [ ] Update Status to `[x] Done` and all criteria to `[x]`
-- [ ] `git commit -m "OP-050: CF synthesis coordinator (decomposition-first architecture)"` ← hook auto-moves this file to `done/` on commit
+- [x] Run `tester` agent — all tests pass
+- [x] Run `code-reviewer` agent — no blocking issues
+- [x] Add "Result Report" in the ticket
+- [x] Add very short context for feature into `.claude/skills/context/context.md`
+- [x] Update Status to `[x] Done` and all criteria to `[x]`
+- [x] `git commit -m "OP-050: CF synthesis coordinator (decomposition-first architecture)"` ← hook auto-moves this file to `done/` on commit

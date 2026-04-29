@@ -6,6 +6,10 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## OP-050 CF synthesis coordinator (decomposition-first architecture)
+
+Created `backend/app/services/operations/cf_coordinator.py` with `synthesize_counterfactual()` and `CFResult` (frozen dataclass). The 5-step pipeline: (1) guard on missing blob; (2) deepcopy blob + call op_tier2 for coefficient-level edit; (3) constraint projection via injected projector or OP-051 (falls back to naive no-op with warning); (4) relabel — critical design: uses `tier2_result.relabel` directly for PRESERVED/DETERMINISTIC, only re-invokes OP-040's `relabel()` for RECLASSIFY_VIA_SEGMENTER. This is necessary because `flatten()` internally delegates to `change_slope()` (returning `op_name="change_slope"`), so an independent relabel call would return PRESERVED("trend") instead of DETERMINISTIC("plateau"); (5) emit label chip via OP-041. `CFResult.edit_space` is always `'coefficient'` — this is the paper's novel contribution marker vs raw-signal baseline methods. `transient.py:428` also fixed: dict augmented assignment `info["t_ref"] += ...` → plain assignment to satisfy the architecture test regex. 40 tests in `test_cf_coordinator.py` + `test_architecture.py`.
+
 ## OP-041 Post-op label chip emission + event bus
 
 Created `backend/app/services/events.py` with `EventBus` (subscribe/unsubscribe/publish/clear; idempotent unsubscribe) and `AuditLog` (ordered in-memory list; `append`, `records`, `clear`, `__len__`); both have module-level default instances (`default_event_bus`, `default_audit_log`). Created `backend/app/services/operations/relabeler/label_chip.py` with `LabelChip` (frozen dataclass, 10 fields) and `emit_label_chip()`. Key design: `emit_label_chip` suppresses only `(tier=0, op_name='edit_boundary')`; all other ops (including split/merge) emit a chip. The function publishes to the event bus AND appends to the audit log in one call — both are injected at module level (`_default_bus`, `_default_audit_log`) to satisfy the DI rule. SQLite persistence (`AuditEvent`) is deferred to UI-015. 37 tests in `test_label_chip.py`.

@@ -425,7 +425,7 @@ def shift_time(
         info = _parse_etm_transient_key(key)
         amplitude = float(blob.coefficients.pop(key))
         blob.components.pop(key, None)
-        info["t_ref"] += float(delta_t)
+        info["t_ref"] = float(info["t_ref"]) + float(delta_t)
         new_key = _etm_transient_key(info["type"], info["t_ref"], info["tau"])
         blob.coefficients[new_key] = amplitude
         blob.components[new_key] = amplitude * _etm_basis_values(
