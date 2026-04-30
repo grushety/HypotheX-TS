@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 
 import { createTieredPaletteState } from '../../lib/operations/createTieredPaletteState.js';
+import { groupTier2Controls } from '../../lib/operations/sliderOps.js';
+import AmplitudeSlider from './AmplitudeSlider.vue';
 import MultiSegmentToolbar from './MultiSegmentToolbar.vue';
 import OperationButton from './OperationButton.vue';
 
@@ -29,6 +31,16 @@ const paletteState = computed(() =>
     pendingOp: props.pendingOp,
   }),
 );
+
+const tier2Controls = computed(() => groupTier2Controls(paletteState.value.tier2.buttons));
+
+function handleSliderCommit(slider, payload) {
+  emit('op-invoked', {
+    tier: slider.tier,
+    op_name: slider.commitOpName,
+    params: { [slider.paramKey]: payload.alpha },
+  });
+}
 
 const tier0Ref = ref(null);
 const tier1Ref = ref(null);
@@ -124,15 +136,25 @@ function handleRowArrows(event, tierIndex) {
     >
       <span class="tier-label">{{ paletteState.tier2.label }}</span>
       <div class="tier-buttons">
-        <OperationButton
-          v-for="btn in paletteState.tier2.buttons"
-          :key="btn.op_name"
-          :op="btn"
-          :enabled="btn.enabled"
-          :loading="btn.loading"
-          :disabled-tooltip="btn.disabledTooltip ?? null"
-          @invoked="emit('op-invoked', $event)"
-        />
+        <template v-for="control in tier2Controls" :key="control.kind === 'slider' ? control.slider.groupId : control.button.op_name">
+          <OperationButton
+            v-if="control.kind === 'button'"
+            :op="control.button"
+            :enabled="control.button.enabled"
+            :loading="control.button.loading"
+            :disabled-tooltip="control.button.disabledTooltip ?? null"
+            @invoked="emit('op-invoked', $event)"
+          />
+          <AmplitudeSlider
+            v-else
+            :label="control.slider.label"
+            :mode="control.slider.mode"
+            :disabled="!control.slider.enabled"
+            :loading="control.slider.loading"
+            :title="!control.slider.enabled && control.slider.disabledTooltip ? control.slider.disabledTooltip : undefined"
+            @commit="handleSliderCommit(control.slider, $event)"
+          />
+        </template>
         <span
           v-if="!paletteState.tier2.buttons.length"
           class="tier-placeholder"
