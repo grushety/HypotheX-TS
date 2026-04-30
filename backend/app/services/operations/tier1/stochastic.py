@@ -300,12 +300,12 @@ def _fill_baseflow(
 
     Optional aux keys: alpha (default 0.925), bfi_max (default 0.80).
     """
-    from app.services.decomposition.fitters.eckhardt import fit_eckhardt  # noqa: PLC0415
+    from app.services.decomposition.fitters.eckhardt import eckhardt_baseflow  # noqa: PLC0415
 
     full = np.concatenate([pre, arr, post])
     alpha = float(aux.get("alpha", 0.925))
     bfi_max = float(aux.get("bfi_max", 0.80))
-    blob = fit_eckhardt(full, alpha=alpha, bfi_max=bfi_max)
+    blob = eckhardt_baseflow(full, a=alpha, bfi_max=bfi_max)
     baseflow = blob.components["baseflow"]
     start = len(pre)
     return baseflow[start : start + len(arr)].copy()
