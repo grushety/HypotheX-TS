@@ -1,0 +1,113 @@
+# Remote-sensing semantic pack (SEG-023).
+#
+# Detectors are defined in detectors_remote_sensing.py and delegate to
+# SEG-013 (ETM, Bevis & Brown 2014), SEG-015 (BFAST, Verbesselt 2010), and
+# SEG-017 (LandTrendr, Kennedy 2010) so no parametric fitting logic is
+# duplicated.
+
+name: remote-sensing
+version: "1.0"
+
+semantic_labels:
+
+  # ---- Phenology ----------------------------------------------------------
+
+  greenup:
+    shape_primitive: trend
+    context_predicate: "slope > 0 and is_in_window and crosses_threshold"
+    detector: timesat_threshold
+    detector_params:
+      threshold_percent: 20
+
+  senescence:
+    shape_primitive: trend
+    context_predicate: "slope < 0 and is_in_window and crosses_threshold"
+    detector: timesat_threshold
+    detector_params:
+      threshold_percent: 80
+
+  peak_of_season:
+    shape_primitive: plateau
+    context_predicate: "amplitude_above_max_ratio > 0.9 and duration_short"
+    detector: mstl_peak_window
+    detector_params: {}
+
+  dormancy:
+    shape_primitive: plateau
+    context_predicate: "amplitude_below_max_ratio > 0.8 and duration_long"
+    detector: low_amplitude_plus_duration
+    detector_params: {}
+
+  # ---- Disturbance and recovery -------------------------------------------
+
+  disturbance:
+    shape_primitive: step
+    context_predicate: "negative_step_magnitude < magnitude_threshold"
+    detector: bfast_breakpoint
+    detector_params:
+      magnitude_threshold: -0.2
+
+  recovery:
+    shape_primitive: trend
+    context_predicate: "slope > min_recovery_slope and follows_disturbance"
+    detector: landtrendr_positive_slope_post_disturbance
+    detector_params:
+      min_recovery_slope: 0.05
+
+  # ---- Soil moisture ------------------------------------------------------
+
+  wet_up:
+    shape_primitive: trend
+    context_predicate: "slope > 0 and follows_dry_down"
+    detector: slope_plus_context
+    detector_params: {}
+
+  dry_down:
+    shape_primitive: trend
+    context_predicate: "slope < 0 and follows_wet_up"
+    detector: slope_plus_context
+    detector_params: {}
+
+  # ---- Temperature extremes -----------------------------------------------
+
+  heatwave:
+    shape_primitive: transient
+    context_predicate: "mean_above_p95 and duration_days >= 3"
+    detector: percentile_threshold_plus_duration
+    detector_params: {}
+
+  coldwave:
+    shape_primitive: transient
+    context_predicate: "mean_below_p5 and duration_days >= 3"
+    detector: percentile_threshold_plus_duration
+    detector_params: {}
+
+  # ---- Cloud / atmospheric noise ------------------------------------------
+
+  cloud_gap:
+    shape_primitive: noise
+    context_predicate: "missingness_mask_value"
+    detector: missingness_mask
+    detector_params: {}
+
+  APS:
+    shape_primitive: noise
+    context_predicate: "is_atmospheric_pattern"
+    detector: gacos_correction_residual
+    detector_params: {}
+
+  # ---- InSAR deformation --------------------------------------------------
+
+  seasonal_deformation:
+    shape_primitive: cycle
+    context_predicate: "is_annual_period"
+    detector: mstl_annual_component
+    detector_params:
+      annual_tolerance_days: 30
+
+  linear_deformation:
+    shape_primitive: trend
+    context_predicate: "abs(linear_rate) > velocity_threshold"
+    detector: etm_linear_rate
+    detector_params:
+      velocity_threshold: 0.0

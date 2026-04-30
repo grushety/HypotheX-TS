@@ -46,6 +46,7 @@ from .core import (
 
 # Trigger detector registration on first import of the package.
 from . import detectors_hydrology  # noqa: F401, E402
+from . import detectors_remote_sensing  # noqa: F401, E402
 from . import detectors_seismo_geodesy  # noqa: F401, E402
 
 __all__ = [
