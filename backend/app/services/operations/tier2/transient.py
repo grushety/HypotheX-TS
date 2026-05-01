@@ -190,6 +190,10 @@ def _gratsid_compute_component(feature: dict, t: np.ndarray) -> np.ndarray:
     ftype = feature.get("type", "gaussian")
     if ftype == "gaussian":
         return amplitude * np.exp(-0.5 * ((t - t_ref) / tau) ** 2)
+    if ftype == "step":
+        # SEG-018 GrAtSiD step feature; τ is unused but kept in the dict
+        # for schema uniformity.
+        return amplitude * (t >= t_ref).astype(np.float64)
     pos = np.maximum(0.0, (t - t_ref) / tau)
     if ftype == "log":
         return amplitude * np.log1p(pos)

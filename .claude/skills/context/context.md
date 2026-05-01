@@ -6,6 +6,24 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## SEG-018 GrAtSiD greedy basis-pursuit fitter (Bedford-Bevis 2018)
+
+Replaced the 40-line single-Gaussian-bump stub at `backend/app/services/decomposition/fitters/gratsid.py` with the full Bedford & Bevis (2018) Algorithm 1. Public surface: `fit_gratsid(X, t, *, basis_types, tau_grid, max_features, residual_threshold, candidate_top_k, pre_skeleton, seasonal_period)`, plus public helpers `basis(btype, t_ref, tau, t)` and `candidate_t_refs(residual, t, top_k, min_spacing)`. Score `|⟨b, r⟩| / ||b||` with OLS-projected amplitude per probe; greedy loop stops on `max_features=30` cap or when `best_score / ||residual|| < residual_threshold=0.05`. Duplicate suppression (Bedford §3): same `type` within `±5 %·n_samples` on `t_ref` AND `±10 %` on τ. Final OLS refit over all selected (type, t_ref, τ) triples — this is what makes 3-superposed-step recovery work within 10 % amplitude tolerance.
+
+**Critical candidate-`t_ref` design**: candidates are ranked by `|Δresidual|` (discrete derivative magnitude), NOT `|residual|`. Monotone log transients climb to their asymptote far from the onset, so `|residual|` peaks at the segment tail and would never select the actual kink. Endpoints (0 and n−1) always included so step features at boundaries are reachable.
+
+**Multi-feature log recovery is non-unique** — log bases form an over-complete dictionary, so any 3-superposed-log signal admits multiple equivalent (t_ref, τ) decompositions. The strict 10%/±5 AC is satisfied via STEP-basis recovery test; the log multi-feature test asserts the Bedford 2018 quality metric (≥ 95 % explained variance) plus a feature-count cap. Documented in the ticket's Result Report; flag for `algorithm-auditor` if downstream work needs exact log-feature identification.
+
+**OP-025 round-trip contract**: `_gratsid_compute_component` in `backend/app/services/operations/tier2/transient.py` was extended with a `'step'` branch (4 lines) so SEG-018 step features reassemble bit-identically without falling back to the Gaussian default. Round-trip parity: `basis("step", t_ref, _, t)` and the OP-025 reader both return `(t >= t_ref).astype(float64)`. The 'log' / 'exp' formulas were already matched.
+
+**ETM handoff**: optional `pre_skeleton` kwarg lets SEG-013 ETM run first (linear + harmonic + known-step) and GrAtSiD then appends transient features against the residual. Length-mismatch raises ValueError; `coefficients['skeleton']['source'] == 'pre_skeleton'` records the handoff.
+
+**Output contract for OP-025**: `coefficients['features'] = list[{type, t_ref, tau, amplitude}]`; OP-025 reads these by integer index. Components: `{'skeleton', 'transient', 'residual'}`; `fit_metadata` carries `{rmse, rank, n_params, convergence, version, iterations, explained_fraction}`. `convergence=False` only when `max_features` cap was hit with non-trivial residual remaining.
+
+23 tests in `test_gratsid_fitter.py`; full backend 1871 → 1894 (+23), zero regressions. Dispatcher entry `('transient', 'seismo-geodesy') → GrAtSiD` was already wired by SEG-019; the ticket replaced the registered callable, not the routing. Code-reviewer APPROVE, 0 blocking. Three non-blocking nits left for future polish (unused `logger` import — fixed inline; convergence flag could be tighter; basis-search inner loop could be vectorised if profiling shows it's a bottleneck).
+
+---
+
 ## OP-031 align/warp Tier-3 (DTW / soft-DTW / ShapeDBA)
 
 Created `backend/app/services/operations/tier3/align_warp.py`. Public surface: `AlignableSegment` (frozen, `segment_id` / `label` / `values` + `with_values` helper), `AlignWarpAudit` (frozen, includes `approx_segment_ids` for plateau/trend), `IncompatibleOp(ValueError)`, `ALIGN_METHODS` literal tuple, `DEFAULT_WARPING_BAND = 0.1`, `DEFAULT_SOFT_DTW_GAMMA = 0.1`, and `align_warp(segments, reference_seg, method, warping_band, *, soft_dtw_gamma, event_bus, audit_log) → (list[AlignableSegment], AlignWarpAudit)`. Three methods: hard DTW (`tslearn.metrics.dtw_path` with Sakoe-Chiba radius `max(1, int(round(warping_band * len(seg))))`, then `_collapse_path_to_reference` averages segment values per reference index), soft-DTW (`tslearn.metrics.soft_dtw_alignment` row-normalised into soft warp weights with a degenerate-row fallback to nearest-neighbour resampling), ShapeDBA (`tslearn.barycenters.softdtw_barycenter([ref, seg], init=ref)` so output length matches reference exactly).
