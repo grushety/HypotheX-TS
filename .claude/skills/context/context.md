@@ -6,6 +6,25 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## UI-009 Reference picker + warping-band slider + method selector (drives OP-031)
+
+Created `frontend/src/lib/alignment/createAlignWarpPanelState.js` (pure state) and three Vue components in `frontend/src/components/alignment/`: `AlignWarpPanel.vue` (two-column container), `AlignmentPreview.vue` (overlay paths + schematic warp grid), `TemplateLibraryPicker.vue` (empty-by-default extensibility stub). State exports `ALIGN_METHODS = ('dtw', 'soft_dtw', 'shapedba')`, `METHOD_LABELS`/`METHOD_DESCRIPTIONS` (citing Sakoe & Chiba 1978 / Cuturi & Blondel 2017 / Petitjean 2011 / Holder 2023 directly in user-facing strings), the three shape sets `COMPATIBLE_SHAPES = {cycle,spike,transient}` / `APPROX_SHAPES = {plateau,trend}` / `INCOMPATIBLE_SHAPES = {noise}` mirroring `backend/app/services/operations/tier3/align_warp.py` frozensets exactly, `MIN_WARPING_BAND=0.01` / `MAX_WARPING_BAND=0.30` / `DEFAULT_WARPING_BAND=0.10` / `DEFAULT_METHOD='dtw'`. Public functions: `clampWarpingBand`, `classifyAlignCompat` (unknown labels → approx, matches the OP-031 fall-through), `buildAlignWarpPayload` (emits `{tier:3, op_name:'align_warp', params:{reference_seg_id, segment_ids, method, warping_band}}`), `createAlignWarpPanelState` (auto-drops the reference id from segmentsToAlign so the user can't self-align), `buildPreviewModel` (unit-square diagonal + Sakoe-Chiba band stripe for DTW only).
+
+**Slider range tighter than OP-031**: AC-spec [0.01, 0.30] vs OP-031 backend (0, 1]. The narrower client-side range prevents users from picking an effectively-no-band that defeats Sakoe-Chiba. Documented inline.
+
+**Preview is schematic, not a real DTW solve**: computing client-side DTW would require shipping a JS implementation; the actual warp runs on apply via OP-031. The preview communicates "this is what method X would do" — diagonal + band stripe for DTW, smooth diagonal for soft-DTW, dashed diagonal for ShapeDBA (barycenter).
+
+**Compatibility check is client-side only on segmentsToAlign** (not on the reference itself — the backend's `_check_compatibility` will catch a noise reference if one is somehow forwarded; no duplicated logic). Apply disabled with `:title` tooltip carrying the disable reason; yellow warning row for plateau/trend approx; red row for noise refusal.
+
+**Three deferred items**:
+1. Picker not wired into `BenchmarkViewerPage.vue` — Vite tree-shakes it today (155.25 kB JS unchanged). Same pattern as UI-008.
+2. Template library hardcoded-empty per AC; component accepts `templateOptions: [{id, label, description}, ...]` prop ready for wire-up when a backend route surfaces pre-stored references.
+3. Multi-selected segments preview only shows the first one against the reference; future UX polish could add per-segment preview switching.
+
+27 new tests; full frontend 546 → 573 (+27), zero regressions; build clean. Code-reviewer APPROVE, 0 blocking. One real nit fixed inline (dead `stroke-dasharray="preview.smooth ? '0' : '0'"` ternary in AlignmentPreview.vue → meaningful `barycenter ? '3 2' : null` to dash the diagonal for ShapeDBA).
+
+---
+
 ## UI-008 Donor picker (replace_from_library) + UserDrawn sketchpad
 
 Created `frontend/src/lib/donors/{createDonorPickerState.js, sketchpadToSeries.js}` (pure libs), `frontend/src/services/api/donorApi.js` (HTTP client documenting the `POST /api/donors/propose` contract), and three Vue components in `frontend/src/components/donors/`: `DonorPicker.vue` (side panel), `DonorCard.vue` (inline-SVG sparkline + metric + Accept), `DonorSketchpad.vue` (canvas with mouse + touch capture, rAF-throttled redraw). `BACKEND_OPTIONS` ships exactly six: NativeGuide / SETSDonor / DiscordDonor / TimeGAN / ShapeDBA / UserDrawn — the middle two are flagged `supported: false`, disabled in the dropdown, and surface a "coming soon" warning panel; UserDrawn is supported but bypasses the network entirely (sketch values are inlined into `params.donor_values` on accept). `buildAcceptPayload` emits the OP-012 shape `{tier:1, op_name:'replace_from_library', params:{backend, donor_id, crossfade_width}}`.
