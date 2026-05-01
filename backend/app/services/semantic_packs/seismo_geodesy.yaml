@@ -1,0 +1,107 @@
+# Seismo-geodesy semantic pack (SEG-022).
+#
+# Detectors are defined in detectors_seismo_geodesy.py and delegate to SEG-013
+# (ETM, Bevis & Brown 2014) and SEG-018 (GrAtSiD, Bedford & Bevis 2018) where
+# possible to avoid duplicating parametric fits.
+
+name: seismo-geodesy
+version: "1.0"
+
+semantic_labels:
+
+  # ---- Seismology ---------------------------------------------------------
+
+  P_arrival:
+    shape_primitive: step
+    detector: sta_lta
+    detector_params:
+      window_sta_seconds: 1.0
+      window_lta_seconds: 10.0
+      threshold: 4.0
+
+  S_arrival:
+    shape_primitive: step
+    detector: sta_lta_with_polarization
+    detector_params:
+      window_sta_seconds: 1.0
+      window_lta_seconds: 10.0
+      threshold: 3.0
+
+  coda:
+    shape_primitive: transient
+    detector: post_S_envelope_fit
+    detector_params: {}
+
+  surface_waves:
+    shape_primitive: cycle
+    detector: dispersive_wave_detection
+    detector_params: {}
+
+  tremor:
+    shape_primitive: noise
+    context_predicate: "low_frequency_amplitude > threshold and sustained_minutes > sustained_threshold"
+    detector: envelope_correlation_plus_lfe
+    detector_params:
+      sustained_threshold: 1.0
+
+  # ---- Geodesy (GNSS) -----------------------------------------------------
+
+  coseismic_offset:
+    shape_primitive: step
+    context_predicate: "abs(step_magnitude) > detection_threshold and origin_time_known"
+    detector: etm_step_from_known_origin
+    detector_params:
+      detection_threshold: 0.0
+
+  postseismic_relaxation:
+    shape_primitive: transient
+    context_predicate: "follows_coseismic_offset and basis_type in ['log', 'exp']"
+    detector: fit_log_or_exp
+    detector_params:
+      tau_range_days: [1, 1000]
+
+  interseismic_loading:
+    shape_primitive: trend
+    context_predicate: "excludes_coseismic_offset and excludes_postseismic_relaxation"
+    detector: etm_linear_rate_ex_steps_ex_transients
+    detector_params: {}
+
+  SSE:
+    shape_primitive: transient
+    context_predicate: "duration_days >= min_duration_days and duration_days <= max_duration_days and smooth_onset and smooth_decay"
+    detector: gratsid_bump
+    detector_params:
+      min_duration_days: 7
+      max_duration_days: 365
+
+  seasonal_signal:
+    shape_primitive: cycle
+    context_predicate: "is_annual or is_semiannual"
+    detector: etm_harmonics
+    detector_params: {}
+
+  # ---- Geodesy (InSAR / network noise) ------------------------------------
+
+  common_mode_error:
+    shape_primitive: noise
+    context_predicate: "is_spatially_correlated"
+    detector: common_mode_pca
+    detector_params: {}
+
+  tropospheric_delay:
+    shape_primitive: noise
+    context_predicate: "is_spatial_atmospheric_pattern"
+    detector: gacos_or_pyaps_correction_residual
+    detector_params: {}
+
+  unwrapping_error:
+    shape_primitive: step
+    context_predicate: "is_2pi_multiple"
+    detector: phase_jump_2pi_detector
+    detector_params: {}
+
+  antenna_offset:
+    shape_primitive: step
+    context_predicate: "has_maintenance_log_entry"
+    detector: metadata_driven_step
+    detector_params: {}

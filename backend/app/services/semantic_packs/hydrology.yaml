@@ -1,0 +1,74 @@
+# Hydrology semantic pack (SEG-021).
+#
+# Each entry attaches a domain-meaningful label to a shape primitive.  The
+# loader (``app.services.semantic_packs.load_pack``) validates that every
+# ``shape_primitive`` is in the 7-shape vocabulary and that every named
+# ``detector`` is registered in ``DETECTOR_REGISTRY``.
+#
+# Context predicates are simple Python boolean expressions evaluated by
+# ``evaluate_predicate`` against the detector-augmented context.  Names
+# referenced here must be populated by the corresponding detector (mutating
+# its ``context`` argument) or supplied by the caller.
+
+name: hydrology
+version: "1.0"
+
+semantic_labels:
+
+  baseflow:
+    shape_primitive: plateau
+    context_predicate: "Q_mean < BFImax * Q_median"
+    detector: eckhardt_baseflow
+    detector_params:
+      BFImax: 0.8
+      a: 0.98
+
+  stormflow:
+    shape_primitive: transient
+    context_predicate: "rising_limb_detected and peak_Q > peak_ratio_threshold * Q_median"
+    detector: peak_detection_plus_ascending_limb_fit
+    detector_params:
+      peak_ratio_threshold: 3.0
+
+  peak_flow:
+    shape_primitive: spike
+    context_predicate: "peak_Q > 5 * Q_median and duration_samples < 3 * dt"
+    detector: hampel_peak
+    detector_params: {}
+
+  rising_limb:
+    shape_primitive: trend
+    context_predicate: "slope > 0 and preceded_by_baseflow"
+    detector: slope_sign_plus_context
+    detector_params: {}
+
+  recession_limb:
+    shape_primitive: trend
+    context_predicate: "slope < 0 and abs(slope) < recession_slope_max and follows_peak_flow"
+    detector: slope_sign_plus_context
+    detector_params:
+      recession_slope_max: 0.1
+
+  snowmelt_freshet:
+    shape_primitive: transient
+    context_predicate: "is_spring and sustained_rise_weeks >= 2"
+    detector: seasonal_context_plus_transient_fit
+    detector_params: {}
+
+  drought:
+    shape_primitive: plateau
+    context_predicate: "low_flow_fraction > 0.9 and duration_days > 30"
+    detector: low_flow_threshold_plus_duration
+    detector_params: {}
+
+  ENSO_phase:
+    shape_primitive: cycle
+    context_predicate: "dominant_period_years >= 2 and dominant_period_years <= 7"
+    detector: mei_index_plus_period_check
+    detector_params: {}
+
+  PDO_phase:
+    shape_primitive: cycle
+    context_predicate: "dominant_period_years >= 15 and dominant_period_years <= 30"
+    detector: pdo_index_plus_period_check
+    detector_params: {}
