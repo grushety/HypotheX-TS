@@ -7,6 +7,16 @@ import {
   createAuditLogPanelState,
 } from '../../lib/audit/createAuditLogPanelState.js';
 import { labelChipBus } from '../../lib/audit/labelChipBus.js';
+import { FEATURE_FLAG_MANIFOLD_AE } from '../../lib/plausibility/createPlausibilityBadgeState.js';
+import { extractSignalsFromEvent } from '../../lib/plausibility/extractSignalsFromEvent.js';
+import { getFeatureFlag } from '../../lib/plausibility/featureFlags.js';
+import PlausibilityBadge from '../plausibility/PlausibilityBadge.vue';
+
+const manifoldEnabled = getFeatureFlag(FEATURE_FLAG_MANIFOLD_AE);
+
+function plausibilityPropsFor(row) {
+  return extractSignalsFromEvent(row.fullEvent ?? row);
+}
 
 const props = defineProps({
   events: {
@@ -205,7 +215,7 @@ onUnmounted(() => {
       </label>
 
       <label class="audit-filter-field">
-        <span class="audit-filter-label">Plausibility</span>
+        <span class="audit-filter-label">Confidence</span>
         <select v-model="filterPlausibility" class="audit-filter-select">
           <option value="">All</option>
           <option v-for="pb in panelState.filterOptions.plausibilityBadges" :key="pb" :value="pb">
@@ -260,6 +270,7 @@ onUnmounted(() => {
       <table v-else class="audit-table">
         <thead>
           <tr>
+            <th scope="col">Plausibility</th>
             <th scope="col">Timestamp</th>
             <th scope="col">Tier</th>
             <th scope="col">Op</th>
@@ -267,7 +278,7 @@ onUnmounted(() => {
             <th scope="col">Shape</th>
             <th scope="col">Rule class</th>
             <th scope="col">Compensation</th>
-            <th scope="col">Plausibility</th>
+            <th scope="col">Confidence</th>
             <th scope="col">Residual</th>
           </tr>
         </thead>
@@ -283,6 +294,12 @@ onUnmounted(() => {
             }"
             @click="handleRowClick(row)"
           >
+            <td class="audit-cell audit-cell-plausibility-badge">
+              <PlausibilityBadge
+                v-bind="plausibilityPropsFor(row)"
+                :manifold-enabled="manifoldEnabled"
+              />
+            </td>
             <td class="audit-cell audit-cell-timestamp">{{ formatCell(row.timestamp) }}</td>
             <td class="audit-cell audit-cell-tier">
               <span v-if="row.tier != null" class="audit-tier-badge" :class="`audit-tier-${row.tier}`">
@@ -347,7 +364,7 @@ onUnmounted(() => {
           <dd>{{ selectedRow.ruleClass ?? '—' }}</dd>
         </div>
         <div>
-          <dt>Plausibility</dt>
+          <dt>Confidence</dt>
           <dd>{{ selectedRow.plausibilityBadge ?? '—' }}</dd>
         </div>
       </dl>
