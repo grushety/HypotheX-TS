@@ -1,6 +1,7 @@
 """Tier-3 user-invocable composite operations."""
 from __future__ import annotations
 
+from .aggregate import METRIC_REGISTRY, aggregate, register_metric
 from .decompose import (
     REFIT_REASON,
     DecomposeAudit,
@@ -27,10 +28,13 @@ __all__ = [
     "DecomposedSegment",
     "HARD_LAWS",
     "LAW_REGISTRY",
+    "METRIC_REGISTRY",
     "REFIT_REASON",
     "SOFT_LAWS",
     "UnknownLaw",
+    "aggregate",
     "decompose",
     "enforce_conservation",
     "register_law",
+    "register_metric",
 ]
