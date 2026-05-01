@@ -6,6 +6,23 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## UI-008 Donor picker (replace_from_library) + UserDrawn sketchpad
+
+Created `frontend/src/lib/donors/{createDonorPickerState.js, sketchpadToSeries.js}` (pure libs), `frontend/src/services/api/donorApi.js` (HTTP client documenting the `POST /api/donors/propose` contract), and three Vue components in `frontend/src/components/donors/`: `DonorPicker.vue` (side panel), `DonorCard.vue` (inline-SVG sparkline + metric + Accept), `DonorSketchpad.vue` (canvas with mouse + touch capture, rAF-throttled redraw). `BACKEND_OPTIONS` ships exactly six: NativeGuide / SETSDonor / DiscordDonor / TimeGAN / ShapeDBA / UserDrawn — the middle two are flagged `supported: false`, disabled in the dropdown, and surface a "coming soon" warning panel; UserDrawn is supported but bypasses the network entirely (sketch values are inlined into `params.donor_values` on accept). `buildAcceptPayload` emits the OP-012 shape `{tier:1, op_name:'replace_from_library', params:{backend, donor_id, crossfade_width}}`.
+
+`sketchpadToSeries` pipeline (the non-obvious bit): dedupe duplicate-x points → sort by x ascending so retraced strokes still produce a monotone time axis → linear interpolate onto a uniform grid → **flip canvas-y** (canvas grows downward, output grows upward — drawing higher = larger value) → min-max rescale to the original segment's amplitude range. Returns `null` on too few points / zero-width x range / non-finite amplitude bounds.
+
+**Three known scope limitations**, documented but not in scope of this ticket:
+1. **Backend route not shipped here.** The `POST /api/donors/propose` contract is fully documented in `donorApi.js` (request: `{backend, segment_values, target_class, k, exclude_ids}`; response: `{backend, candidates: [{donor_id, values, distance, metric}, ...]}`); 501 for unimplemented backends is surfaced cleanly via `err.status`. Backend wiring is a follow-up.
+2. **Picker not wired into `BenchmarkViewerPage.vue`.** Components are built and tested in isolation; Vite tree-shakes them out of the bundle today (155.25 kB JS unchanged). Wiring is a one-import-plus-one-handler change.
+3. **k-th donor support is UI-only.** `excludeIds` + `kIndex` are forwarded to the API but the existing `NativeGuide`/`SETSDonor`/`DiscordDonor` classes return only the closest. Future ticket extends `propose_donor` with `(k, exclude)`.
+
+**`onMounted` auto-load gotcha**: code-reviewer's first pass flagged that the picker would open empty until the user changed the dropdown. Fix: `onMounted(() => { if (!isUserDrawn) loadCandidates(); })` plus a watch on `props.segmentId` that re-fetches. Both happen automatically without user interaction now.
+
+37 new tests (createDonorPickerState 21, sketchpadToSeries 8, donorApi 8); full frontend suite 509 → 546, zero regressions; `npm run build` clean. Code-reviewer APPROVE, 0 blocking after addressing the two real nits (auto-load on mount + rAF-throttled redraw).
+
+---
+
 ## SEG-018 GrAtSiD greedy basis-pursuit fitter (Bedford-Bevis 2018)
 
 Replaced the 40-line single-Gaussian-bump stub at `backend/app/services/decomposition/fitters/gratsid.py` with the full Bedford & Bevis (2018) Algorithm 1. Public surface: `fit_gratsid(X, t, *, basis_types, tau_grid, max_features, residual_threshold, candidate_top_k, pre_skeleton, seasonal_period)`, plus public helpers `basis(btype, t_ref, tau, t)` and `candidate_t_refs(residual, t, top_k, min_spacing)`. Score `|⟨b, r⟩| / ||b||` with OLS-projected amplitude per probe; greedy loop stops on `max_features=30` cap or when `best_score / ||residual|| < residual_threshold=0.05`. Duplicate suppression (Bedford §3): same `type` within `±5 %·n_samples` on `t_ref` AND `±10 %` on τ. Final OLS refit over all selected (type, t_ref, τ) triples — this is what makes 3-superposed-step recovery work within 10 % amplitude tolerance.
