@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## OP-031 align/warp Tier-3 (DTW / soft-DTW / ShapeDBA)
+
+Created `backend/app/services/operations/tier3/align_warp.py`. Public surface: `AlignableSegment` (frozen, `segment_id` / `label` / `values` + `with_values` helper), `AlignWarpAudit` (frozen, includes `approx_segment_ids` for plateau/trend), `IncompatibleOp(ValueError)`, `ALIGN_METHODS` literal tuple, `DEFAULT_WARPING_BAND = 0.1`, `DEFAULT_SOFT_DTW_GAMMA = 0.1`, and `align_warp(segments, reference_seg, method, warping_band, *, soft_dtw_gamma, event_bus, audit_log) → (list[AlignableSegment], AlignWarpAudit)`. Three methods: hard DTW (`tslearn.metrics.dtw_path` with Sakoe-Chiba radius `max(1, int(round(warping_band * len(seg))))`, then `_collapse_path_to_reference` averages segment values per reference index), soft-DTW (`tslearn.metrics.soft_dtw_alignment` row-normalised into soft warp weights with a degenerate-row fallback to nearest-neighbour resampling), ShapeDBA (`tslearn.barycenters.softdtw_barycenter([ref, seg], init=ref)` so output length matches reference exactly).
+
+**Compatibility table**: cycle/spike/transient pass cleanly; plateau/trend run but are listed in `audit.approx_segment_ids`; noise raises `IncompatibleOp` for both segment AND reference (aligning *to* white noise is as meaningless as warping noise — pinned by test). Unknown labels are treated as approx and recorded in audit — open-vocabulary by design but would mask typos like "cyle" (non-blocking nit).
+
+**Length preservation gotcha**: tslearn's `softdtw_barycenter` defaults output length to its input length, so passing `init=ref.reshape(-1, 1)` is the only way to guarantee `len(barycenter) == len(reference)`. ShapeDBA without explicit `init` returns `len(input[0])` which may not match the reference if inputs are reshuffled.
+
+**No new audit-event type** registered — uses the generic OP-041 EventBus / AuditLog infrastructure. No `LabelChip` emitted (shape labels are unchanged by warp, consistent with `decompose`). Pure-functional core: input segment list never mutated.
+
+`tslearn>=0.6` was already in `backend/requirements.txt` from OP-012 — no new deps. 19 tests in `test_align_warp_tier3.py`. Full backend suite: 1852 → 1871 pass, 0 regressions. Code-reviewer APPROVE with 3 non-blocking nits (audit doesn't record effective Sakoe-Chiba radius after the `max(1, …)` floor; empty `seg.values` silently substitutes a zero-vector instead of rejecting symmetrically with the empty-reference check; `_warp_shapedba` calls `soft_dtw_alignment` a second time just for audit cost — would be cheaper via scalar `soft_dtw`).
+
+**UI-009 wiring is deferred** to its own ticket — this backend op is ready for it.
+
+---
+
 ## UI-014 Semantic-layer panel + custom YAML upload (with predicate-eval hardening)
 
 Created `backend/app/routes/semantic_packs.py` (3 routes: `GET /api/semantic-packs`, `POST /api/semantic-packs/label-segments`, `POST /api/semantic-packs/validate-yaml`), `frontend/src/lib/semantic/createSemanticLayerState.js` (pure state) + `sessionStorage.js` + `formatYamlError.js`, `frontend/src/services/api/semanticPackApi.js`, and `frontend/src/components/semantic/SemanticLayerPanel.vue`. Wired into `BenchmarkViewerPage.vue` via a non-destructive `enrichedSample` computed — `applySemanticLabelsToSegments` clones `sample.value.segments` and adds `semanticLabel` for the display path only; raw `sample.value` is unchanged for editing/audit/operations. Custom YAML uploads go through a `tempfile.TemporaryDirectory + load_pack(pack_dir=...)` flow so the existing path-based loader is reused. `_load_built_in_pack` is wrapped with `@functools.lru_cache(maxsize=8)`. Session storage persists `{activePackKey, customYamlText}` and rehydrates on mount; an `onMounted` packs-loaded watcher re-binds the active pack (or re-runs validation for restored custom YAML).
