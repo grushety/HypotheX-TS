@@ -42,6 +42,7 @@ from .core import (
     load_pack,
     match_semantic_label,
     register_detector,
+    validate_predicate_strict,
 )
 
 # Trigger detector registration on first import of the package.
@@ -58,4 +59,5 @@ __all__ = [
     "load_pack",
     "match_semantic_label",
     "register_detector",
+    "validate_predicate_strict",
 ]

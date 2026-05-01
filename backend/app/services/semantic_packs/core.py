@@ -151,13 +151,26 @@ _ALLOWED_BUILTINS: dict[str, Callable[..., Any]] = {
 }
 
 
-def _validate_predicate_ast(tree: ast.AST) -> None:
+_STRICT_DISALLOWED_NODES: tuple[type, ...] = (ast.Pow,)
+
+
+def _validate_predicate_ast(tree: ast.AST, *, strict: bool = False) -> None:
     """Reject any AST node outside the safe whitelist; reject calls to
-    anything other than the small whitelisted-builtins set."""
+    anything other than the small whitelisted-builtins set.
+
+    When ``strict=True`` the additional ``_STRICT_DISALLOWED_NODES`` tuple
+    is rejected — used for user-uploaded packs (UI-014) where ``2 ** 10 ** 8``
+    would otherwise let an attacker freeze the worker.
+    """
     for node in ast.walk(tree):
         if not isinstance(node, _ALLOWED_AST_NODES):
             raise ValueError(
                 f"Predicate uses disallowed syntax: {type(node).__name__}"
+            )
+        if strict and isinstance(node, _STRICT_DISALLOWED_NODES):
+            raise ValueError(
+                "Predicate uses disallowed operator '**' in strict mode "
+                "(uploaded packs cannot use exponentiation)."
             )
         if isinstance(node, ast.Call):
             if not isinstance(node.func, ast.Name):
@@ -170,6 +183,18 @@ def _validate_predicate_ast(tree: ast.AST) -> None:
                     f"Predicate calls disallowed function {node.func.id!r}; "
                     f"allowed: {sorted(_ALLOWED_BUILTINS)}."
                 )
+
+
+def validate_predicate_strict(predicate: str) -> None:
+    """Validate an uploaded-pack predicate against the strict whitelist.
+
+    Raises :class:`ValueError` on any disallowed syntax, including the
+    exponentiation operator ``**``. Empty predicates pass.
+    """
+    if not predicate or not predicate.strip():
+        return
+    tree = ast.parse(predicate, mode="eval")
+    _validate_predicate_ast(tree, strict=True)
 
 
 def evaluate_predicate(predicate: str, context: dict[str, Any]) -> bool:
@@ -186,9 +211,14 @@ def evaluate_predicate(predicate: str, context: dict[str, Any]) -> bool:
     the codebase), so the AST guard is defence-in-depth, not the primary
     boundary.  In particular, the evaluator does **not** bound the CPU /
     memory of arithmetic operations — a malicious predicate such as
-    ``2 ** 10 ** 8`` would happily run.  If the trust boundary ever
-    widens to user-uploaded packs (e.g. UI-014 import), drop ``ast.Pow``
-    from the whitelist and add a wall-clock timeout around ``eval``.
+    ``2 ** 10 ** 8`` would happily run.
+
+    UI-014 widened the trust boundary to accept user-uploaded packs over
+    HTTP. The mitigation lives at the route layer rather than in this
+    evaluator: see :func:`validate_predicate_strict` (rejects ``ast.Pow``)
+    plus the body-size cap in ``app.routes.semantic_packs._load_custom_pack``.
+    Built-in pack predicates continue to flow through this non-strict path
+    unchanged.
 
     Args:
         predicate: Python boolean expression as a string.

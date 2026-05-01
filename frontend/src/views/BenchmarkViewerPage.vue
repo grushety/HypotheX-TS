@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
 import HistoryPanel from "../components/history/HistoryPanel.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
+import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
 import WarningPanel from "../components/warnings/WarningPanel.vue";
 import { AVAILABLE_SEGMENT_LABELS } from "../lib/segments/updateSegmentLabel";
@@ -48,6 +49,21 @@ import {
   fetchBenchmarkUncertainty,
   submitSuggestionDecision,
 } from "../services/api/benchmarkApi";
+import {
+  fetchSemanticPacks,
+  labelSemanticSegments,
+  validateSemanticPackYaml,
+} from "../services/api/semanticPackApi";
+import {
+  CUSTOM_OPTION_KEY,
+  NONE_OPTION_KEY,
+  applySemanticLabelsToSegments,
+  buildSegmentLabelMap,
+} from "../lib/semantic/createSemanticLayerState";
+import {
+  loadSemanticLayerSession,
+  saveSemanticLayerSession,
+} from "../lib/semantic/sessionStorage";
 
 const sample = ref(null);
 const loading = ref(true);
@@ -86,9 +102,32 @@ const selectedLabeler = ref("prototype");
 const pendingOpName = ref(null);
 let compatibilityRequestId = 0;
 
+const semanticPacks = ref([]);
+const semanticPacksLoading = ref(false);
+const semanticActivePackKey = ref(NONE_OPTION_KEY);
+const semanticActivePack = ref(null);
+const semanticLabelResults = ref([]);
+const semanticCustomError = ref(null);
+const semanticCustomYamlText = ref("");
+let semanticRequestId = 0;
+
 const selectedSegment = computed(() =>
   getSelectedSegment(sample.value?.segments ?? [], selectedSegmentId.value),
 );
+
+const semanticSegmentLabelMap = computed(() =>
+  buildSegmentLabelMap(semanticLabelResults.value),
+);
+const semanticAnnotatedSegments = computed(() => {
+  if (!sample.value?.segments) return [];
+  if (semanticActivePackKey.value === NONE_OPTION_KEY) return sample.value.segments;
+  return applySemanticLabelsToSegments(sample.value.segments, semanticSegmentLabelMap.value);
+});
+const enrichedSample = computed(() => {
+  if (!sample.value) return null;
+  if (semanticActivePackKey.value === NONE_OPTION_KEY) return sample.value;
+  return { ...sample.value, segments: semanticAnnotatedSegments.value };
+});
 const pageState = computed(() => createViewerPageState(sample.value, selectedSegment.value));
 const historyEntries = computed(() => createHistoryEntries(auditEvents.value));
 const sessionPanelState = computed(() => createSessionPanelState(auditEvents.value, sample.value));
@@ -605,6 +644,127 @@ async function handleAdaptModel() {
   }
 }
 
+async function loadSemanticPacks() {
+  semanticPacksLoading.value = true;
+  try {
+    const payload = await fetchSemanticPacks();
+    semanticPacks.value = payload.packs ?? [];
+  } catch (loadError) {
+    semanticPacks.value = [];
+    semanticCustomError.value = {
+      message: loadError instanceof Error ? loadError.message : "Failed to load semantic packs.",
+      kind: "schema",
+    };
+  } finally {
+    semanticPacksLoading.value = false;
+  }
+}
+
+async function refreshSemanticLabels() {
+  const requestId = ++semanticRequestId;
+  if (
+    semanticActivePackKey.value === NONE_OPTION_KEY ||
+    !sample.value?.segments?.length ||
+    !Array.isArray(sample.value.values)
+  ) {
+    semanticLabelResults.value = [];
+    return;
+  }
+  const isCustom = semanticActivePackKey.value === CUSTOM_OPTION_KEY;
+  const customYaml = isCustom ? semanticCustomYamlText.value : null;
+  if (isCustom && !customYaml) {
+    semanticLabelResults.value = [];
+    return;
+  }
+  try {
+    const segmentsPayload = sample.value.segments.map((seg) => ({
+      id: seg.id,
+      start: seg.start,
+      end: seg.end,
+      shape: seg.shape ?? seg.label ?? "noise",
+    }));
+    const response = await labelSemanticSegments({
+      packName: isCustom ? null : semanticActivePackKey.value,
+      customYaml,
+      values: sample.value.values,
+      segments: segmentsPayload,
+      context: {},
+    });
+    if (requestId === semanticRequestId) {
+      semanticLabelResults.value = response.results ?? [];
+    }
+  } catch (requestError) {
+    if (requestId === semanticRequestId) {
+      semanticLabelResults.value = [];
+      semanticCustomError.value = {
+        message:
+          requestError instanceof Error
+            ? requestError.message
+            : "Failed to compute semantic labels.",
+        kind: "schema",
+      };
+    }
+  }
+}
+
+function handleSelectSemanticPack(packKey) {
+  semanticActivePackKey.value = packKey;
+  semanticCustomError.value = null;
+  if (packKey === NONE_OPTION_KEY) {
+    semanticActivePack.value = null;
+    semanticLabelResults.value = [];
+  } else if (packKey === CUSTOM_OPTION_KEY) {
+    semanticActivePack.value = null;
+    semanticLabelResults.value = [];
+  } else {
+    const matched = semanticPacks.value.find((pack) => pack.name === packKey) ?? null;
+    semanticActivePack.value = matched;
+    refreshSemanticLabels();
+  }
+  saveSemanticLayerSession({
+    activePackKey: semanticActivePackKey.value,
+    customYamlText: semanticCustomYamlText.value || null,
+  });
+}
+
+async function handleUploadCustomYaml(yamlText) {
+  semanticCustomYamlText.value = yamlText ?? "";
+  semanticCustomError.value = null;
+  if (!semanticCustomYamlText.value.trim()) {
+    return;
+  }
+  try {
+    const result = await validateSemanticPackYaml(semanticCustomYamlText.value);
+    if (!result.ok) {
+      semanticCustomError.value = result.error ?? { message: "Validation failed", kind: "schema" };
+      semanticActivePack.value = null;
+      semanticLabelResults.value = [];
+      return;
+    }
+    semanticActivePack.value = result.pack ?? null;
+    semanticActivePackKey.value = CUSTOM_OPTION_KEY;
+    saveSemanticLayerSession({
+      activePackKey: CUSTOM_OPTION_KEY,
+      customYamlText: semanticCustomYamlText.value,
+    });
+    refreshSemanticLabels();
+  } catch (requestError) {
+    semanticCustomError.value = {
+      message:
+        requestError instanceof Error ? requestError.message : "Validation request failed.",
+      kind: "schema",
+    };
+  }
+}
+
+function handleClearCustomPack() {
+  semanticCustomYamlText.value = "";
+  semanticActivePack.value = null;
+  semanticLabelResults.value = [];
+  semanticCustomError.value = null;
+  saveSemanticLayerSession({ activePackKey: semanticActivePackKey.value, customYamlText: null });
+}
+
 function handleExportLog() {
   if (!auditEvents.value.length) {
     return;
@@ -627,6 +787,9 @@ watch(
   () => sample.value?.segments,
   (segments) => {
     selectedSegmentId.value = reconcileSelectedSegmentId(segments ?? [], selectedSegmentId.value);
+    if (semanticActivePackKey.value !== NONE_OPTION_KEY) {
+      refreshSemanticLabels();
+    }
   },
   { immediate: true },
 );
@@ -654,7 +817,36 @@ watch(
 
 onMounted(() => {
   loadBenchmarkOptions();
+  loadSemanticPacks();
+  const restored = loadSemanticLayerSession();
+  if (restored?.activePackKey) {
+    semanticActivePackKey.value = restored.activePackKey;
+    if (restored.customYamlText) {
+      semanticCustomYamlText.value = restored.customYamlText;
+    }
+  }
 });
+
+watch(
+  () => semanticPacks.value,
+  () => {
+    if (
+      semanticActivePackKey.value !== NONE_OPTION_KEY &&
+      semanticActivePackKey.value !== CUSTOM_OPTION_KEY
+    ) {
+      const matched =
+        semanticPacks.value.find((pack) => pack.name === semanticActivePackKey.value) ?? null;
+      if (matched) {
+        semanticActivePack.value = matched;
+        refreshSemanticLabels();
+      } else {
+        semanticActivePackKey.value = NONE_OPTION_KEY;
+      }
+    } else if (semanticActivePackKey.value === CUSTOM_OPTION_KEY && semanticCustomYamlText.value) {
+      handleUploadCustomYaml(semanticCustomYamlText.value);
+    }
+  },
+);
 </script>
 
 <template>
@@ -763,7 +955,7 @@ onMounted(() => {
           </div>
 
           <TimelineViewer
-            :sample="sample"
+            :sample="enrichedSample"
             :selected-segment-id="selectedSegmentId"
             :segment-uncertainty="uncertaintyPayload?.segmentUncertainty ?? []"
             :boundary-uncertainty="uncertaintyPayload?.boundaryUncertainty ?? []"
@@ -801,6 +993,19 @@ onMounted(() => {
 
       <!-- Right column: label editor + operations + model comparison + session stats -->
       <aside class="col-right" aria-label="Controls and comparison">
+        <SemanticLayerPanel
+          :built-in-packs="semanticPacks"
+          :active-pack-key="semanticActivePackKey"
+          :active-pack="semanticActivePack"
+          :label-results="semanticLabelResults"
+          :custom-error="semanticCustomError"
+          :custom-yaml-text="semanticCustomYamlText"
+          :loading="semanticPacksLoading"
+          @select-pack="handleSelectSemanticPack"
+          @upload-custom-yaml="handleUploadCustomYaml"
+          @clear-custom="handleClearCustomPack"
+        />
+
         <div v-if="selectedSegment" class="label-editor">
           <label class="label-editor-field">
             <span class="sidebar-label">Segment label</span>
