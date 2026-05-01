@@ -1,4 +1,9 @@
 <script setup>
+import { FEATURE_FLAG_MANIFOLD_AE } from "../../lib/plausibility/createPlausibilityBadgeState.js";
+import { extractSignalsFromEvent } from "../../lib/plausibility/extractSignalsFromEvent.js";
+import { getFeatureFlag } from "../../lib/plausibility/featureFlags.js";
+import PlausibilityBadge from "../plausibility/PlausibilityBadge.vue";
+
 defineProps({
   entries: {
     type: Array,
@@ -16,6 +21,12 @@ defineProps({
 });
 
 const emit = defineEmits(["export-log"]);
+
+const manifoldEnabled = getFeatureFlag(FEATURE_FLAG_MANIFOLD_AE);
+
+function badgePropsFor(entry) {
+  return extractSignalsFromEvent(entry);
+}
 </script>
 
 <template>
@@ -64,9 +75,15 @@ const emit = defineEmits(["export-log"]);
             <strong>{{ entry.title }}</strong>
             <p class="history-summary">{{ entry.summary }}</p>
           </div>
-          <span class="history-status" :class="`history-status-${entry.statusLabel.toLowerCase()}`">
-            {{ entry.statusLabel }}
-          </span>
+          <div class="history-status-group">
+            <PlausibilityBadge
+              v-bind="badgePropsFor(entry)"
+              :manifold-enabled="manifoldEnabled"
+            />
+            <span class="history-status" :class="`history-status-${entry.statusLabel.toLowerCase()}`">
+              {{ entry.statusLabel }}
+            </span>
+          </div>
         </div>
 
         <p class="history-meta">

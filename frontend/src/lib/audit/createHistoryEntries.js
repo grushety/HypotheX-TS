@@ -57,5 +57,8 @@ export function createHistoryEntries(events = []) {
       timestampLabel: formatTimestampLabel(event.timestamp ?? null),
       warningCount: event.warningCount ?? 0,
       affectedSegmentIds: event.affectedSegmentIds ?? [],
+      constraintResidual: event.constraintResidual ?? null,
+      plausibilityRange: event.plausibilityRange ?? null,
+      plausibilityManifold: event.plausibilityManifold ?? null,
     }));
 }
