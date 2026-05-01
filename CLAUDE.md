@@ -69,8 +69,7 @@ HypotheX-TS/
 - **Every domain function must cite its source** in the docstring (paper + equation)
 - **Never delete or rewrite working tests** without explicit request
 - **Always run tests after any code change**
-- **Checkpoint before large refactors:** `git add -A && git commit -m "checkpoint: before <change>"`
-- **ALWAYS run `tester` agent → `code-reviewer` agent → commit `<PREFIX>-NNN: description`** when a ticket is done
+- **ALWAYS run `tester` agent → `code-reviewer` agent → commit `<PREFIX>-NNN: description`** when a ticket is done — ONE commit per ticket, never mid-ticket
 
 ## Ticket Authoring Rule
 
@@ -92,6 +91,13 @@ All tasks are tracked as ticket files in `.claude/tickets/`.
 - **Do not start work without a ticket** — if something is unclear, ask before creating new files or making changes
 - **One ticket at a time** — complete and mark done before starting the next
 - **After finishing a ticket:** run `tester` agent, then `code-reviewer` agent, then commit: `git commit -m "<PREFIX>-NNN: short description"`
+- **ONE commit per ticket. ONE push per ticket.** Do not commit mid-ticket. Do not commit after each agent run, each test fix, or each file edit. All work for a ticket lands in a single commit at the end. For a safety checkpoint during long work, use `git stash` — not a commit. (Yulia has reported 20+ pushes for a single ticket. This is unacceptable noise.)
+- **Bash command formatting — NEVER put `#` comments inside bash commands.** Claude Code's security guard rejects any command containing a `#` followed by text on a new line, treating it as a path-validation bypass attempt. This includes:
+  - Multi-line shell snippets with `# comment` lines
+  - Commit messages spanning multiple lines
+  - Heredocs with `# ...` inside `"..."`
+  - Any quoted argument containing a literal newline followed by `#`
+  Instead: write single-line commands. Put commit messages on one line. If you need to explain what you're doing, say it in your text response — not in the bash command. For multi-line content, write to a file first with `Write` or `Edit`, then run `git commit -F file` or similar.
 - The git hook auto-moves the ticket file to `done/` on commit
 - Current open tickets: see `.claude/tickets/`
 
@@ -124,6 +130,7 @@ Windows users do not need the chmod step — Git for Windows honours the Python 
 - `research-algorithms` — algorithm sources, equations, SotA status. **Load before any domain algorithm work.**
 - `backend-patterns` — Flask layering, DI, frozen dataclasses, lru_cache, exception hierarchy.
 - `context` — running log of feature-level changes; appended one short paragraph per finished ticket (DoD step).
+
 
 ## Reference Docs
 
