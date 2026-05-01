@@ -136,9 +136,9 @@ def detect_baseflow(
     # baseflow logic.
     try:
         from app.services.decomposition.fitters.eckhardt import (  # noqa: PLC0415
-            fit_eckhardt,
+            eckhardt_baseflow,
         )
-        blob = fit_eckhardt(arr, alpha=a, bfi_max=bfi_max)
+        blob = eckhardt_baseflow(arr, a=a, bfi_max=bfi_max)
         baseflow_arr = blob.components["baseflow"]
     except Exception as exc:  # noqa: BLE001
         logger.warning("eckhardt_baseflow: SEG-016 fitter unavailable (%s)", exc)
