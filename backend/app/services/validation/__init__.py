@@ -10,6 +10,7 @@ Currently exposes:
   - ``conservation_significance`` — bootstrap CI + ratio + MMD on conservation residuals (VAL-007).
   - ``mmd_distshift`` — linear-time MMD distshift for replace_from_library (VAL-008).
   - ``coverage`` — session-level shape-vocabulary coverage tracker (VAL-010).
+  - ``diversity`` — DPP log-det diversity of accepted CFs (VAL-011).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -35,6 +36,16 @@ from app.services.validation.coverage import (
     CoverageResult,
     ShapeVocabularyCoverageTracker,
     gini_coefficient,
+)
+from app.services.validation.diversity import (
+    DEFAULT_REGULARISATION,
+    KERNEL_DTW_RBF,
+    KERNEL_LATENT_EUCLIDEAN,
+    KERNEL_SHAPELET_EDIT,
+    DiversityError,
+    DiversityResult,
+    IncrementalDiversityTracker,
+    dpp_log_det_diversity,
 )
 from app.services.validation.conservation_significance import (
     DEFAULT_BOOTSTRAP_B,
@@ -150,6 +161,7 @@ __all__ = [
     "DEFAULT_MMD_SUBSAMPLE_CAP",
     "DEFAULT_PERMUTATIONS",
     "DEFAULT_PROXIMITY_PERCENTILE",
+    "DEFAULT_REGULARISATION",
     "DEFAULT_SIGMA",
     "DEFAULT_SPARSITY_THRESHOLD",
     "DEFAULT_TIP_FRACTION_THRESHOLD",
@@ -157,8 +169,14 @@ __all__ = [
     "DEFAULT_TIP_SKEWNESS_THRESHOLD",
     "DEFAULT_Z_THRESHOLD",
     "DistShiftResult",
+    "DiversityError",
+    "DiversityResult",
     "Forecaster",
+    "IncrementalDiversityTracker",
+    "KERNEL_DTW_RBF",
+    "KERNEL_LATENT_EUCLIDEAN",
     "KERNEL_RBF_MEDIAN",
+    "KERNEL_SHAPELET_EDIT",
     "LABEL_CHIP_TOPIC",
     "MMDDistShiftError",
     "MMDLinearResult",
@@ -197,6 +215,7 @@ __all__ = [
     "conservation_residual_ci",
     "conservation_significance",
     "default_sigma_for_op",
+    "dpp_log_det_diversity",
     "gini_coefficient",
     "joint_stationarity_check",
     "mmd_linear_time",
