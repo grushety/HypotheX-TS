@@ -1,10 +1,12 @@
 import { TIER_0_OPS, TIER_1_OPS, TIER_2_OPS, TIER_3_OPS } from './operationCatalog.js';
+import { applyGapGatingToButton } from '../gaps/createGapGatingState.js';
 import { createShapeGatingState } from '../viewer/shapeGating.js';
 
 export function createTieredPaletteState({
   selectedSegmentIds = [],
   selectedShapes = [],
   pendingOp = null,
+  gapInfo = null,
 } = {}) {
   const isSingleSelect = selectedSegmentIds.length === 1;
   const isMultiSelect = selectedSegmentIds.length > 1;
@@ -13,7 +15,8 @@ export function createTieredPaletteState({
 
   function makeButton(op) {
     const enabled = op.requiresMultiSelect ? isMultiSelect : isSingleSelect;
-    return { ...op, enabled, loading: pendingOp === op.op_name };
+    const base = { ...op, enabled, loading: pendingOp === op.op_name };
+    return applyGapGatingToButton(base, gapInfo);
   }
 
   // Build the Tier-2 op list: single-select shows active shape's ops;
@@ -33,12 +36,15 @@ export function createTieredPaletteState({
     }
   }
 
-  const tier2Buttons = shapeOps.map((op) => ({
-    ...op,
-    enabled: gating.isEnabled(op.op_name),
-    loading: pendingOp === op.op_name,
-    disabledTooltip: gating.tooltipIfDisabled(op.op_name),
-  }));
+  const tier2Buttons = shapeOps.map((op) => {
+    const base = {
+      ...op,
+      enabled: gating.isEnabled(op.op_name),
+      loading: pendingOp === op.op_name,
+      disabledTooltip: gating.tooltipIfDisabled(op.op_name),
+    };
+    return applyGapGatingToButton(base, gapInfo);
+  });
 
   const tier2Disabled =
     isMultiSelect &&
