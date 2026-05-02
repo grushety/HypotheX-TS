@@ -6,6 +6,16 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-005 Coefficient-CI z-score (per-edit fast path)
+
+Added `backend/app/services/validation/coefficient_ci.py`: frozen `CoefficientCIConfig` / `CoefficientCIResult`, `CoefficientCIError`, `CoefficientCIValidator`, plus pure helpers `politis_white_block_length` (flat-top kernel, rule-of-thumb fallback), `stationary_bootstrap` (Politis-Romano 1994 geometric blocks with wrap-around), and `refit_blob` (dispatches through the existing `FITTER_REGISTRY`). Hot path is O(1): `(value − bootstrap_mean) / max(std, 1e-12)`. Cache is JSON per `(segment_id, method)` with alnum-sanitised filenames; method-mismatch on load raises. Wired into `synthesize_counterfactual` via one optional kwarg `coefficient_ci_validator`; result lands on the new `ValidationResult.coefficient_ci` forward-ref field.
+
+**Tier-2 deep-copy gotcha (load-bearing for any future validator that wants post-edit coefficients):** every Tier-2 op in this codebase does `blob = copy.deepcopy(blob)` at entry and returns only `Tier2OpResult.values`. The caller's `working_blob.coefficients` are *not* updated by the op. So `validator.validate(working_blob)` would return z-score 0 against the bootstrap mean. The validator now accepts `np.ndarray` as well — when given the post-edit signal it refits the same decomposition method and z-scores the recovered coefficients. The OP-050 wiring uses this path: `coefficient_ci_validator.validate(X_edit)`. If you ever add another validator that needs post-edit coefficients, do not assume the working_blob carries them.
+
+**Politis-White caveat:** a "AR(1) gives larger block than iid" comparison is *not* a robust property of the formula — sample autocorrelations on iid data are O(1/√n), the divisor in `(2 g(0)² / G)^(1/3)` amplifies this, and you can get larger spurious blocks for iid than for moderate AR. The test now asserts only that AR(1) block falls inside `[1, √n]`, which is the actual guarantee. 25 new tests; all five validators + OP-050 = 178/178; full backend 2035/2037 (2 pre-existing unrelated failures).
+
+---
+
 ## VAL-004 Native-Guide proximity & sparsity (per-edit)
 
 Added `backend/app/services/validation/native_guide.py`: frozen `NativeGuideThresholds` (sorted NUN distances + q90) and `NativeGuideResult` (proximity, sparsity, proximity_pct, too_dense, metric); pure functions `native_guide_proximity` (dtw / euclidean / l1), `native_guide_sparsity`, `percentile_rank`; combined `native_guide_validate`; calibration helpers `compute_nun_distances` and `thresholds_from_distances`; JSON cache I/O `save_thresholds` / `load_thresholds`. DTW always goes through `tslearn.metrics.dtw`; we never reimplement DTW. Wired into `synthesize_counterfactual` via three kwargs: `native_guide_thresholds` (auto-runs when supplied), `native_guide_metric`, and `run_native_guide` (explicit opt-in for metrics-only output without thresholds). `too_dense = (sparsity < 0.7) AND (proximity > q90_nun)` per Delaney et al. ICCBR 2021 — fires the VAL-020 "edit changed too much" tip.

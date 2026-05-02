@@ -5,10 +5,22 @@ Currently exposes:
   - ``probe_ir`` — PROBE invalidation-rate check (VAL-002).
   - ``ynn_plausibility`` — yNN k-NN plausibility under DTW (VAL-003).
   - ``native_guide`` — Native-Guide proximity & sparsity (VAL-004).
+  - ``coefficient_ci`` — Coefficient-CI z-score under stationary bootstrap (VAL-005).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
 """
+from app.services.validation.coefficient_ci import (
+    DEFAULT_B,
+    DEFAULT_Z_THRESHOLD,
+    CoefficientCIConfig,
+    CoefficientCIError,
+    CoefficientCIResult,
+    CoefficientCIValidator,
+    politis_white_block_length,
+    refit_blob,
+    stationary_bootstrap,
+)
 from app.services.validation.conformal_pid import (
     BandCheckResult,
     ConformalCalibrationError,
@@ -62,9 +74,14 @@ from app.services.validation.ynn_plausibility import (
 
 __all__ = [
     "BandCheckResult",
+    "CoefficientCIConfig",
+    "CoefficientCIError",
+    "CoefficientCIResult",
+    "CoefficientCIValidator",
     "ConformalCalibrationError",
     "ConformalConfig",
     "ConformalPIDValidator",
+    "DEFAULT_B",
     "DEFAULT_CANDIDATE_MULTIPLIER",
     "DEFAULT_DTW_BAND",
     "DEFAULT_EPS_PER_DIM",
@@ -73,6 +90,7 @@ __all__ = [
     "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_SIGMA",
     "DEFAULT_SPARSITY_THRESHOLD",
+    "DEFAULT_Z_THRESHOLD",
     "Forecaster",
     "METHOD_LINEARISED",
     "METHOD_MONTE_CARLO",
@@ -100,7 +118,10 @@ __all__ = [
     "native_guide_sparsity",
     "native_guide_validate",
     "percentile_rank",
+    "politis_white_block_length",
     "probe_invalidation_rate",
+    "refit_blob",
     "save_thresholds",
+    "stationary_bootstrap",
     "thresholds_from_distances",
 ]
