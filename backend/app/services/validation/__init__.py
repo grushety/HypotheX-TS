@@ -9,6 +9,7 @@ Currently exposes:
   - ``stationarity`` — ADF + KPSS + Zivot-Andrews joint stationarity check (VAL-006).
   - ``conservation_significance`` — bootstrap CI + ratio + MMD on conservation residuals (VAL-007).
   - ``mmd_distshift`` — linear-time MMD distshift for replace_from_library (VAL-008).
+  - ``coverage`` — session-level shape-vocabulary coverage tracker (VAL-010).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -23,6 +24,17 @@ from app.services.validation.coefficient_ci import (
     politis_white_block_length,
     refit_blob,
     stationary_bootstrap,
+)
+from app.services.validation.coverage import (
+    DEFAULT_TIP_FRACTION_THRESHOLD,
+    DEFAULT_TIP_MIN_EDITS,
+    DEFAULT_TIP_SKEWNESS_THRESHOLD,
+    LABEL_CHIP_TOPIC,
+    N_SHAPES,
+    SHAPES,
+    CoverageResult,
+    ShapeVocabularyCoverageTracker,
+    gini_coefficient,
 )
 from app.services.validation.conservation_significance import (
     DEFAULT_BOOTSTRAP_B,
@@ -125,6 +137,7 @@ __all__ = [
     "ConservationConfig",
     "ConservationSignificance",
     "ConservationSignificanceError",
+    "CoverageResult",
     "DEFAULT_B",
     "DEFAULT_BOOTSTRAP_B",
     "DEFAULT_BREAK_TOLERANCE",
@@ -139,13 +152,18 @@ __all__ = [
     "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_SIGMA",
     "DEFAULT_SPARSITY_THRESHOLD",
+    "DEFAULT_TIP_FRACTION_THRESHOLD",
+    "DEFAULT_TIP_MIN_EDITS",
+    "DEFAULT_TIP_SKEWNESS_THRESHOLD",
     "DEFAULT_Z_THRESHOLD",
     "DistShiftResult",
     "Forecaster",
     "KERNEL_RBF_MEDIAN",
+    "LABEL_CHIP_TOPIC",
     "MMDDistShiftError",
     "MMDLinearResult",
     "MMDResult",
+    "N_SHAPES",
     "METHOD_LINEARISED",
     "METHOD_MONTE_CARLO",
     "METRIC_DTW",
@@ -158,6 +176,8 @@ __all__ = [
     "ProbeMethodError",
     "ProbeModel",
     "RatioTestResult",
+    "SHAPES",
+    "ShapeVocabularyCoverageTracker",
     "StationarityError",
     "StationarityResult",
     "TIER2_DEFAULT_SIGMA",
@@ -177,6 +197,7 @@ __all__ = [
     "conservation_residual_ci",
     "conservation_significance",
     "default_sigma_for_op",
+    "gini_coefficient",
     "joint_stationarity_check",
     "mmd_linear_time",
     "mmd_quadratic",
