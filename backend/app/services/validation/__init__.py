@@ -4,6 +4,7 @@ Currently exposes:
   - ``conformal_pid`` — Conformal-PID prediction-band check (VAL-001).
   - ``probe_ir`` — PROBE invalidation-rate check (VAL-002).
   - ``ynn_plausibility`` — yNN k-NN plausibility under DTW (VAL-003).
+  - ``native_guide`` — Native-Guide proximity & sparsity (VAL-004).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -15,6 +16,26 @@ from app.services.validation.conformal_pid import (
     ConformalPIDValidator,
     Forecaster,
     ValidationResult,
+)
+from app.services.validation.native_guide import (
+    DEFAULT_DTW_BAND,
+    DEFAULT_EPS_PER_DIM,
+    DEFAULT_PROXIMITY_PERCENTILE,
+    DEFAULT_SPARSITY_THRESHOLD,
+    METRIC_DTW,
+    METRIC_EUCLIDEAN,
+    METRIC_L1,
+    NativeGuideError,
+    NativeGuideResult,
+    NativeGuideThresholds,
+    compute_nun_distances,
+    load_thresholds,
+    native_guide_proximity,
+    native_guide_sparsity,
+    native_guide_validate,
+    percentile_rank,
+    save_thresholds,
+    thresholds_from_distances,
 )
 from app.services.validation.probe_ir import (
     DEFAULT_MC_SAMPLES,
@@ -30,7 +51,6 @@ from app.services.validation.probe_ir import (
 )
 from app.services.validation.ynn_plausibility import (
     DEFAULT_CANDIDATE_MULTIPLIER,
-    DEFAULT_DTW_BAND,
     DEFAULT_K,
     YnnConfig,
     YnnIndexError,
@@ -47,23 +67,40 @@ __all__ = [
     "ConformalPIDValidator",
     "DEFAULT_CANDIDATE_MULTIPLIER",
     "DEFAULT_DTW_BAND",
+    "DEFAULT_EPS_PER_DIM",
     "DEFAULT_K",
     "DEFAULT_MC_SAMPLES",
+    "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_SIGMA",
+    "DEFAULT_SPARSITY_THRESHOLD",
     "Forecaster",
     "METHOD_LINEARISED",
     "METHOD_MONTE_CARLO",
-    "TIER2_DEFAULT_SIGMA",
+    "METRIC_DTW",
+    "METRIC_EUCLIDEAN",
+    "METRIC_L1",
+    "NativeGuideError",
+    "NativeGuideResult",
+    "NativeGuideThresholds",
     "ProbeIRResult",
     "ProbeMethodError",
     "ProbeModel",
+    "TIER2_DEFAULT_SIGMA",
     "ValidationResult",
     "YnnConfig",
     "YnnIndexError",
     "YnnPlausibilityValidator",
     "YnnResult",
+    "compute_nun_distances",
     "default_sigma_for_op",
     "keogh_envelope",
     "lb_keogh",
+    "load_thresholds",
+    "native_guide_proximity",
+    "native_guide_sparsity",
+    "native_guide_validate",
+    "percentile_rank",
     "probe_invalidation_rate",
+    "save_thresholds",
+    "thresholds_from_distances",
 ]

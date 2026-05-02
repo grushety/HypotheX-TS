@@ -37,10 +37,12 @@ from app.services.operations.relabeler.label_chip import emit_label_chip
 from app.services.operations.relabeler.relabeler import RelabelResult, relabel
 from app.services.validation import (
     ConformalPIDValidator,
+    NativeGuideThresholds,
     ProbeModel,
     ValidationResult,
     YnnPlausibilityValidator,
     default_sigma_for_op,
+    native_guide_validate,
     probe_invalidation_rate,
 )
 
@@ -144,6 +146,9 @@ def synthesize_counterfactual(
     probe_method: Literal["linearised", "monte_carlo"] = "linearised",
     ynn_validator: YnnPlausibilityValidator | None = None,
     ynn_target_class: object = None,
+    native_guide_thresholds: NativeGuideThresholds | None = None,
+    native_guide_metric: Literal["dtw", "euclidean", "l1"] = "dtw",
+    run_native_guide: bool = False,
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -193,6 +198,16 @@ def synthesize_counterfactual(
                           ``CFResult.validation.ynn``.
         ynn_target_class: Class label that yNN compares neighbour labels
                           against; required when ``ynn_validator`` is supplied.
+        native_guide_thresholds: Optional ``NativeGuideThresholds`` (VAL-004).
+                          Calibrated 90th-percentile NUN distance per dataset;
+                          when supplied with ``run_native_guide=True``, fuels
+                          the ``too_dense`` flag.
+        native_guide_metric: Metric for the proximity computation; default
+                          ``'dtw'``.
+        run_native_guide: When ``True`` (and ``pre_segment`` is supplied),
+                          computes proximity + sparsity even without
+                          calibrated thresholds; ``too_dense`` is then
+                          ``False`` regardless.
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -290,12 +305,27 @@ def synthesize_counterfactual(
             )
         ynn_result = ynn_validator.ynn(X_edit, ynn_target_class)
 
+    native_guide_result = None
+    if run_native_guide or native_guide_thresholds is not None:
+        if pre_segment is None:
+            raise ValueError(
+                "synthesize_counterfactual: 'pre_segment' is required when running Native-Guide."
+            )
+        native_guide_result = native_guide_validate(
+            np.asarray(pre_segment, dtype=np.float64),
+            X_edit,
+            native_guide_thresholds,
+            metric=native_guide_metric,
+        )
+
     validation_result: ValidationResult | None = None
-    if conformal_result is not None or probe_result is not None or ynn_result is not None:
+    if (conformal_result is not None or probe_result is not None
+            or ynn_result is not None or native_guide_result is not None):
         validation_result = ValidationResult(
             conformal=conformal_result,
             probe_ir=probe_result,
             ynn=ynn_result,
+            native_guide=native_guide_result,
         )
 
     return CFResult(

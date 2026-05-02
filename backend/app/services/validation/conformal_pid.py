@@ -106,17 +106,18 @@ class ValidationResult:
 
     Each field is ``None`` when the corresponding validator was not run on
     this edit. Fields land here as their VAL tickets ship — currently
-    VAL-001 (``conformal``), VAL-002 (``probe_ir``), VAL-003 (``ynn``).
+    VAL-001 (``conformal``), VAL-002 (``probe_ir``), VAL-003 (``ynn``),
+    VAL-004 (``native_guide``).
 
-    ``probe_ir`` and ``ynn`` are annotated as forward string references so
-    this module does not side-import their submodules; the runtime types
-    are ``ProbeIRResult | None`` from ``app.services.validation.probe_ir``
-    and ``YnnResult | None`` from ``app.services.validation.ynn_plausibility``.
+    All non-VAL-001 fields are forward string references so this module
+    does not side-import sibling validators; the runtime types come from
+    ``app.services.validation.{probe_ir, ynn_plausibility, native_guide}``.
     """
 
     conformal: BandCheckResult | None = None
     probe_ir: "ProbeIRResult | None" = None  # noqa: F821 — forward ref
     ynn: "YnnResult | None" = None  # noqa: F821 — forward ref
+    native_guide: "NativeGuideResult | None" = None  # noqa: F821 — forward ref
 
 
 @dataclass(frozen=True)
