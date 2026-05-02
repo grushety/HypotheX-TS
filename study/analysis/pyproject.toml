@@ -1,0 +1,20 @@
+[project]
+# Pinned Python packages for the VAL-041 analysis pipeline. Python is
+# used only for the supplementary plotting helpers and the synthetic-data
+# integrity check; the core analysis is R + brms (`renv.lock`).
+name = "hypothex-ts-study-analysis"
+version = "0.1.0"
+description = "VAL-041 analysis-pipeline Python helpers (plotting + integrity checks)"
+requires-python = ">=3.11"
+
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "matplotlib>=3.8",
+    "scipy>=1.11",
+]
+
+[tool.poetry]
+# AC line 162: pinned versions, CI uses them.
+[tool.uv]
+# uv-style pinning is also supported; whichever the runtime image uses.

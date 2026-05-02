@@ -1,0 +1,126 @@
+---
+title: "Bayesian companion — informational, not gating"
+output:
+  html_document:
+    toc: true
+---
+
+Companion `brms` model with the same fixed-effects structure as H1.
+Per VAL-040 §10:
+  - `Normal(0, 1)` priors on standardised effects.
+  - Posterior probability that the effect exceeds **ROPE = ± 0.1 d**
+    (Kruschke 2013).
+  - **Robustness check only** — never used to overturn or confirm the
+    frequentist H1 outcome.
+
+AC reporting requirements (line 159):
+  - Posterior mean.
+  - 95 % credible interval.
+  - Posterior probability outside ROPE.
+  - R-hat ≤ 1.01 for all parameters.
+  - ESS ≥ 1000 for all bulk + tail.
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(brms)
+  library(posterior)
+  library(bayestestR)
+})
+
+source("_constants.R")
+set.seed(SEED)
+
+data <- readRDS(file.path("data", "processed", "study.rds"))
+```
+
+## Priors
+
+```{r priors}
+priors <- c(
+  prior(normal(0, 1),       class = "b"),         # standardised effects
+  prior(student_t(3, 0, 2.5), class = "Intercept"),
+  prior(student_t(3, 0, 2.5), class = "sd"),
+  prior(lkj(2),              class = "cor")
+)
+```
+
+## Fit
+
+```{r fit-bayes}
+fit_bayes <- brm(
+  formula = as.formula(FORMULA_H1),
+  family = bernoulli(),
+  prior = priors,
+  data = data,
+  chains = BRMS_CHAINS,
+  iter = BRMS_ITER,
+  warmup = BRMS_WARMUP,
+  control = list(adapt_delta = BRMS_ADAPT_DELTA),
+  seed = SEED,
+  file = file.path("cache", "fit_bayes.rds")
+)
+```
+
+## Convergence diagnostics (LOCKED thresholds)
+
+```{r diagnostics}
+ds <- summary(fit_bayes)$fixed
+rhat_max <- max(ds$Rhat, na.rm = TRUE)
+ess_bulk_min <- min(ds$Bulk_ESS, na.rm = TRUE)
+ess_tail_min <- min(ds$Tail_ESS, na.rm = TRUE)
+
+cat(sprintf("R-hat max = %.4f (threshold ≤ %.2f) — %s\n",
+            rhat_max, BRMS_R_HAT_MAX,
+            if (rhat_max <= BRMS_R_HAT_MAX) "PASS" else "FAIL"))
+cat(sprintf("Bulk ESS min = %d (threshold ≥ %d) — %s\n",
+            as.integer(ess_bulk_min), BRMS_ESS_MIN,
+            if (ess_bulk_min >= BRMS_ESS_MIN) "PASS" else "FAIL"))
+cat(sprintf("Tail ESS min = %d (threshold ≥ %d) — %s\n",
+            as.integer(ess_tail_min), BRMS_ESS_MIN,
+            if (ess_tail_min >= BRMS_ESS_MIN) "PASS" else "FAIL"))
+
+if (rhat_max > BRMS_R_HAT_MAX || min(ess_bulk_min, ess_tail_min) < BRMS_ESS_MIN) {
+  warning(
+    "Bayesian companion convergence diagnostics did not meet pre-",
+    "registered thresholds — log a deviation in study/deviations.md ",
+    "and report in the paper."
+  )
+}
+```
+
+## Posterior summary + ROPE
+
+```{r posterior}
+post_b <- posterior::as_draws_df(fit_bayes)$b_toolhypothex_tips
+post_mean <- mean(post_b)
+post_ci <- quantile(post_b, c(0.025, 0.975))
+
+# Convert from logit-scale b to standardised d for the ROPE comparison.
+varcomp <- VarCorr(fit_bayes)
+sigma2_p <- attr(varcomp$participant, "stddev")[1]^2
+sigma2_i <- attr(varcomp$item, "stddev")[1]^2
+denom <- sqrt(sigma2_p + sigma2_i + (pi^2 / 3))
+post_d <- post_b / denom
+prob_outside_rope <- mean(abs(post_d) > ROPE_D)
+
+cat(sprintf(
+  "Posterior mean (b) = %.3f, 95%% CI [%.3f, %.3f]\n",
+  post_mean, post_ci[1], post_ci[2]
+))
+cat(sprintf(
+  "Posterior d mean = %.3f, Pr(|d| > %.2f) = %.3f\n",
+  mean(post_d), ROPE_D, prob_outside_rope
+))
+
+dir.create("cache", showWarnings = FALSE)
+saveRDS(list(
+  post_mean = post_mean,
+  post_ci = post_ci,
+  post_d_mean = mean(post_d),
+  prob_outside_rope = prob_outside_rope,
+  rhat_max = rhat_max,
+  ess_bulk_min = ess_bulk_min,
+  ess_tail_min = ess_tail_min,
+  rope_d = ROPE_D
+), file.path("cache", "bayes_summary.rds"))
+```

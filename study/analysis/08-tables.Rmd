@@ -1,0 +1,88 @@
+---
+title: "Paper tables (LaTeX booktabs)"
+output:
+  html_document:
+    toc: true
+---
+
+Each table is rendered to LaTeX (`booktabs` style) for direct
+inclusion in the paper. AC line 161: "all tables in `study/tables/`
+are LaTeX (`booktabs`)".
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(tibble)
+  library(xtable)
+})
+
+source("_constants.R")
+set.seed(SEED)
+
+dir.create("tables", showWarnings = FALSE, recursive = TRUE)
+```
+
+## Table 1 — Pre-registered hypotheses + results
+
+```{r table-1}
+h1 <- readRDS(file.path("cache", "h1_summary.rds"))
+h2 <- readRDS(file.path("cache", "h2_summary.rds"))
+secondary <- readRDS(file.path("cache", "secondary_bh.rds"))
+bayes <- readRDS(file.path("cache", "bayes_summary.rds"))
+
+table1 <- tibble::tribble(
+  ~Hypothesis, ~Family,    ~Test,         ~Effect,                    ~p_or_status,
+  "H1",        "primary",  "glmer",       sprintf("d = %.2f [%.2f, %.2f]", h1$d, h1$ci[1], h1$ci[2]),
+                                                                     sprintf("p = %.4g (Holm: %.4g)", h1$p, h1$p_holm["p_h1"]),
+  "H2",        "primary",  "TOST",        sprintf("bounds ± %.2f d", h2$sesoi_d),
+                                                                     sprintf("t1 = %.2f, p1 = %.4g; t2 = %.2f, p2 = %.4g; equiv = %s",
+                                                                              h2$t1, h2$p1, h2$t2, h2$p2,
+                                                                              ifelse(h2$equivalence_achieved, "YES", "NO")),
+  "H3",        "secondary","lmer",        sprintf("see fit_h3.rds"),
+                                                                     sprintf("p = %.4g (BH: %.4g)", secondary$p["p_h3"], secondary$p_bh["p_h3"]),
+  "H4",        "secondary","lmer",        sprintf("see fit_h4.rds"),
+                                                                     sprintf("p = %.4g (BH: %.4g)", secondary$p["p_h4"], secondary$p_bh["p_h4"]),
+  "Bayes (H1 companion)", "robustness",   "brms",
+                                          sprintf("post.d = %.2f, Pr(|d| > %.2f) = %.2f",
+                                                   bayes$post_d_mean, bayes$rope_d, bayes$prob_outside_rope),
+                                                                     sprintf("R-hat ≤ %.2f, ESS ≥ %d", BRMS_R_HAT_MAX, BRMS_ESS_MIN)
+)
+
+print(xtable::xtable(table1, caption = "Pre-registered hypotheses + results.",
+                     label = "tab:hypotheses"),
+      booktabs = TRUE, include.rownames = FALSE,
+      file = file.path("tables", "table1_hypotheses.tex"))
+```
+
+## Table 2 — Brier scores per condition
+
+```{r table-2}
+brier <- readRDS(file.path("cache", "brier_summary.rds"))$brier
+table2 <- do.call(rbind, lapply(names(brier), function(cond) {
+  data.frame(
+    condition = cond,
+    brier = sprintf("%.4f", brier[[cond]]$point),
+    ci = sprintf("[%.4f, %.4f]", brier[[cond]]$ci[1], brier[[cond]]$ci[2]),
+    n_trials = brier[[cond]]$n_trials,
+    stringsAsFactors = FALSE
+  )
+}))
+
+print(xtable::xtable(table2,
+                     caption = "Brier score per condition (B = 999 percentile bootstrap).",
+                     label = "tab:brier"),
+      booktabs = TRUE, include.rownames = FALSE,
+      file = file.path("tables", "table2_brier.tex"))
+```
+
+## Table 3 — Exclusion audit
+
+```{r table-3}
+audit <- readr::read_csv(file.path("data", "processed", "exclusion_audit.csv"),
+                         show_col_types = FALSE)
+print(xtable::xtable(audit,
+                     caption = "Pre-registered exclusion audit (sequential application).",
+                     label = "tab:exclusions"),
+      booktabs = TRUE, include.rownames = FALSE,
+      file = file.path("tables", "table3_exclusions.tex"))
+```

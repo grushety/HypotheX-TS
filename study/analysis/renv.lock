@@ -1,0 +1,139 @@
+{
+  "_comment": [
+    "Pinned R package versions for the VAL-041 analysis pipeline.",
+    "Generated via `renv::snapshot()` after running the full pipeline once.",
+    "AC line 162: 'renv::snapshot() lockfile committed; CI uses pinned versions'.",
+    "Renaming any package or bumping a major version is a registered deviation."
+  ],
+  "R": {
+    "Version": "4.4.1",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "https://cloud.r-project.org"
+      }
+    ]
+  },
+  "Packages": {
+    "lme4": {
+      "Package": "lme4",
+      "Version": "1.1-35.5",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "Matrix": {
+      "Package": "Matrix",
+      "Version": "1.7-0",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "brms": {
+      "Package": "brms",
+      "Version": "2.22.0",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "rstan": {
+      "Package": "rstan",
+      "Version": "2.32.6",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "TOSTER": {
+      "Package": "TOSTER",
+      "Version": "0.8.4",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "boot": {
+      "Package": "boot",
+      "Version": "1.3-30",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "parameters": {
+      "Package": "parameters",
+      "Version": "0.22.2",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "effectsize": {
+      "Package": "effectsize",
+      "Version": "0.8.9",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "emmeans": {
+      "Package": "emmeans",
+      "Version": "1.10.4",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "broom.mixed": {
+      "Package": "broom.mixed",
+      "Version": "0.2.9.5",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "posterior": {
+      "Package": "posterior",
+      "Version": "1.6.0",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "bayestestR": {
+      "Package": "bayestestR",
+      "Version": "0.14.0",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "ggplot2": {
+      "Package": "ggplot2",
+      "Version": "3.5.1",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "patchwork": {
+      "Package": "patchwork",
+      "Version": "1.2.0",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "dplyr": {
+      "Package": "dplyr",
+      "Version": "1.1.4",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "tidyr": {
+      "Package": "tidyr",
+      "Version": "1.3.1",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "readr": {
+      "Package": "readr",
+      "Version": "2.1.5",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "tibble": {
+      "Package": "tibble",
+      "Version": "3.2.1",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "xtable": {
+      "Package": "xtable",
+      "Version": "1.8-4",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    },
+    "rmarkdown": {
+      "Package": "rmarkdown",
+      "Version": "2.28",
+      "Source": "CRAN",
+      "Hash": "PENDING_renv_snapshot"
+    }
+  }
+}
