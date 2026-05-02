@@ -7,6 +7,7 @@ Currently exposes:
   - ``native_guide`` — Native-Guide proximity & sparsity (VAL-004).
   - ``coefficient_ci`` — Coefficient-CI z-score under stationary bootstrap (VAL-005).
   - ``stationarity`` — ADF + KPSS + Zivot-Andrews joint stationarity check (VAL-006).
+  - ``conservation_significance`` — bootstrap CI + ratio + MMD on conservation residuals (VAL-007).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -21,6 +22,21 @@ from app.services.validation.coefficient_ci import (
     politis_white_block_length,
     refit_blob,
     stationary_bootstrap,
+)
+from app.services.validation.conservation_significance import (
+    DEFAULT_BOOTSTRAP_B,
+    DEFAULT_MMD_PERMUTATIONS,
+    DEFAULT_MMD_SUBSAMPLE_CAP,
+    ConservationCIResult,
+    ConservationConfig,
+    ConservationSignificance,
+    ConservationSignificanceError,
+    MMDResult,
+    RatioTestResult,
+    conservation_mmd_test,
+    conservation_ratio_test,
+    conservation_residual_ci,
+    conservation_significance,
 )
 from app.services.validation.conformal_pid import (
     BandCheckResult,
@@ -94,18 +110,26 @@ __all__ = [
     "ConformalCalibrationError",
     "ConformalConfig",
     "ConformalPIDValidator",
+    "ConservationCIResult",
+    "ConservationConfig",
+    "ConservationSignificance",
+    "ConservationSignificanceError",
     "DEFAULT_B",
+    "DEFAULT_BOOTSTRAP_B",
     "DEFAULT_BREAK_TOLERANCE",
     "DEFAULT_CANDIDATE_MULTIPLIER",
     "DEFAULT_DTW_BAND",
     "DEFAULT_EPS_PER_DIM",
     "DEFAULT_K",
     "DEFAULT_MC_SAMPLES",
+    "DEFAULT_MMD_PERMUTATIONS",
+    "DEFAULT_MMD_SUBSAMPLE_CAP",
     "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_SIGMA",
     "DEFAULT_SPARSITY_THRESHOLD",
     "DEFAULT_Z_THRESHOLD",
     "Forecaster",
+    "MMDResult",
     "METHOD_LINEARISED",
     "METHOD_MONTE_CARLO",
     "METRIC_DTW",
@@ -117,6 +141,7 @@ __all__ = [
     "ProbeIRResult",
     "ProbeMethodError",
     "ProbeModel",
+    "RatioTestResult",
     "StationarityError",
     "StationarityResult",
     "TIER2_DEFAULT_SIGMA",
@@ -131,6 +156,10 @@ __all__ = [
     "YnnPlausibilityValidator",
     "YnnResult",
     "compute_nun_distances",
+    "conservation_mmd_test",
+    "conservation_ratio_test",
+    "conservation_residual_ci",
+    "conservation_significance",
     "default_sigma_for_op",
     "joint_stationarity_check",
     "keogh_envelope",

@@ -38,10 +38,12 @@ from app.services.operations.relabeler.relabeler import RelabelResult, relabel
 from app.services.validation import (
     CoefficientCIValidator,
     ConformalPIDValidator,
+    ConservationConfig,
     NativeGuideThresholds,
     ProbeModel,
     ValidationResult,
     YnnPlausibilityValidator,
+    conservation_significance,
     default_sigma_for_op,
     joint_stationarity_check,
     native_guide_validate,
@@ -154,6 +156,9 @@ def synthesize_counterfactual(
     coefficient_ci_validator: CoefficientCIValidator | None = None,
     run_stationarity: bool = False,
     stationarity_alpha: float = 0.05,
+    conservation_residual_pre: np.ndarray | None = None,
+    conservation_residual_post: np.ndarray | None = None,
+    conservation_config: ConservationConfig | None = None,
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -227,6 +232,16 @@ def synthesize_counterfactual(
                           the edit window in segment-bounded ops).
         stationarity_alpha: Significance level for ADF / KPSS / ZA;
                           default 0.05.
+        conservation_residual_pre / conservation_residual_post:
+                          Optional 1-D arrays of conservation residuals
+                          (``r_t = Σ fluxes − dStorage/dt`` per OP-032)
+                          before and after the projection. When both are
+                          supplied, runs the VAL-007 joint significance
+                          battery (bootstrap CI + variance-ratio + MMD)
+                          and attaches the result to
+                          ``CFResult.validation.conservation``.
+        conservation_config: Optional ``ConservationConfig`` overriding
+                          bootstrap_B / mmd_permutations / ci_alpha.
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -358,11 +373,25 @@ def synthesize_counterfactual(
             edit_window=(0, X_edit.shape[0]),
         )
 
+    conservation_result = None
+    if conservation_residual_pre is not None or conservation_residual_post is not None:
+        if conservation_residual_pre is None or conservation_residual_post is None:
+            raise ValueError(
+                "synthesize_counterfactual: both 'conservation_residual_pre' and "
+                "'conservation_residual_post' must be supplied together."
+            )
+        conservation_result = conservation_significance(
+            conservation_residual_pre,
+            conservation_residual_post,
+            config=conservation_config,
+        )
+
     validation_result: ValidationResult | None = None
     if (conformal_result is not None or probe_result is not None
             or ynn_result is not None or native_guide_result is not None
             or coefficient_ci_result is not None
-            or stationarity_result is not None):
+            or stationarity_result is not None
+            or conservation_result is not None):
         validation_result = ValidationResult(
             conformal=conformal_result,
             probe_ir=probe_result,
@@ -370,6 +399,7 @@ def synthesize_counterfactual(
             native_guide=native_guide_result,
             coefficient_ci=coefficient_ci_result,
             stationarity=stationarity_result,
+            conservation=conservation_result,
         )
 
     return CFResult(
