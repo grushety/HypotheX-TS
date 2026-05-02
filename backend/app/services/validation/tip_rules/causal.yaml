@@ -1,0 +1,13 @@
+# VAL-020 causal tip — autocorrelation propagation across the edit window.
+# Trigger condition references metrics.autocorr_at_lag_k and the boolean
+# metrics.k_steps_after_edit_in_horizon, which an upstream emitter computes
+# (out of scope for VAL-020). When either field is missing the rule
+# silently does not fire (safe_eval swallows the lookup error).
+
+- id: high_autocorrelation_propagation
+  condition: "metrics.autocorr_at_lag_k > 0.5 and metrics.k_steps_after_edit_in_horizon"
+  degree: directing
+  modality: contingency
+  severity: 2
+  message: "Edit at t={t_edit} likely propagates to t={t_edit_plus_k}; verify CF validity downstream."
+  paper_ref: "Karimi-Schölkopf-Valera FAccT 2021"

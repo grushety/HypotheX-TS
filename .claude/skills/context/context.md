@@ -6,6 +6,25 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-020 Lotse-based tip-rules engine
+
+Added `backend/app/services/validation/tip_engine.py`: frozen `Tip` (degree / modality / severity guarded), `TipRuleError`, YAML loader (`load_tip_rules`) with schema validation + duplicate-id rejection, `safe_eval` wrapping `simpleeval.EvalWithCompoundTypes`, and `TipEngine` with auto-subscription to `label_chip` / `validation_metrics` / `session_metrics`, emission on `tip_emitted`, and audit on `tip_dismissed`. Five YAML rule files under `backend/app/services/validation/tip_rules/` ship the 7 starter rules from the ticket. Added `simpleeval>=0.9.13` to `backend/requirements.txt`.
+
+**Three Lotse / Ceneda design rules (load-bearing for any future tip system):**
+1. **Max 3 tips per edit** (Heer 2019 PNAS).
+2. **Modality switching after 5 consecutive CF tips** (Upadhyay-Lakkaraju-Gajos IUI 2025) — partitions candidates non-CF-first when the threshold is met.
+3. **Recent-tip suppression**: rules that fired with severity ≤ 2 in the last 3 edits are suppressed *unless* the new firing has higher severity. Severity-3 tips never suppressed.
+
+**`safe_eval` security boundary:** `simpleeval` configured with empty `functions=` so any function call raises `FunctionNotDefined` → `TipRuleError`. Missing fields (NameNotDefined / AttributeDoesNotExist / KeyError / AttributeError) silently return `False` — partial metrics payloads don't blow up the whole evaluation pass. Critical for the AC's "no `eval()` on raw user YAML" requirement.
+
+**`label_chip` is the trigger, not an input.** The chip event fires `evaluate(self._latest_metrics, self._latest_session)`; `validation_metrics` and `session_metrics` populate those caches separately. Decouples rule conditions from chip structure — chip carries shape labels and confidence, not validation metrics.
+
+**Nested attribute access works for free.** `simpleeval.EvalWithCompoundTypes` walks chained `.attr` access on dict values, so `metrics.kpss_pre.p < 0.05` resolves when `metrics.kpss_pre` is itself a dict. Both the `kpss_post_only` and `high_autocorrelation_propagation` rules benefit. Missing nested fields → `AttributeDoesNotExist`, caught as False.
+
+45 new tests; full backend 2257/2259 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-014 Guardrails sidebar UI component
 
 Frontend-only ticket. Added `frontend/src/lib/guardrails/createGuardrailsState.js`: framework-agnostic state machine with `METRIC_CATALOGUE` (label / topic / citation / valueLabel per metric), `DEFAULT_USER_THRESHOLDS`, `trafficLight()` selector, five `apply*Update` reducers, action creators (`dismissPulse`, `setEnabled`, `setUserThreshold`, `resetMetric`, `setCollapsed`, `setDock`), and selectors (`visibleRows`, `rowTrafficLight`). Vue components under `frontend/src/components/guardrails/`: shared `GuardrailsRow.vue` + `Sparkline.vue` carry the layout; five named wrapper files (`CoverageRow`, `DiversityRow`, `ValidityRow`, `CherryPickingRow`, `ForkingPathsRow`) match the AC's filename list and let future per-metric tweaks slot in cleanly. `GuardrailsSettings.vue` is the settings dialog; `GuardrailsSidebar.vue` is the entry point — subscribes to the five topics on mount, unsubscribes on unmount, exposes the reducers via `defineExpose`.
