@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## UI-018 Scope attribute editor (window_size + mode + reference + domain_hint)
+
+Created `frontend/src/lib/scope/createScopeEditorState.js` (pure state) and `frontend/src/components/scope/ScopeAttributeEditor.vue` (modal dialog with `role="dialog"` + `aria-modal="true"` + backdrop-click + Escape-key close + per-field `aria-describedby` to inline error regions). Lib exports `DOMAIN_HINTS = ['hydrology', 'seismo-geodesy', 'remote-sensing', 'other']`, `INHERIT_DOMAIN_KEY = 'inherit'` (UI-only sentinel, never sent to backend), `DOMAIN_HINT_OPTIONS`, `SCOPE_MODES = ['fixed', 'sliding']`, `defaultScopeForDomain` with per-pack defaults (hydrology → sliding 30, seismo-geodesy → fixed no-default-reference, remote-sensing → sliding 365), `validateScope` (integer + positive + ≤ series length + mode in vocab + reference required for fixed), `resolveDomainHint` (translates inherit sentinel to project hint at serialise time), `buildScopeUpdatePayload` (frozen `{segmentId, scope, previousScope, triggerReclassify: true}`; **drops the reference for sliding mode** even if draft carries one — avoids a stale reference confusing backend dispatch), `draftFromScope`, `createScopeEditorState`. `canSave = validation.ok && segment.id != null`.
+
+**Inherit sentinel design**: UI dropdown's `'inherit'` key maps to `domain_hint = projectDomainHint` at serialise time, or `null` if the project has no hint (routes to the backend's "generic fitter" path). The sentinel is never sent over the wire.
+
+**Backend `scope` dict shape on `DecomposedSegment`** (per `backend/app/models/decomposition.py:75`): `scope: dict[str, Any] | None`; `decompose.py:213-215` already reads `scope['domain_hint']`. UI-018 adds three more keys to the dict — `window_size`, `mode`, `reference` — that the backend should treat as optional and ignore when not present (no schema migration needed; consumers that don't read them are unaffected).
+
+**Three deferred items** (consistent with UI-008 / UI-009 / UI-017 scope-keeping pattern): chip-context-menu opener not wired (dialog is standalone); parent API dispatch deferred (component emits `scope-updated` and `close`; the parent forwards to a backend segment-update route + OP-040 `RECLASSIFY_VIA_SEGMENTER`); end-to-end fixture test (open → save → API call → UI-013 chip) hangs off the parent wire-up. The `previousScope` field is included in the emitted payload so the backend audit-log emission can capture pre/post values per UI-015.
+
+31 new tests; full frontend 614 → 645 (+31), zero regressions; `npm run build` clean (157.68 kB JS unchanged — the dialog is not yet imported anywhere, so Vite tree-shakes it). Code-reviewer APPROVE, 0 blocking. Three a11y nits addressed inline (conditional `aria-describedby` so dangling references don't appear when there's no error, missing `id` on the reference error region, global Escape-key listener mounted/cleaned via `onMounted`/`onUnmounted`).
+
+---
+
 ## UI-017 Gap indicator + missing-data gating for dense-data ops
 
 Created `frontend/src/lib/gaps/{createGapGatingState.js, userSetting.js}` (pure libs) and `frontend/src/components/gaps/{GapIndicator.vue, GapFillPicker.vue}` (presentation), plus light-touch integrations into `createTieredPaletteState`, `ShapeChip.vue`, and `SegmentationOverlay.vue`. State exports `DEFAULT_DENSE_OPS_THRESHOLD_PCT = 30`, `DENSE_DATA_OPS = {cycle_change_frequency, cycle_shift_phase, cycle_add_harmonics, cycle_remove_harmonics, decompose}` (frozen Set — maps the AC's OP-024 names to the frontend op-catalog names; the Tier-3 `decompose` entry point covers ETM/STL fits downstream), `SUPPRESS_STRATEGIES = ['linear','spline','climatology']` matching UI-005, plus `classifyGap`, `isOpBlockedByGap`, `gapDisabledTooltip` (AC-verbatim string), `applyGapGatingToButton`, `buildSuppressPayload`. Settings persistence in `userSetting.js` via `sessionStorage` keyed at `hypothex-ts.gap.dense_ops_threshold_pct.v1`; always clamps on read.
