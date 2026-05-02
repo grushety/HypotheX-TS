@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-008 Linear-time MMD distshift for replace_from_library
+
+Added `backend/app/services/validation/mmd_distshift.py`: frozen `MMDLinearResult` and `DistShiftResult`; vectorised `mmd_linear_time` (Gretton 2012 Theorem 6, computes h = k(x_a, x_b) + k(y_a, y_b) − k(x_a, y_b) − k(x_b, y_a) over slice indices — no Python loop); `mmd_quadratic` reference for the lin-vs-quad agreement test only; block-permutation `replace_library_distshift` reusing `stationary_bootstrap` + `politis_white_block_length` from VAL-005. RBF kernel with median-heuristic bandwidth on the *concatenated* sample (per AC); the n² pairwise distance is downsampled to 500 via deterministic-by-index strides to keep memory tight on long series. p-value uses the standard `(1 + k) / (1 + B)` plus-one correction. Wired into `synthesize_counterfactual` via three kwargs (`mmd_distshift_window`, `mmd_distshift_context`, `mmd_distshift_n_permutations`); result lands on the new `ValidationResult.mmd_distshift` forward-ref field.
+
+**Whitening contract (load-bearing — same shape as VAL-001/2/5/6 deviations):** the AC says "Operates on whitened residuals — guardrail enforced (asserts whitening upstream)". Runtime detection of "is this whitened?" is brittle (autocorrelation tests on small samples are noisy), so the validator does *not* enforce it at runtime. Both the module docstring and `mmd_linear_time` / `replace_library_distshift` docstrings flag the contract loudly. Callers must pre-whiten via `whiten_residual` from VAL-006 before passing arrays in. Future violations would surface as overly-low p-values driven by autocorrelation, not distributional shift.
+
+**Block permutation correctly handles AR(1) nulls** — the test `test_ar1_null_no_false_positive` pins the most important property: drawing both sides from the same AR(1) process with phi=0.7 still produces p > 0.05. Without stationary-bootstrap-block permutation an iid shuffle would falsely reject. This is the load-bearing reason we don't permute by simple index shuffling.
+
+23 new tests; all eight validators + OP-050 = 247/247 green; full backend 2104/2106 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-007 Conservation-residual significance battery (per OP-032)
 
 Added `backend/app/services/validation/conservation_significance.py`: five frozen DTOs (`ConservationConfig`, `ConservationCIResult`, `RatioTestResult`, `MMDResult`, `ConservationSignificance`), and three pure tests plus an orchestrator. (1) `conservation_residual_ci` runs a Politis-Romano stationary bootstrap (B=999 default) on the post-projection residual against H0: E[r] = 0, returning a two-sided CI and p-value. (2) `conservation_ratio_test` computes ‖r_post‖² / ‖r_pre‖² and reports an F-referenced upper-tail p-value via `scipy.stats.f.sf`. (3) `conservation_mmd_test` runs an RBF MMD² (median-heuristic bandwidth) with B=200 permutation null using the standard `(1 + k) / (1 + B)` plus-one correction. The bootstrap reuses `stationary_bootstrap` and `politis_white_block_length` from VAL-005 — no duplication. Wired into `synthesize_counterfactual` via three kwargs (`conservation_residual_pre`, `conservation_residual_post`, `conservation_config`); result lands on `ValidationResult.conservation` forward-ref field.

@@ -48,6 +48,7 @@ from app.services.validation import (
     joint_stationarity_check,
     native_guide_validate,
     probe_invalidation_rate,
+    replace_library_distshift,
 )
 
 logger = logging.getLogger(__name__)
@@ -159,6 +160,9 @@ def synthesize_counterfactual(
     conservation_residual_pre: np.ndarray | None = None,
     conservation_residual_post: np.ndarray | None = None,
     conservation_config: ConservationConfig | None = None,
+    mmd_distshift_window: np.ndarray | None = None,
+    mmd_distshift_context: np.ndarray | None = None,
+    mmd_distshift_n_permutations: int = 200,
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -242,6 +246,18 @@ def synthesize_counterfactual(
                           ``CFResult.validation.conservation``.
         conservation_config: Optional ``ConservationConfig`` overriding
                           bootstrap_B / mmd_permutations / ci_alpha.
+        mmd_distshift_window / mmd_distshift_context:
+                          Optional 1-D **whitened residual** arrays (VAL-008).
+                          The window is the donor-replaced segment residual
+                          (Tier-1 ``replace_from_library``); the context is
+                          the surrounding-series residual. When both are
+                          supplied, runs ``replace_library_distshift`` and
+                          attaches the result to
+                          ``CFResult.validation.mmd_distshift``. Whitening
+                          is the caller's responsibility — VAL-008 deliberately
+                          does not detect or enforce it.
+        mmd_distshift_n_permutations: Block-permutation null sample count;
+                          default 200.
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -386,12 +402,26 @@ def synthesize_counterfactual(
             config=conservation_config,
         )
 
+    mmd_distshift_result = None
+    if mmd_distshift_window is not None or mmd_distshift_context is not None:
+        if mmd_distshift_window is None or mmd_distshift_context is None:
+            raise ValueError(
+                "synthesize_counterfactual: both 'mmd_distshift_window' and "
+                "'mmd_distshift_context' must be supplied together."
+            )
+        mmd_distshift_result = replace_library_distshift(
+            mmd_distshift_window,
+            mmd_distshift_context,
+            n_permutations=mmd_distshift_n_permutations,
+        )
+
     validation_result: ValidationResult | None = None
     if (conformal_result is not None or probe_result is not None
             or ynn_result is not None or native_guide_result is not None
             or coefficient_ci_result is not None
             or stationarity_result is not None
-            or conservation_result is not None):
+            or conservation_result is not None
+            or mmd_distshift_result is not None):
         validation_result = ValidationResult(
             conformal=conformal_result,
             probe_ir=probe_result,
@@ -400,6 +430,7 @@ def synthesize_counterfactual(
             coefficient_ci=coefficient_ci_result,
             stationarity=stationarity_result,
             conservation=conservation_result,
+            mmd_distshift=mmd_distshift_result,
         )
 
     return CFResult(
