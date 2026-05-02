@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-012 Validity-rate tracker (session-level)
+
+Added `backend/app/services/validation/validity_rate.py`: frozen `CFResultEvent`, frozen `ValidityRateResult` (counters, rate, per-tier / per-shape breakdowns, recent_rate over last `tip_window` events, rate_trend_7day, precomputed `tip_should_fire`), and `ValidityRateTracker` with auto-subscription to the `'cf_result'` topic, `reset()`, `close()`, and `from_events()` replay constructor. Mirrors the lifecycle pattern of VAL-010 (`ShapeVocabularyCoverageTracker`) and VAL-011 (`IncrementalDiversityTracker`). Persistence by event-log replay — no new DB column.
+
+**`CFResult.predicted_class` / `target_class` decoupling (load-bearing for any future per-validity wiring):** the current `CFResult` (OP-050) does not carry these fields — they're populated by the orchestrator that runs the user's classifier post-edit. The tracker takes `is_valid` as an explicit boolean on the `CFResultEvent` rather than reaching into a classifier interface that may differ across deployments. The orchestrator (which knows the target class) decides validity and publishes the event. This matches the pattern from VAL-002 (PROBE-IR) where the model contract lives at the call site rather than inside the validator.
+
+**Injectable clock for deterministic 7-day rolling-window tests** (`clock: Callable[[], float]`, default `time.time`). The `_Clock` test helper pins a fixed `t` and lets `test_clock_advance_phases_out_events` advance time forward without monkeypatching the stdlib. Pattern recommendation: any future time-window-based metric should accept an injectable clock — saves us from importing `freezegun` for one test.
+
+**Tip predicate is doubly-guarded:** `tip_should_fire` requires *both* `recent_rate is not None` (≥ 10 events) *and* `recent_rate < threshold`. Early-session always has `recent_rate=None` so the tip can't false-positive before the user has a chance to demonstrate competency. Default thresholds match AC: `tip_rate_threshold=0.3`, `tip_window=10`, `trend_window_seconds=7·86400`.
+
+27 new tests; full backend 2184/2186 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-011 DPP log-det diversity tracker (session-level)
 
 Added `backend/app/services/validation/diversity.py`: frozen `DiversityResult` (log_det, n_cfs, kernel, bandwidth, regularisation); one-shot `dpp_log_det_diversity(cfs, kernel, bandwidth, regularisation, encoder)` doing a full recompute; `IncrementalDiversityTracker` maintaining K / K_inv / log_det under O(n²)-per-add Schur-complement updates; `from_cfs(history)` replay constructor mirroring VAL-010's pattern. Three kernels: `dtw_rbf` (DTW + RBF, median-heuristic σ — canonical); `shapelet_edit` (project-local z-normalised-Euclidean stand-in — AC notes there is no canonical TS shapelet-edit kernel); `latent_euclidean` (Euclidean on raw or encoder-projected series). DTW always via `tslearn.metrics.dtw`; we never reimplement.
