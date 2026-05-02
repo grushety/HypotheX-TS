@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-007 Conservation-residual significance battery (per OP-032)
+
+Added `backend/app/services/validation/conservation_significance.py`: five frozen DTOs (`ConservationConfig`, `ConservationCIResult`, `RatioTestResult`, `MMDResult`, `ConservationSignificance`), and three pure tests plus an orchestrator. (1) `conservation_residual_ci` runs a Politis-Romano stationary bootstrap (B=999 default) on the post-projection residual against H0: E[r] = 0, returning a two-sided CI and p-value. (2) `conservation_ratio_test` computes ‖r_post‖² / ‖r_pre‖² and reports an F-referenced upper-tail p-value via `scipy.stats.f.sf`. (3) `conservation_mmd_test` runs an RBF MMD² (median-heuristic bandwidth) with B=200 permutation null using the standard `(1 + k) / (1 + B)` plus-one correction. The bootstrap reuses `stationary_bootstrap` and `politis_white_block_length` from VAL-005 — no duplication. Wired into `synthesize_counterfactual` via three kwargs (`conservation_residual_pre`, `conservation_residual_post`, `conservation_config`); result lands on `ValidationResult.conservation` forward-ref field.
+
+**MMD subsampling (load-bearing for any future MMD-based validator):** the n × n RBF kernel matrices are 2.4 GB on a 10k residual, so `ConservationConfig.mmd_subsample_cap` (default 500) randomly draws subsamples before kernel construction. The subsample size is reported on `MMDResult.subsample_size` so callers know whether the test saw their full residual or a draw of it. Disable subsampling with `mmd_subsample_cap=None`.
+
+**Edge case in ratio test:** when `r_pre` is exactly zero (conservation already perfectly closed pre-projection), the variance ratio is undefined; the validator returns NaN p-value and `f_statistic=NaN` rather than blowing up. The `ratio` field is `0.0` or `inf` depending on whether `r_post` is also zero.
+
+**Methodological contribution.** Patil et al. arXiv:2601.08999 (Jan 2026) introduced physics-guided CFs but did *not* attach formal p-values to conservation residuals. This module fills that gap — the joint CI + ratio + MMD output is meant to publish as the "conservation tightness" badge alongside UI-010's residual-budget bar.
+
+25 new tests; all seven validators + OP-050 = 224/224 green; full backend 2081/2083 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-006 ADF + KPSS + Zivot-Andrews joint stationarity (per-edit)
 
 Added `backend/app/services/validation/stationarity.py`: frozen `StationarityResult` (ADF/KPSS p-values pre+post, ZA p, ZA break index, break-consistency flag, verdict, alpha, ar_order); pure helpers `whiten_residual` (cube-root-rule lag capped at 10, with `n > 2(lag+1)` guard against AutoReg numerical collapse) and `_detrend` (OLS slope+intercept); public `joint_stationarity_check`. ADF/KPSS/Zivot-Andrews are all delegated to `statsmodels.tsa.stattools` (`trim=0.15` on ZA bounds the breakpoint search); we never reimplement them. Wired into `synthesize_counterfactual` via two kwargs: `run_stationarity` (opt-in flag) + `stationarity_alpha`. Coordinator passes `edit_window=(0, len(X_edit))` since the segment IS the edit window in segment-bounded ops. Result lands on `ValidationResult.stationarity` forward-ref field.
