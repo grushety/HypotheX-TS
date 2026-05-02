@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-011 DPP log-det diversity tracker (session-level)
+
+Added `backend/app/services/validation/diversity.py`: frozen `DiversityResult` (log_det, n_cfs, kernel, bandwidth, regularisation); one-shot `dpp_log_det_diversity(cfs, kernel, bandwidth, regularisation, encoder)` doing a full recompute; `IncrementalDiversityTracker` maintaining K / K_inv / log_det under O(n²)-per-add Schur-complement updates; `from_cfs(history)` replay constructor mirroring VAL-010's pattern. Three kernels: `dtw_rbf` (DTW + RBF, median-heuristic σ — canonical); `shapelet_edit` (project-local z-normalised-Euclidean stand-in — AC notes there is no canonical TS shapelet-edit kernel); `latent_euclidean` (Euclidean on raw or encoder-projected series). DTW always via `tslearn.metrics.dtw`; we never reimplement.
+
+**Frozen-bandwidth design (load-bearing for any future incremental kernel-matrix tracker):** the median-heuristic σ depends on the full distance distribution, but Schur-complement updates rely on a stable kernel matrix — re-deriving σ from new pairwise distances would re-shape K and invalidate the cached K_old^-1. The tracker freezes σ at the n=2 full-recompute step and keeps it for the rest of the session. Class docstring states this loudly; callers who need adaptive σ use the one-shot `dpp_log_det_diversity` or pass an explicit bandwidth to both. The `test_incremental_matches_full_recompute` test passes a fixed bandwidth so the comparison is fair; without it, the tracker would drift from a one-shot recompute on every accept.
+
+**Numerical fallback on near-duplicates:** when the Schur scalar `s = K_nn − k^T K_old^{-1} k` collapses to ≤ 0 (essentially identical CFs), the tracker triggers a full recompute rather than producing NaN. The full recompute then yields a finite-but-very-negative log det near `n · log(ε)` — the right user-facing signal for "this CF is essentially a duplicate". `test_identical_adds_drive_log_det_down` pins the monotonicity.
+
+**Persistence pattern follows VAL-010:** no new DB column. `from_cfs(audit_log_chips)` rebuilds tracker state from the persisted chip stream; bit-identical to live replay. Same recommendation as VAL-010 for any future session-level metric.
+
+25 new tests; full backend 2157/2159 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-010 Shape-vocabulary coverage tracker (session-level)
 
 Added `backend/app/services/validation/coverage.py`: `SHAPES` 7-tuple, `LABEL_CHIP_TOPIC` constant, frozen `CoverageResult` DTO (carries `tip_should_fire` and `suggested_shape` precomputed so the UI engine can read them directly), pure `gini_coefficient` helper, and `ShapeVocabularyCoverageTracker`. Construction takes an optional `EventBus` and auto-subscribes to the `label_chip` topic; `close()` unsubscribes; `reset()` zeros counts; `from_chips(history)` is the persistence-replay constructor. The tracker counts `chip.old_shape` once and `chip.new_shape` only when it differs (PRESERVED ops touch one shape; DETERMINISTIC / RECLASSIFY ops with a transition touch two). Tip predicate: `fraction < 0.4 AND skewness > 0.6 AND total_edits > 10` per AC; thresholds configurable on the constructor for VAL-014 / VAL-020 to tune.
