@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-003 yNN k-NN plausibility under DTW (per-edit)
+
+Added `backend/app/services/validation/ynn_plausibility.py`: `YnnPlausibilityValidator` with `_build` + `ynn(x_prime, target_class) -> YnnResult`, frozen `YnnConfig` (K=5, dtw_band=0.1, candidate_multiplier=4), `YnnIndexError`, plus `keogh_envelope` and `lb_keogh` primitives — the only non-DTW pieces, since `tslearn.metrics` does not expose LB_Keogh. DTW always goes through `tslearn.metrics.dtw` with `sakoe_chiba_radius = round(dtw_band × T)`; we never reimplement DTW. Per-query path: vectorised LB_Keogh against every training envelope (numpy broadcast) → `np.argpartition` shortlist of `candidate_multiplier × K` → full DTW on the shortlist → top-K by DTW → fraction whose label matches `target_class`. Wired into `synthesize_counterfactual` via two optional kwargs (`ynn_validator`, `ynn_target_class`); result lands on a new `ValidationResult.ynn` forward-ref field. K=0 returns `nan` with `RuntimeWarning` per AC; K is clipped to training-set size when the set is smaller.
+
+**Index format (security-relevant):** single `.npz` per dataset under `cache_dir`, loaded with `allow_pickle=False`. The training data and the LB_Keogh envelopes are stored together; sidecar config (K, dtw_band, candidate_multiplier) is included as scalar arrays so there is exactly one file. Cached-config mismatch raises `YnnIndexError` rather than silently reusing stale envelopes — same discipline as the VAL-001 calibration cache. Filename sanitisation (alnum + `-`/`_`) blocks path traversal in `dataset_name`. `test_npz_does_not_use_pickle` pins the security boundary.
+
+**Index-array immutability gotcha:** the index is shared across queries; an in-place mutation of `_upper` / `_lower` would silently break LB_Keogh without rebuilding. After build (and after load) all four index arrays are marked `setflags(write=False)`, turning the silent invariant break into a loud `ValueError`.
+
+**Latency:** AC asks ≤ 100 ms / 50k examples; CI perf test asserts ≤ 200 ms / 5k × T=40 to keep the fixture cheap (build path is currently a Python loop over training points, fine for one-shot init). 29 new tests including the LB_Keogh ≤ DTW lower-bound property over 20 random pairs (the most important correctness check). VAL-001 + VAL-002 + VAL-003 + OP-050 = 115/115; frontend 645/645; code-reviewer APPROVE 0 blocking.
+
+---
+
 ## VAL-002 PROBE invalidation rate (linearised per-edit)
 
 Added `backend/app/services/validation/probe_ir.py` with `probe_invalidation_rate(model, x_prime, *, sigma, method, n_samples, rng) -> ProbeIRResult`, a `ProbeModel` Protocol (`score / gradient / predict / threshold`), and a `TIER2_DEFAULT_SIGMA` per-op σ map (amplitude ops 0.05 in coefficient space; time ops 0.5 in sample-shift space; default 0.1). Wired into `synthesize_counterfactual` via three optional kwargs (`probe_model`, `probe_sigma`, `probe_method`); IR plumbs through to a new `ValidationResult.probe_ir` field (forward-ref string to avoid a circular import). `probe_sigma=None` falls back to `default_sigma_for_op(op_name)`.
