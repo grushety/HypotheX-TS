@@ -14,6 +14,7 @@ Currently exposes:
   - ``validity_rate`` — session-level validity-rate tracker (VAL-012).
   - ``cherry_picking`` — TS adaptation of the Hinns 2026 cherry-picking detector (VAL-013).
   - ``tip_engine`` — Lotse-style YAML-rule tip-generation engine (VAL-020).
+  - ``iaaft`` — IAAFT surrogate test, slow path (VAL-030).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -29,6 +30,20 @@ from app.services.validation.cherry_picking import (
     CherryPickingScore,
     UtilityFn,
     default_utility_fn,
+)
+from app.services.validation.iaaft import (
+    DEFAULT_MAX_ITER,
+    DEFAULT_N_SURROGATES,
+    DEFAULT_PE_M,
+    DEFAULT_PE_TAU,
+    DEFAULT_SPECTRUM_TOLERANCE,
+    DEFAULT_TOL,
+    IAAFTResult,
+    cache_key as iaaft_cache_key,
+    clear_iaaft_cache,
+    iaaft_surrogate,
+    iaaft_test,
+    permutation_entropy,
 )
 from app.services.validation.coefficient_ci import (
     DEFAULT_B,
@@ -210,19 +225,25 @@ __all__ = [
     "DEFAULT_EPS_PER_DIM",
     "DEFAULT_K",
     "DEFAULT_MC_SAMPLES",
+    "DEFAULT_MAX_ITER",
     "DEFAULT_MAX_TIPS_PER_EDIT",
     "DEFAULT_MIN_ACCEPTED",
     "DEFAULT_MMD_PERMUTATIONS",
     "DEFAULT_MMD_SUBSAMPLE_CAP",
     "DEFAULT_MODALITY_SWITCH_AFTER_N",
     "DEFAULT_N_SAMPLES",
+    "DEFAULT_N_SURROGATES",
     "DEFAULT_PERMUTATIONS",
+    "DEFAULT_PE_M",
+    "DEFAULT_PE_TAU",
     "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_RECENT_SUPPRESSION_WINDOW",
     "DEFAULT_REGULARISATION",
     "DEFAULT_RULES_DIR",
     "DEFAULT_SIGMA",
     "DEFAULT_SPARSITY_THRESHOLD",
+    "DEFAULT_SPECTRUM_TOLERANCE",
+    "DEFAULT_TOL",
     "DEFAULT_TIP_FRACTION_THRESHOLD",
     "DEFAULT_TIP_MIN_EDITS",
     "DEFAULT_TIP_RATE_THRESHOLD",
@@ -239,6 +260,7 @@ __all__ = [
     "DiversityError",
     "DiversityResult",
     "Forecaster",
+    "IAAFTResult",
     "IncrementalDiversityTracker",
     "KERNEL_DTW_RBF",
     "KERNEL_LATENT_EUCLIDEAN",
@@ -291,6 +313,7 @@ __all__ = [
     "YnnIndexError",
     "YnnPlausibilityValidator",
     "YnnResult",
+    "clear_iaaft_cache",
     "compute_nun_distances",
     "conservation_mmd_test",
     "conservation_ratio_test",
@@ -300,6 +323,9 @@ __all__ = [
     "default_utility_fn",
     "dpp_log_det_diversity",
     "gini_coefficient",
+    "iaaft_cache_key",
+    "iaaft_surrogate",
+    "iaaft_test",
     "joint_stationarity_check",
     "load_tip_rules",
     "mmd_linear_time",
@@ -311,6 +337,7 @@ __all__ = [
     "native_guide_sparsity",
     "native_guide_validate",
     "percentile_rank",
+    "permutation_entropy",
     "politis_white_block_length",
     "probe_invalidation_rate",
     "refit_blob",
