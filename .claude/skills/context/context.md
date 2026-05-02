@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-031 Full moving-block bootstrap (slow path)
+
+Added `backend/app/services/validation/mbb.py`: frozen `MBBResult` (with `replicates` as a frozen tuple); `MBBError`; `politis_white_block_length` delegating to `arch.bootstrap.optimal_block_length` (Patton-Politis-White 2009 *corrected* formula); `mbb_ci` for raw-series statistic CIs via `arch.StationaryBootstrap` / `CircularBlockBootstrap`; `mbb_coefficient_ci` for decomposition-coefficient CIs via Bergmeir-Hyndman-Benítez 2016 residual-bootstrap protocol; SHA-256 cache. Added `arch>=6.3` to `backend/requirements.txt`.
+
+**Naming clash with VAL-005 resolved (load-bearing for any future block-length caller):** VAL-005 ships a hand-rolled `politis_white_block_length` (flat-top kernel, kept tight for the inline coefficient-CI bootstrap). VAL-031's version delegates to `arch` per AC requirement. To avoid the package-level collision, VAL-031's wrapper is re-exported from `__init__.py` as `mbb_optimal_block_length` while keeping the AC-required name `politis_white_block_length` inside `mbb.py`. Both are correct for their respective use cases; document this choice on any future caller that needs *the* block length.
+
+**Methodological-honesty caveat travels on the result (load-bearing for slow-path UI dialogs):** each `MBBResult` carries a `stationarity_caveat` string — different text for raw-series vs. residual bootstrap. Both versions cross-recommend VAL-030 (IAAFT) for cases where the stationarity assumption is suspect. The dialog UI reads `result.stationarity_caveat` directly so the caveat survives serialisation. This is the same "honesty travels with data" pattern as VAL-013's methodological-honesty docstring.
+
+**Failure-tolerant refit loop in `mbb_coefficient_ci`:** ETM and similar fitters can raise on degenerate residual bootstraps (singular design matrix). Failures are logged at DEBUG and the replicate is skipped; **if more than half fail**, an `MBBError` is raised so callers don't silently consume a degenerate CI. `n_replicates` on the result reflects the actual successful count.
+
+**arch warning suppression:** arch's `optimal_block_length` triggers RuntimeWarnings on constant input (division by zero in the spectral-window formula). The warning is suppressed inside `politis_white_block_length` and the function falls back to `max(1, ceil(n^(1/3)))` instead. Caller never sees the noise.
+
+29 new tests; full backend 2316/2318 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-030 IAAFT surrogate test (slow path)
 
 Added `backend/app/services/validation/iaaft.py`: frozen `IAAFTResult` (carries q_edit, q_surrogate_mean/std, p_value, surrogate distribution as frozen tuple, n_surrogates, statistic_name, plus diagnostic `spectrum_max_abs_err`); `iaaft_surrogate` (Schreiber-Schmitz 2000 Alg 1 verbatim — random init + alternating spectrum-replace + rank-replace until MSE convergence); `permutation_entropy` (Bandt-Pompe 2002 Eq. 1, default discriminating statistic at m=4, τ=1); `iaaft_test` orchestrator with joblib parallelism and Edgington plus-one two-sided p-value; `cache_key` / `clear_iaaft_cache` for per-edit caching. Added `joblib>=1.3` to `backend/requirements.txt`.
