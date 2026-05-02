@@ -95,6 +95,35 @@ class DecompositionBlob:
             result = result + arr
         return result
 
+    def with_coefficients(
+        self,
+        coefficients: dict[str, Any],
+        *,
+        components: dict[str, np.ndarray] | None = None,
+    ) -> "DecompositionBlob":
+        """Return a deep copy with updated ``coefficients`` (and optionally
+        ``components``).
+
+        Used by VAL-032 (CS in coefficient space): the validator perturbs
+        coefficients, then a method-specific reconstructor produces fresh
+        components consistent with the new values, and ``with_coefficients``
+        bundles both into an immutable new blob.
+
+        When ``components=None`` the original components are deep-copied
+        unchanged — useful when the caller plans to call ``reassemble()``
+        on the original signal regardless of the coefficient change. The
+        common path for VAL-032 is to pass both arguments together so that
+        ``reassemble()`` reflects the new coefficients.
+        """
+        import copy as _copy
+        return DecompositionBlob(
+            method=self.method,
+            components=_copy.deepcopy(components) if components is not None else _copy.deepcopy(self.components),
+            coefficients=_copy.deepcopy(coefficients),
+            residual=self.residual.copy() if self.residual is not None else None,
+            fit_metadata=_copy.deepcopy(self.fit_metadata),
+        )
+
     def to_json(self) -> dict:
         """Serialize to a JSON-compatible dict.
 

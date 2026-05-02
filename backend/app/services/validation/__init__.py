@@ -16,6 +16,7 @@ Currently exposes:
   - ``tip_engine`` — Lotse-style YAML-rule tip-generation engine (VAL-020).
   - ``iaaft`` — IAAFT surrogate test, slow path (VAL-030).
   - ``mbb`` — full moving-block bootstrap, slow path (VAL-031).
+  - ``cs_coefficient`` — CS in decomposition coefficient space (VAL-032 — publishable transplant of Dutta 2022).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -69,6 +70,21 @@ from app.services.validation.coefficient_ci import (
     politis_white_block_length,
     refit_blob,
     stationary_bootstrap,
+)
+from app.services.validation.cs_coefficient import (
+    DEFAULT_KAPPA,
+    DEFAULT_M_SAMPLES,
+    DEFAULT_ROBUST_THRESHOLD,
+    CSCoefficientError,
+    CSResult,
+    CoefficientJacobianFn,
+    ProbaModel,
+    ReconstructFn,
+    cache_key as cs_cache_key,
+    clear_cs_cache,
+    cs_analytic_bound,
+    cs_coefficient_space,
+    sigma_theta_from_mbb,
 )
 from app.services.validation.coverage import (
     DEFAULT_TIP_FRACTION_THRESHOLD,
@@ -232,6 +248,9 @@ __all__ = [
     "ConservationConfig",
     "ConservationSignificance",
     "ConservationSignificanceError",
+    "CSCoefficientError",
+    "CSResult",
+    "CoefficientJacobianFn",
     "CoverageResult",
     "DEFAULT_B",
     "DEFAULT_BOOTSTRAP_B",
@@ -240,6 +259,8 @@ __all__ = [
     "DEFAULT_DTW_BAND",
     "DEFAULT_EPS_PER_DIM",
     "DEFAULT_K",
+    "DEFAULT_KAPPA",
+    "DEFAULT_M_SAMPLES",
     "DEFAULT_MC_SAMPLES",
     "DEFAULT_MAX_ITER",
     "DEFAULT_MAX_TIPS_PER_EDIT",
@@ -256,6 +277,7 @@ __all__ = [
     "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_RECENT_SUPPRESSION_WINDOW",
     "DEFAULT_REGULARISATION",
+    "DEFAULT_ROBUST_THRESHOLD",
     "DEFAULT_RULES_DIR",
     "DEFAULT_SIGMA",
     "DEFAULT_SPARSITY_THRESHOLD",
@@ -303,10 +325,12 @@ __all__ = [
     "NativeGuideError",
     "NativeGuideResult",
     "NativeGuideThresholds",
+    "ProbaModel",
     "ProbeIRResult",
     "ProbeMethodError",
     "ProbeModel",
     "RatioTestResult",
+    "ReconstructFn",
     "SHAPES",
     "ShapeVocabularyCoverageTracker",
     "StationarityError",
@@ -333,6 +357,7 @@ __all__ = [
     "YnnIndexError",
     "YnnPlausibilityValidator",
     "YnnResult",
+    "clear_cs_cache",
     "clear_iaaft_cache",
     "clear_mbb_cache",
     "compute_nun_distances",
@@ -340,6 +365,9 @@ __all__ = [
     "conservation_ratio_test",
     "conservation_residual_ci",
     "conservation_significance",
+    "cs_analytic_bound",
+    "cs_cache_key",
+    "cs_coefficient_space",
     "default_sigma_for_op",
     "default_utility_fn",
     "dpp_log_det_diversity",
@@ -369,6 +397,7 @@ __all__ = [
     "replace_library_distshift",
     "safe_eval",
     "save_thresholds",
+    "sigma_theta_from_mbb",
     "stationary_bootstrap",
     "thresholds_from_distances",
     "whiten_residual",

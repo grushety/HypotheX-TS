@@ -6,6 +6,24 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-032 CS in decomposition-coefficient space (publishable transplant of Dutta 2022)
+
+Added `backend/app/services/validation/cs_coefficient.py`: frozen `CSResult` (CS, μ, σ, invalidation_rate, frozen-tuple σ_θ, is_robust, target_class, method); `CSCoefficientError`; `cs_coefficient_space` MC implementation of Dutta 2022 §3 (`CS = μ − κσ`, default `κ = 0.5`); `sigma_theta_from_mbb` integration helper that converts each VAL-031 MBB CI into a Gaussian-equivalent σ via `(ci_upper − ci_lower) / (2 · 1.96)`; `cs_analytic_bound` (gated Hamman 2023 closed form). Extended `DecompositionBlob` with an immutable `with_coefficients(coefficients, components=None)` deep-copy method. **Per the SOTA review's open-research-gaps §1, this is the first published deployment of CS in fitted-parametric-decomposition coefficient space with an MBB-calibrated noise model.**
+
+**Coefficient-space-only invariant (load-bearing for the publishable claim):** the contribution lives entirely in keeping perturbations in coefficient space — anything noising the raw signal would be a known PROBE-IR variant (VAL-002). Two tests pin this:
+1. **Source-grep** on `cs_coefficient.py` for exactly one `rng.normal(...)` site (the σ_θ vector inside the MC loop) and zero `components['...'] + rng.*` / `reassemble() + rng.*` patterns.
+2. **Behavioural**: passing an identity-reconstruct stub (ignores perturbed coefficients, returns original components) keeps σ = 0 even with σ_θ = 5.0. If perturbations leaked into the signal, σ would be > 0.
+
+Future trackers that build on this need to maintain both invariants.
+
+**`reconstruct_fn` callable design (load-bearing for any future fitter):** the validator cannot rebuild components generically across the 10 supported decomposition methods (different fitters have different forward maps from coefficients to signal — Constant has `trend = full_like(level)`, ETM has `trend = x0 + linear_rate · t`, MSTL has multiple seasonal components, etc.). VAL-032 takes a method-specific `reconstruct_fn(coefficients_dict, original_blob) -> components_dict` callable; the test fixture provides `_constant_reconstruct`. A future FITTER_REGISTRY-style reconstructor registry is a follow-up ticket — the current callable is an honest contract.
+
+**Hamman 2023 analytic bound — AC-deviation documented:** the AC asserts "analytic bound returns ≤ MC-CS for piecewise-linear toy model". This property does *not* strictly hold: the Hamman bound is `Φ(margin / σ_pred)` (a normal-approximation lower bound on `Pr(robust)` under linearisation), while CS = μ − κσ is a different quantity (Dutta 2022 prob-distribution summary). On a sigmoid model the linearisation can *over*-estimate robustness because it can't capture sigmoid curvature. The test was recast to pin the closed form against its hand-derived value on a deterministic fixture; the deviation rationale lives in the test docstring + ticket Result Report. Relating the two metrics rigorously requires additional assumptions (convexity / curvature direction) — separate paper.
+
+32 new tests; full backend 2348/2350 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-031 Full moving-block bootstrap (slow path)
 
 Added `backend/app/services/validation/mbb.py`: frozen `MBBResult` (with `replicates` as a frozen tuple); `MBBError`; `politis_white_block_length` delegating to `arch.bootstrap.optimal_block_length` (Patton-Politis-White 2009 *corrected* formula); `mbb_ci` for raw-series statistic CIs via `arch.StationaryBootstrap` / `CircularBlockBootstrap`; `mbb_coefficient_ci` for decomposition-coefficient CIs via Bergmeir-Hyndman-Benítez 2016 residual-bootstrap protocol; SHA-256 cache. Added `arch>=6.3` to `backend/requirements.txt`.
