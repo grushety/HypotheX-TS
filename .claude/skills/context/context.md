@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-013 Cherry-picking risk detector (TS adaptation of Hinns 2026)
+
+Added `backend/app/services/validation/cherry_picking.py`: `AdmissibleCFSampler` Protocol, `UtilityFn` callable type, `default_utility_fn` (AC-default `0.4·plaus + 0.3·sparsity + 0.3·valid`), frozen `CherryPickingScore`, and `CherryPickingDetector` with `on_accepted`, `score()`, `reset()`, `replay()`. Caches the admissible-CF utility distribution per `instance_key` (defaults to `id(x_original)`); sampler called at most once per key. KS test against uniform[0, 1] delegated to `scipy.stats.kstest`. **First TS-CF deployment of the Hinns 2026 detector** and the first interactive deployment to any modality — load-bearing methodological-honesty docstring up top.
+
+**Three load-bearing caveats** (must be cited in any publication that uses this metric): (1) **data-access level only** — explanation-only detector is "extremely limited in practice" per Hinns 2026 §6, not implemented; (2) **utility function is project-specific** — Hinns 2026 §4 leaves `u` open, AC default `(0.4, 0.3, 0.3)` is a project choice; (3) **admissible-CF distribution = typed-op random walk**, *not* uniform on the manifold — the score measures bias relative to that sampling distribution.
+
+**Recommendation logic** is mean-quantile-conditioned: `mean_q > 0.8` → "all top utility, try intermediate"; `< 0.2` → "all bottom utility, surface model's preferred"; between → "non-uniform, explore a different region". The tip engine reads `tip_should_fire` and `recommendation` directly off the result.
+
+**Cache reset semantics:** `reset()` clears *both* accepted-CF quantiles and the utility cache, because the admissible-CF distribution is meaningful only relative to the *current session's* original instances. Stale cache from a prior session would conflate distributions across sessions. This is a different choice from VAL-010/011/012, which preserve event history; document if changing.
+
+28 new tests; full backend 2212/2214 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-012 Validity-rate tracker (session-level)
 
 Added `backend/app/services/validation/validity_rate.py`: frozen `CFResultEvent`, frozen `ValidityRateResult` (counters, rate, per-tier / per-shape breakdowns, recent_rate over last `tip_window` events, rate_trend_7day, precomputed `tip_should_fire`), and `ValidityRateTracker` with auto-subscription to the `'cf_result'` topic, `reset()`, `close()`, and `from_events()` replay constructor. Mirrors the lifecycle pattern of VAL-010 (`ShapeVocabularyCoverageTracker`) and VAL-011 (`IncrementalDiversityTracker`). Persistence by event-log replay — no new DB column.
