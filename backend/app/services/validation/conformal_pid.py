@@ -108,7 +108,8 @@ class ValidationResult:
     this edit. Fields land here as their VAL tickets ship — currently
     VAL-001 (``conformal``), VAL-002 (``probe_ir``), VAL-003 (``ynn``),
     VAL-004 (``native_guide``), VAL-005 (``coefficient_ci``),
-    VAL-006 (``stationarity``), VAL-007 (``conservation``).
+    VAL-006 (``stationarity``), VAL-007 (``conservation``),
+    VAL-008 (``mmd_distshift``).
 
     All non-VAL-001 fields are forward string references so this module
     does not side-import sibling validators.
@@ -121,6 +122,7 @@ class ValidationResult:
     coefficient_ci: "CoefficientCIResult | None" = None  # noqa: F821 — forward ref
     stationarity: "StationarityResult | None" = None  # noqa: F821 — forward ref
     conservation: "ConservationSignificance | None" = None  # noqa: F821 — forward ref
+    mmd_distshift: "DistShiftResult | None" = None  # noqa: F821 — forward ref
 
 
 @dataclass(frozen=True)

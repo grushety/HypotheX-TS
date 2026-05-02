@@ -8,6 +8,7 @@ Currently exposes:
   - ``coefficient_ci`` — Coefficient-CI z-score under stationary bootstrap (VAL-005).
   - ``stationarity`` — ADF + KPSS + Zivot-Andrews joint stationarity check (VAL-006).
   - ``conservation_significance`` — bootstrap CI + ratio + MMD on conservation residuals (VAL-007).
+  - ``mmd_distshift`` — linear-time MMD distshift for replace_from_library (VAL-008).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -37,6 +38,16 @@ from app.services.validation.conservation_significance import (
     conservation_ratio_test,
     conservation_residual_ci,
     conservation_significance,
+)
+from app.services.validation.mmd_distshift import (
+    DEFAULT_PERMUTATIONS,
+    KERNEL_RBF_MEDIAN,
+    DistShiftResult,
+    MMDDistShiftError,
+    MMDLinearResult,
+    mmd_linear_time,
+    mmd_quadratic,
+    replace_library_distshift,
 )
 from app.services.validation.conformal_pid import (
     BandCheckResult,
@@ -124,11 +135,16 @@ __all__ = [
     "DEFAULT_MC_SAMPLES",
     "DEFAULT_MMD_PERMUTATIONS",
     "DEFAULT_MMD_SUBSAMPLE_CAP",
+    "DEFAULT_PERMUTATIONS",
     "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_SIGMA",
     "DEFAULT_SPARSITY_THRESHOLD",
     "DEFAULT_Z_THRESHOLD",
+    "DistShiftResult",
     "Forecaster",
+    "KERNEL_RBF_MEDIAN",
+    "MMDDistShiftError",
+    "MMDLinearResult",
     "MMDResult",
     "METHOD_LINEARISED",
     "METHOD_MONTE_CARLO",
@@ -162,6 +178,8 @@ __all__ = [
     "conservation_significance",
     "default_sigma_for_op",
     "joint_stationarity_check",
+    "mmd_linear_time",
+    "mmd_quadratic",
     "keogh_envelope",
     "lb_keogh",
     "load_thresholds",
@@ -172,6 +190,7 @@ __all__ = [
     "politis_white_block_length",
     "probe_invalidation_rate",
     "refit_blob",
+    "replace_library_distshift",
     "save_thresholds",
     "stationary_bootstrap",
     "thresholds_from_distances",
