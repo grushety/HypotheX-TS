@@ -104,12 +104,18 @@ class BandCheckResult:
 class ValidationResult:
     """Aggregate validation outcome attached to ``CFResult.validation``.
 
-    Currently only exposes the conformal-PID band check; other validators
-    (PROBE-IR, IAAFT, MBB, CS, PPCEF) will appear as additional fields as
-    later VAL tickets land.
+    Each field is ``None`` when the corresponding validator was not run on
+    this edit. Fields land here as their VAL tickets ship — currently
+    VAL-001 (``conformal``) and VAL-002 (``probe_ir``).
+
+    The ``probe_ir`` annotation is a forward string reference so this
+    module does not import from ``probe_ir`` (avoiding a side-import for
+    callers that only need conformal). The runtime type is
+    ``ProbeIRResult | None`` from ``app.services.validation.probe_ir``.
     """
 
     conformal: BandCheckResult | None = None
+    probe_ir: "ProbeIRResult | None" = None  # noqa: F821 — forward ref
 
 
 @dataclass(frozen=True)

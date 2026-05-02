@@ -35,7 +35,13 @@ from app.models.decomposition import DecompositionBlob
 from app.services.events import AuditLog, EventBus
 from app.services.operations.relabeler.label_chip import emit_label_chip
 from app.services.operations.relabeler.relabeler import RelabelResult, relabel
-from app.services.validation import ConformalPIDValidator, ValidationResult
+from app.services.validation import (
+    ConformalPIDValidator,
+    ProbeModel,
+    ValidationResult,
+    default_sigma_for_op,
+    probe_invalidation_rate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +138,9 @@ def synthesize_counterfactual(
     audit_log: AuditLog | None = None,
     validator: ConformalPIDValidator | None = None,
     pre_segment: np.ndarray | None = None,
+    probe_model: ProbeModel | None = None,
+    probe_sigma: float | None = None,
+    probe_method: Literal["linearised", "monte_carlo"] = "linearised",
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -166,6 +175,14 @@ def synthesize_counterfactual(
         pre_segment:      Pre-edit segment values (same length as the
                           edited segment) used to compute ``y_pre``. Required
                           when ``validator`` is supplied.
+        probe_model:      Optional ProbeModel (VAL-002). When supplied, the
+                          coordinator computes the PROBE invalidation rate on
+                          ``X_edit`` and attaches the result to
+                          ``CFResult.validation.probe_ir``.
+        probe_sigma:      Perturbation scale σ for PROBE-IR; falls back to the
+                          per-op default in ``TIER2_DEFAULT_SIGMA`` when ``None``.
+        probe_method:     'linearised' (default; closed-form Pawelczyk Eq. 5)
+                          or 'monte_carlo' (slow-path fallback).
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -234,8 +251,8 @@ def synthesize_counterfactual(
         audit_log=audit_log,
     )
 
-    # Step 6: per-edit prediction-band check (VAL-001, optional)
-    validation_result: ValidationResult | None = None
+    # Step 6: per-edit validation checks (VAL-001 + VAL-002, both optional)
+    conformal_result = None
     if validator is not None:
         if pre_segment is None:
             raise ValueError(
@@ -243,7 +260,24 @@ def synthesize_counterfactual(
             )
         y_pre = float(validator.forecaster.predict(np.asarray(pre_segment, dtype=np.float64)))
         y_post = float(validator.forecaster.predict(X_edit))
-        validation_result = ValidationResult(conformal=validator.band_check(y_pre, y_post))
+        conformal_result = validator.band_check(y_pre, y_post)
+
+    probe_result = None
+    if probe_model is not None:
+        effective_sigma = probe_sigma if probe_sigma is not None else default_sigma_for_op(op_name)
+        probe_result = probe_invalidation_rate(
+            probe_model,
+            X_edit,
+            sigma=effective_sigma,
+            method=probe_method,
+        )
+
+    validation_result: ValidationResult | None = None
+    if conformal_result is not None or probe_result is not None:
+        validation_result = ValidationResult(
+            conformal=conformal_result,
+            probe_ir=probe_result,
+        )
 
     return CFResult(
         edited_series=X_edit,
