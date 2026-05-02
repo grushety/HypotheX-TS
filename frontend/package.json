@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test --test-isolation=none src/lib/data/*.test.js src/lib/viewer/*.test.js src/lib/chart/*.test.js src/lib/segments/*.test.js src/lib/operations/*.test.js src/lib/constraints/*.test.js src/lib/audit/*.test.js src/lib/export/*.test.js src/lib/benchmarks/*.test.js src/lib/decomposition/*.test.js src/lib/relabel/*.test.js src/lib/plausibility/*.test.js src/lib/semantic/*.test.js src/lib/donors/*.test.js src/lib/alignment/*.test.js src/lib/gaps/*.test.js src/lib/scope/*.test.js src/services/api/*.test.js",
+    "test": "node --test --test-isolation=none src/lib/data/*.test.js src/lib/viewer/*.test.js src/lib/chart/*.test.js src/lib/segments/*.test.js src/lib/operations/*.test.js src/lib/constraints/*.test.js src/lib/audit/*.test.js src/lib/export/*.test.js src/lib/benchmarks/*.test.js src/lib/decomposition/*.test.js src/lib/relabel/*.test.js src/lib/plausibility/*.test.js src/lib/semantic/*.test.js src/lib/donors/*.test.js src/lib/alignment/*.test.js src/lib/gaps/*.test.js src/lib/scope/*.test.js src/lib/guardrails/*.test.js src/services/api/*.test.js",
     "lint": "node scripts/lint.mjs"
   },
   "dependencies": {

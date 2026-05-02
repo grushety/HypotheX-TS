@@ -6,6 +6,23 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-014 Guardrails sidebar UI component
+
+Frontend-only ticket. Added `frontend/src/lib/guardrails/createGuardrailsState.js`: framework-agnostic state machine with `METRIC_CATALOGUE` (label / topic / citation / valueLabel per metric), `DEFAULT_USER_THRESHOLDS`, `trafficLight()` selector, five `apply*Update` reducers, action creators (`dismissPulse`, `setEnabled`, `setUserThreshold`, `resetMetric`, `setCollapsed`, `setDock`), and selectors (`visibleRows`, `rowTrafficLight`). Vue components under `frontend/src/components/guardrails/`: shared `GuardrailsRow.vue` + `Sparkline.vue` carry the layout; five named wrapper files (`CoverageRow`, `DiversityRow`, `ValidityRow`, `CherryPickingRow`, `ForkingPathsRow`) match the AC's filename list and let future per-metric tweaks slot in cleanly. `GuardrailsSettings.vue` is the settings dialog; `GuardrailsSidebar.vue` is the entry point — subscribes to the five topics on mount, unsubscribes on unmount, exposes the reducers via `defineExpose`.
+
+**Lisnic 2025 design (load-bearing for any future Lisnic-style guardrail UI):**
+1. **Pulse only on the *transition*** to firing — re-pulsing every render is the "too aggressive" failure mode Lisnic 2025 explicitly calls out. State machine compares previous `tipShouldFire` to new before pulsing.
+2. **`dismissPulse` clears the pulse but keeps the foreground** — user acknowledges; threshold still crossed; row stays at top until the metric drops back below.
+3. **`tipShouldFire` precomputed by backend, never recomputed in UI** — settings dialog overrides only change the traffic-light *colour bands* (advisory), not the pulse/announcement predicate. UI thresholds and backend thresholds are intentionally separable.
+
+**Forking-paths row reserved with `pendingBackend=true`** — no VAL ticket ships a forking-paths metric (VAL-014 lists 5 rows but VAL-010..013 ships 4). Reserving the slot keeps the layout stable and gives future backend tickets a clean drop-in point. Catalogue cites Gelman & Loken 2013.
+
+**Deferred wire-up:** the sidebar is not yet imported into `BenchmarkViewerPage.vue`, so the build size is unchanged (Vite tree-shakes it). Same pattern as UI-017 / UI-018. Parent route imports it as a one-line change in a future ticket. `eventBus` prop is optional — callers without a bus can call the exposed reducers directly.
+
+34 new tests (679 frontend total, +34); `npm test` 679/679; `npm run build` clean at 157.68 kB JS.
+
+---
+
 ## VAL-013 Cherry-picking risk detector (TS adaptation of Hinns 2026)
 
 Added `backend/app/services/validation/cherry_picking.py`: `AdmissibleCFSampler` Protocol, `UtilityFn` callable type, `default_utility_fn` (AC-default `0.4·plaus + 0.3·sparsity + 0.3·valid`), frozen `CherryPickingScore`, and `CherryPickingDetector` with `on_accepted`, `score()`, `reset()`, `replay()`. Caches the admissible-CF utility distribution per `instance_key` (defaults to `id(x_original)`); sampler called at most once per key. KS test against uniform[0, 1] delegated to `scipy.stats.kstest`. **First TS-CF deployment of the Hinns 2026 detector** and the first interactive deployment to any modality — load-bearing methodological-honesty docstring up top.
