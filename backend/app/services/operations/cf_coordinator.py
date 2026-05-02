@@ -35,6 +35,7 @@ from app.models.decomposition import DecompositionBlob
 from app.services.events import AuditLog, EventBus
 from app.services.operations.relabeler.label_chip import emit_label_chip
 from app.services.operations.relabeler.relabeler import RelabelResult, relabel
+from app.services.validation import ConformalPIDValidator, ValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,9 @@ class CFResult:
         op_name:             Canonical Tier-2 op name (e.g. 'flatten').
         segment_id:          ID of the edited segment.
         op_id:               UUID4 assigned to this synthesis call.
+        validation:          Per-edit validation outcomes; ``None`` when no
+                             validator was supplied. ``validation.conformal``
+                             holds the VAL-001 BandCheckResult.
     """
 
     edited_series: np.ndarray
@@ -105,6 +109,7 @@ class CFResult:
     op_name: str
     segment_id: str
     op_id: str
+    validation: ValidationResult | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +130,8 @@ def synthesize_counterfactual(
     projector: Callable[..., np.ndarray] | None = None,
     event_bus: EventBus | None = None,
     audit_log: AuditLog | None = None,
+    validator: ConformalPIDValidator | None = None,
+    pre_segment: np.ndarray | None = None,
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -151,6 +158,14 @@ def synthesize_counterfactual(
                           otherwise falls back to naive (no-op) with a warning.
         event_bus:        EventBus for chip publication; uses default when None.
         audit_log:        AuditLog for chip persistence; uses default when None.
+        validator:        Optional ConformalPIDValidator (VAL-001). When
+                          supplied together with ``pre_segment``, the
+                          coordinator runs ``band_check`` on the pre/post
+                          forecasts and attaches the result to
+                          ``CFResult.validation.conformal``.
+        pre_segment:      Pre-edit segment values (same length as the
+                          edited segment) used to compute ``y_pre``. Required
+                          when ``validator`` is supplied.
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -219,6 +234,17 @@ def synthesize_counterfactual(
         audit_log=audit_log,
     )
 
+    # Step 6: per-edit prediction-band check (VAL-001, optional)
+    validation_result: ValidationResult | None = None
+    if validator is not None:
+        if pre_segment is None:
+            raise ValueError(
+                "synthesize_counterfactual: 'pre_segment' is required when 'validator' is supplied."
+            )
+        y_pre = float(validator.forecaster.predict(np.asarray(pre_segment, dtype=np.float64)))
+        y_post = float(validator.forecaster.predict(X_edit))
+        validation_result = ValidationResult(conformal=validator.band_check(y_pre, y_post))
+
     return CFResult(
         edited_series=X_edit,
         blob=working_blob,
@@ -231,6 +257,7 @@ def synthesize_counterfactual(
         op_name=op_name,
         segment_id=segment_id,
         op_id=op_id,
+        validation=validation_result,
     )
 
 

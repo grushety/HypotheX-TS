@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-001 Conformal-PID prediction-band check (per-edit fast path)
+
+New `backend/app/services/validation/` package with `ConformalPIDValidator` (Angelopoulos–Candès–Tibshirani NeurIPS 2023, arXiv 2307.16895). The validator owns three frozen DTOs (`BandCheckResult`, `ValidationResult`, `ConformalConfig`), a `Forecaster` Protocol, and a JSON calibration cache at `validation/cache/conformal_calibration_<dataset>.json`. `band_check(y_pre, y_post)` is O(1): it reads the latest rolling quantile `q̂_α` and emits `verdict ∈ {within, exceeds_alpha=0.1, exceeds_alpha=0.05}` plus the centred prediction interval. OP-050 `synthesize_counterfactual` gained two optional kwargs — `validator` and `pre_segment` — that, when both supplied, call the forecaster pre/post and attach a `ValidationResult` to the new `CFResult.validation` field (default `None`, so all 37 OP-050 tests pass unchanged).
+
+**Pseudocode-vs-paper deviation (load-bearing):** the ticket's pseudocode shows a residual-gap update `err = |y − ŷ| − q`, but that controller does **not** target 1 − α coverage (it converges to a function of `E[|residual|]` instead). The Acceptance Criteria require both "Angelopoulos 2023 Eq. 4 correctness" and "1 − α ± 0.02 marginal coverage on held-out tail", and only the paper's miscoverage-indicator form (`err = 1{|y−ŷ| > q} − α`) satisfies both. The implementation follows the paper; the deviation is documented in `update()`'s docstring so a future auditor sees the choice. Default PID gains: `K_p=0.5, K_i=0.1, integral_window=10` (Angelopoulos 2023 Table 1).
+
+**Cache config integrity:** `_load_cache` validates all four config fields (`alpha`, `K_p`, `K_i`, `integral_window`), not just `alpha` — silent reuse with stale gains was the most-likely production footgun. Path traversal is blocked by alnum/`-`/`_` filename sanitisation in `_calibration_path`.
+
+26 new tests (`test_conformal_pid.py`); 37 OP-050 tests still green; held-out coverage test asserts mean rolling-100 hit-rate within 0.02 of 1−α (per-window 0.02 is below binomial sampling noise of √(0.9·0.1/100) ≈ 0.03). Code-reviewer APPROVE, 0 blocking.
+
+---
+
 ## UI-018 Scope attribute editor (window_size + mode + reference + domain_hint)
 
 Created `frontend/src/lib/scope/createScopeEditorState.js` (pure state) and `frontend/src/components/scope/ScopeAttributeEditor.vue` (modal dialog with `role="dialog"` + `aria-modal="true"` + backdrop-click + Escape-key close + per-field `aria-describedby` to inline error regions). Lib exports `DOMAIN_HINTS = ['hydrology', 'seismo-geodesy', 'remote-sensing', 'other']`, `INHERIT_DOMAIN_KEY = 'inherit'` (UI-only sentinel, never sent to backend), `DOMAIN_HINT_OPTIONS`, `SCOPE_MODES = ['fixed', 'sliding']`, `defaultScopeForDomain` with per-pack defaults (hydrology → sliding 30, seismo-geodesy → fixed no-default-reference, remote-sensing → sliding 365), `validateScope` (integer + positive + ≤ series length + mode in vocab + reference required for fixed), `resolveDomainHint` (translates inherit sentinel to project hint at serialise time), `buildScopeUpdatePayload` (frozen `{segmentId, scope, previousScope, triggerReclassify: true}`; **drops the reference for sliding mode** even if draft carries one — avoids a stale reference confusing backend dispatch), `draftFromScope`, `createScopeEditorState`. `canSave = validation.ok && segment.id != null`.
