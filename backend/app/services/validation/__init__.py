@@ -11,6 +11,7 @@ Currently exposes:
   - ``mmd_distshift`` — linear-time MMD distshift for replace_from_library (VAL-008).
   - ``coverage`` — session-level shape-vocabulary coverage tracker (VAL-010).
   - ``diversity`` — DPP log-det diversity of accepted CFs (VAL-011).
+  - ``validity_rate`` — session-level validity-rate tracker (VAL-012).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -61,6 +62,15 @@ from app.services.validation.conservation_significance import (
     conservation_ratio_test,
     conservation_residual_ci,
     conservation_significance,
+)
+from app.services.validation.validity_rate import (
+    CF_RESULT_TOPIC,
+    DEFAULT_TIP_RATE_THRESHOLD,
+    DEFAULT_TIP_WINDOW,
+    DEFAULT_TREND_WINDOW_SECONDS,
+    CFResultEvent,
+    ValidityRateResult,
+    ValidityRateTracker,
 )
 from app.services.validation.mmd_distshift import (
     DEFAULT_PERMUTATIONS,
@@ -137,6 +147,8 @@ from app.services.validation.ynn_plausibility import (
 
 __all__ = [
     "BandCheckResult",
+    "CF_RESULT_TOPIC",
+    "CFResultEvent",
     "CoefficientCIConfig",
     "CoefficientCIError",
     "CoefficientCIResult",
@@ -166,7 +178,10 @@ __all__ = [
     "DEFAULT_SPARSITY_THRESHOLD",
     "DEFAULT_TIP_FRACTION_THRESHOLD",
     "DEFAULT_TIP_MIN_EDITS",
+    "DEFAULT_TIP_RATE_THRESHOLD",
     "DEFAULT_TIP_SKEWNESS_THRESHOLD",
+    "DEFAULT_TIP_WINDOW",
+    "DEFAULT_TREND_WINDOW_SECONDS",
     "DEFAULT_Z_THRESHOLD",
     "DistShiftResult",
     "DiversityError",
@@ -198,6 +213,8 @@ __all__ = [
     "ShapeVocabularyCoverageTracker",
     "StationarityError",
     "StationarityResult",
+    "ValidityRateResult",
+    "ValidityRateTracker",
     "TIER2_DEFAULT_SIGMA",
     "VERDICT_INTRODUCED",
     "VERDICT_NONSTATIONARY_PRESERVED",
