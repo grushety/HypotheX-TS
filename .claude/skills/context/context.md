@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-004 Native-Guide proximity & sparsity (per-edit)
+
+Added `backend/app/services/validation/native_guide.py`: frozen `NativeGuideThresholds` (sorted NUN distances + q90) and `NativeGuideResult` (proximity, sparsity, proximity_pct, too_dense, metric); pure functions `native_guide_proximity` (dtw / euclidean / l1), `native_guide_sparsity`, `percentile_rank`; combined `native_guide_validate`; calibration helpers `compute_nun_distances` and `thresholds_from_distances`; JSON cache I/O `save_thresholds` / `load_thresholds`. DTW always goes through `tslearn.metrics.dtw`; we never reimplement DTW. Wired into `synthesize_counterfactual` via three kwargs: `native_guide_thresholds` (auto-runs when supplied), `native_guide_metric`, and `run_native_guide` (explicit opt-in for metrics-only output without thresholds). `too_dense = (sparsity < 0.7) AND (proximity > q90_nun)` per Delaney et al. ICCBR 2021 — fires the VAL-020 "edit changed too much" tip.
+
+**Calibration script** at `backend/scripts/calibrate_native_guide_thresholds.py` — loads via `DatasetRegistry`, runs O(n²) DTW pairs offline, writes JSON cache. Mirrors `calibrate_shape_thresholds.py`'s structure.
+
+**Threshold I/O invariants:** `NativeGuideThresholds.__post_init__` enforces sorted-non-decreasing distances so `percentile_rank` can use `np.searchsorted(side='right')` directly; metric mismatch between calibration time and validation time raises `NativeGuideError` rather than silently producing a meaningless `proximity_pct`. Filename sanitisation (alnum + `-`/`_`, empty rejected) blocks path traversal in `dataset_name`.
+
+**Sparsity noise-floor invariant (load-bearing per AC):** `eps_per_dim` is a caller-provided constant; `native_guide_sparsity` does NOT renormalise the input. Caller is responsible for normalising x and x' once at session start so the threshold is dataset-agnostic and stable across edits. 38 new tests; VAL-001 + VAL-002 + VAL-003 + VAL-004 + OP-050 = 153/153 green; full backend suite 2010/2012 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-003 yNN k-NN plausibility under DTW (per-edit)
 
 Added `backend/app/services/validation/ynn_plausibility.py`: `YnnPlausibilityValidator` with `_build` + `ynn(x_prime, target_class) -> YnnResult`, frozen `YnnConfig` (K=5, dtw_band=0.1, candidate_multiplier=4), `YnnIndexError`, plus `keogh_envelope` and `lb_keogh` primitives — the only non-DTW pieces, since `tslearn.metrics` does not expose LB_Keogh. DTW always goes through `tslearn.metrics.dtw` with `sakoe_chiba_radius = round(dtw_band × T)`; we never reimplement DTW. Per-query path: vectorised LB_Keogh against every training envelope (numpy broadcast) → `np.argpartition` shortlist of `candidate_multiplier × K` → full DTW on the shortlist → top-K by DTW → fraction whose label matches `target_class`. Wired into `synthesize_counterfactual` via two optional kwargs (`ynn_validator`, `ynn_target_class`); result lands on a new `ValidationResult.ynn` forward-ref field. K=0 returns `nan` with `RuntimeWarning` per AC; K is clipped to training-set size when the set is smaller.
