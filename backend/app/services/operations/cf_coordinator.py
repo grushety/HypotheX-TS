@@ -43,6 +43,7 @@ from app.services.validation import (
     ValidationResult,
     YnnPlausibilityValidator,
     default_sigma_for_op,
+    joint_stationarity_check,
     native_guide_validate,
     probe_invalidation_rate,
 )
@@ -151,6 +152,8 @@ def synthesize_counterfactual(
     native_guide_metric: Literal["dtw", "euclidean", "l1"] = "dtw",
     run_native_guide: bool = False,
     coefficient_ci_validator: CoefficientCIValidator | None = None,
+    run_stationarity: bool = False,
+    stationarity_alpha: float = 0.05,
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -216,6 +219,14 @@ def synthesize_counterfactual(
                           coefficient against the post-edit value and
                           attaches the result to
                           ``CFResult.validation.coefficient_ci``.
+        run_stationarity: When ``True`` (and ``pre_segment`` is supplied),
+                          runs the VAL-006 ADF + KPSS + Zivot-Andrews battery
+                          on ``(pre_segment, X_edit)``. The result lands on
+                          ``CFResult.validation.stationarity``. ``edit_window``
+                          is set to the full segment span (the segment IS
+                          the edit window in segment-bounded ops).
+        stationarity_alpha: Significance level for ADF / KPSS / ZA;
+                          default 0.05.
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -334,16 +345,31 @@ def synthesize_counterfactual(
         # method to recover the edited coefficients.
         coefficient_ci_result = coefficient_ci_validator.validate(X_edit)
 
+    stationarity_result = None
+    if run_stationarity:
+        if pre_segment is None:
+            raise ValueError(
+                "synthesize_counterfactual: 'pre_segment' is required when running stationarity."
+            )
+        pre_arr = np.asarray(pre_segment, dtype=np.float64)
+        stationarity_result = joint_stationarity_check(
+            pre_arr, X_edit,
+            alpha=stationarity_alpha,
+            edit_window=(0, X_edit.shape[0]),
+        )
+
     validation_result: ValidationResult | None = None
     if (conformal_result is not None or probe_result is not None
             or ynn_result is not None or native_guide_result is not None
-            or coefficient_ci_result is not None):
+            or coefficient_ci_result is not None
+            or stationarity_result is not None):
         validation_result = ValidationResult(
             conformal=conformal_result,
             probe_ir=probe_result,
             ynn=ynn_result,
             native_guide=native_guide_result,
             coefficient_ci=coefficient_ci_result,
+            stationarity=stationarity_result,
         )
 
     return CFResult(
