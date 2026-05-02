@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-006 ADF + KPSS + Zivot-Andrews joint stationarity (per-edit)
+
+Added `backend/app/services/validation/stationarity.py`: frozen `StationarityResult` (ADF/KPSS p-values pre+post, ZA p, ZA break index, break-consistency flag, verdict, alpha, ar_order); pure helpers `whiten_residual` (cube-root-rule lag capped at 10, with `n > 2(lag+1)` guard against AutoReg numerical collapse) and `_detrend` (OLS slope+intercept); public `joint_stationarity_check`. ADF/KPSS/Zivot-Andrews are all delegated to `statsmodels.tsa.stattools` (`trim=0.15` on ZA bounds the breakpoint search); we never reimplement them. Wired into `synthesize_counterfactual` via two kwargs: `run_stationarity` (opt-in flag) + `stationarity_alpha`. Coordinator passes `edit_window=(0, len(X_edit))` since the segment IS the edit window in segment-bounded ops. Result lands on `ValidationResult.stationarity` forward-ref field.
+
+**Pseudocode-vs-AC deviation (load-bearing — fourth one in this run):** the ticket pseudocode detrends *and* pre-whitens before ADF/KPSS, but each step independently breaks the AC's own "random walk → ADF fails to reject, KPSS rejects" test case. Detrending biases ADF toward rejecting the unit-root null on a finite-sample random walk (Phillips 1988 spurious-trend); whitening a random walk via AR(1) yields white noise so both tests then call it stationary. By default the validator runs ADF/KPSS on the raw signals with `regression='c'`. `detrend=True` and `whiten=True` are exposed as opt-in toggles for callers who want the pseudocode's behaviour. The `whiten_residual` helper is retained so the AC's "exposed helper" requirement is satisfied either way.
+
+**Verdict enum** has five values (added `undetermined` for degenerate inputs that produce NaN p-values: zero-variance / too-short series). `__post_init__` on `StationarityResult` guards against unknown verdict strings — important because the verdict is what the VAL-020 tip engine will switch on.
+
+21 new tests; all six validators + OP-050 = 199/199 green; full backend 2056/2058 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-005 Coefficient-CI z-score (per-edit fast path)
 
 Added `backend/app/services/validation/coefficient_ci.py`: frozen `CoefficientCIConfig` / `CoefficientCIResult`, `CoefficientCIError`, `CoefficientCIValidator`, plus pure helpers `politis_white_block_length` (flat-top kernel, rule-of-thumb fallback), `stationary_bootstrap` (Politis-Romano 1994 geometric blocks with wrap-around), and `refit_blob` (dispatches through the existing `FITTER_REGISTRY`). Hot path is O(1): `(value − bootstrap_mean) / max(std, 1e-12)`. Cache is JSON per `(segment_id, method)` with alnum-sanitised filenames; method-mismatch on load raises. Wired into `synthesize_counterfactual` via one optional kwarg `coefficient_ci_validator`; result lands on the new `ValidationResult.coefficient_ci` forward-ref field.

@@ -6,6 +6,7 @@ Currently exposes:
   - ``ynn_plausibility`` — yNN k-NN plausibility under DTW (VAL-003).
   - ``native_guide`` — Native-Guide proximity & sparsity (VAL-004).
   - ``coefficient_ci`` — Coefficient-CI z-score under stationary bootstrap (VAL-005).
+  - ``stationarity`` — ADF + KPSS + Zivot-Andrews joint stationarity check (VAL-006).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -61,6 +62,18 @@ from app.services.validation.probe_ir import (
     default_sigma_for_op,
     probe_invalidation_rate,
 )
+from app.services.validation.stationarity import (
+    DEFAULT_BREAK_TOLERANCE,
+    StationarityError,
+    StationarityResult,
+    VERDICT_INTRODUCED,
+    VERDICT_NONSTATIONARY_PRESERVED,
+    VERDICT_REDUCED,
+    VERDICT_STATIONARY_PRESERVED,
+    VERDICT_UNDETERMINED,
+    joint_stationarity_check,
+    whiten_residual,
+)
 from app.services.validation.ynn_plausibility import (
     DEFAULT_CANDIDATE_MULTIPLIER,
     DEFAULT_K,
@@ -82,6 +95,7 @@ __all__ = [
     "ConformalConfig",
     "ConformalPIDValidator",
     "DEFAULT_B",
+    "DEFAULT_BREAK_TOLERANCE",
     "DEFAULT_CANDIDATE_MULTIPLIER",
     "DEFAULT_DTW_BAND",
     "DEFAULT_EPS_PER_DIM",
@@ -103,7 +117,14 @@ __all__ = [
     "ProbeIRResult",
     "ProbeMethodError",
     "ProbeModel",
+    "StationarityError",
+    "StationarityResult",
     "TIER2_DEFAULT_SIGMA",
+    "VERDICT_INTRODUCED",
+    "VERDICT_NONSTATIONARY_PRESERVED",
+    "VERDICT_REDUCED",
+    "VERDICT_STATIONARY_PRESERVED",
+    "VERDICT_UNDETERMINED",
     "ValidationResult",
     "YnnConfig",
     "YnnIndexError",
@@ -111,6 +132,7 @@ __all__ = [
     "YnnResult",
     "compute_nun_distances",
     "default_sigma_for_op",
+    "joint_stationarity_check",
     "keogh_envelope",
     "lb_keogh",
     "load_thresholds",
@@ -124,4 +146,5 @@ __all__ = [
     "save_thresholds",
     "stationary_bootstrap",
     "thresholds_from_distances",
+    "whiten_residual",
 ]
