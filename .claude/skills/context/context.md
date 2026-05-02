@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-040 Pre-registered user-study spec (OSF v1.0, locked)
+
+Methodology / documentation ticket — no code changes. Authored seven study artefacts under `study/`: `preregistration.md` (14 sections, all numeric constants locked except IRB#); `README.md` (OSF checklist + variable-name contract + mirrored constants table); `deviations.md` (append-only placeholder); `power/h1_simulation.R` (seeded Westfall-Kenny-Judd 2014 simulation, seed 20260502, σ²_p=0.85 σ²_i=0.43); `materials/items.json` (32 items × 8/domain × 4 domains × 7-shape vocab); three `protocol/instructions_*.md`; `pilot/pilot_summary.md` (N=8 appendix). 59 invariant tests in `backend/tests/test_preregistration.py` pin file presence, items.json schema, outcome-variable contract across files, locked-constants presence, deviations.md empty state, R-script seed.
+
+**PDF deferral pattern (load-bearing for any future pre-registered artefact):** we do *not* commit `preregistration_v1.0.pdf`. Two reasons: (a) committing both markdown and PDF creates two sources of truth that drift on every edit; (b) the registration workflow is "render at upload time and post both to OSF together" with a checksum tying the markdown to the rendered PDF. Same applies to `protocol/instructions_*.pdf`. Markdown source is the registered artefact; rendering is a frozen-at-OSF-time operation.
+
+**OSF registration is institutionally gated** (IRB + OSF account); README ships a checklist + `PENDING REGISTRATION` placeholder until those clear. The codebase delivers the *artefact set*; the upload step is a separate operational task.
+
+**Hypothesis-numbering deviation logged at v1.0** (load-bearing for the publication writeup): the ticket lists H3 (plausibility) as secondary; the protocol promotes it into the primary family because it is the AC's foundational quality criterion (Verma et al. *ACM CSUR* 56:312, 2024). One-line deviation logged in `preregistration.md` §2 *at registration time*, not later. No further hypothesis edits permitted post-registration.
+
+**Variable-name contract** between `preregistration.md` §7/§8, `README.md` "Variable-name contract", and the future VAL-041 R script. Tests parametrically pin all 7 names across the first two files. VAL-041 will read the same names → renaming any of them in *any* of the three locations fails the test ⇒ registered deviation.
+
+59 new tests; full backend 2438/2440 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-033 PPCEF normalising-flow plausibility for TS decompositions
 
 Added `backend/app/services/validation/ppcef.py`: frozen `PPCEFResult` (log_p, train 5th/50th percentiles, empirical-CDF quantile, is_plausible, flow_method, coefficient_dim, decomposition_method); `PPCEFError`; `CoefficientFlow` wrapping `normflows` (NSF default, RealNVP fallback for `dim < 4`); coefficient-encoder registry (`_COEFF_ENCODERS`, `register_coefficient_encoder`, `encode_blob_to_vector`) — Constant (`level`) and ETM (`x0, linear_rate, n_steps, mean_abs_step`) encoders ship; unregistered methods fall back to a 4-vector summary (count, mean, std, max-abs); `lof_baseline_score` for the publication comparator panel. Added `backend/scripts/train_ppcef.py`. Added `normflows>=1.7` + `scikit-learn>=1.3` to `backend/requirements.txt`. **Per the SOTA review open-research-gaps §3, this is the third publishable contribution.**
