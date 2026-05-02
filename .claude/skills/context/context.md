@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-002 PROBE invalidation rate (linearised per-edit)
+
+Added `backend/app/services/validation/probe_ir.py` with `probe_invalidation_rate(model, x_prime, *, sigma, method, n_samples, rng) -> ProbeIRResult`, a `ProbeModel` Protocol (`score / gradient / predict / threshold`), and a `TIER2_DEFAULT_SIGMA` per-op σ map (amplitude ops 0.05 in coefficient space; time ops 0.5 in sample-shift space; default 0.1). Wired into `synthesize_counterfactual` via three optional kwargs (`probe_model`, `probe_sigma`, `probe_method`); IR plumbs through to a new `ValidationResult.probe_ir` field (forward-ref string to avoid a circular import). `probe_sigma=None` falls back to `default_sigma_for_op(op_name)`.
+
+**Pseudocode-vs-paper deviation (load-bearing):** the ticket pseudocode shows `2 · (1 − Φ(margin/std_f))` (two-sided), but Pawelczyk 2023 Eq. 5 — to which the AC binds correctness — is the one-sided form `1 − Φ(margin / (σ ‖∇f‖))`. A binary prediction can only flip in one direction for a fixed x', so the factor of 2 is incorrect for IR. Implementation follows the paper; deviation documented in the module docstring.
+
+**Numerical stability gotcha caught by σ-monotonicity test:** `1 − Φ(z)` underflows once `erf(z/√2)` saturates near 1 (z ≈ 8). Use `0.5 · erfc(z/√2)` instead; retains precision out to z ≈ 25. This was caught by σ=0.05 sensitivity at margin=1.5 — the naïve form returned exactly 0.0, so two adjacent IRs were equal and the strict-monotonic test failed.
+
+**Gradient-shape guard:** silent `np.asarray(...).reshape(-1)` of a wrong-length gradient is the worst failure mode for a robustness metric (produces a meaningless IR). The validator now raises `ProbeMethodError` when `gradient(x).shape != x.shape`. 23 tests; OP-050 + VAL-001 + VAL-002 = 86/86 green; 645/645 frontend; code-reviewer APPROVE 0 blocking.
+
+---
+
 ## VAL-001 Conformal-PID prediction-band check (per-edit fast path)
 
 New `backend/app/services/validation/` package with `ConformalPIDValidator` (Angelopoulos–Candès–Tibshirani NeurIPS 2023, arXiv 2307.16895). The validator owns three frozen DTOs (`BandCheckResult`, `ValidationResult`, `ConformalConfig`), a `Forecaster` Protocol, and a JSON calibration cache at `validation/cache/conformal_calibration_<dataset>.json`. `band_check(y_pre, y_post)` is O(1): it reads the latest rolling quantile `q̂_α` and emits `verdict ∈ {within, exceeds_alpha=0.1, exceeds_alpha=0.05}` plus the centred prediction interval. OP-050 `synthesize_counterfactual` gained two optional kwargs — `validator` and `pre_segment` — that, when both supplied, call the forecaster pre/post and attach a `ValidationResult` to the new `CFResult.validation` field (default `None`, so all 37 OP-050 tests pass unchanged).
