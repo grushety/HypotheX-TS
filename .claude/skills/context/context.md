@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-010 Shape-vocabulary coverage tracker (session-level)
+
+Added `backend/app/services/validation/coverage.py`: `SHAPES` 7-tuple, `LABEL_CHIP_TOPIC` constant, frozen `CoverageResult` DTO (carries `tip_should_fire` and `suggested_shape` precomputed so the UI engine can read them directly), pure `gini_coefficient` helper, and `ShapeVocabularyCoverageTracker`. Construction takes an optional `EventBus` and auto-subscribes to the `label_chip` topic; `close()` unsubscribes; `reset()` zeros counts; `from_chips(history)` is the persistence-replay constructor. The tracker counts `chip.old_shape` once and `chip.new_shape` only when it differs (PRESERVED ops touch one shape; DETERMINISTIC / RECLASSIFY ops with a transition touch two). Tip predicate: `fraction < 0.4 AND skewness > 0.6 AND total_edits > 10` per AC; thresholds configurable on the constructor for VAL-014 / VAL-020 to tune.
+
+**Different shape from VAL-001..008**: this is session-level, not per-edit. *Not* wired into `synthesize_counterfactual` / `CFResult.validation` — the AC explicitly surfaces it in the Guardrails sidebar via the event bus, not on a per-CFResult basis. Future per-session validators (VAL-011 DPP-diversity, VAL-012 validity rate, VAL-013 cherry-picking risk) should follow the same pattern.
+
+**Persistence design (load-bearing for any future session-level metric):** the AC says "persisted across server restarts via session DB", but rather than adding a new DB column, the tracker leverages the existing `audit_events` table that already stores every `LabelChip`. On restart, callers read the chips for the active session and replay them through `from_chips(...)` — the result is bit-identical to the live tracker that produced them. `test_from_chips_matches_live_replay` pins this invariant. Pattern recommendation: any new session-level metric whose state is a deterministic function of the chip stream should use `from_chips`-style replay rather than introducing a new DB column.
+
+28 new tests; all eight per-edit validators + tracker + OP-050 = 275/275 green; full backend 2132/2134 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-008 Linear-time MMD distshift for replace_from_library
 
 Added `backend/app/services/validation/mmd_distshift.py`: frozen `MMDLinearResult` and `DistShiftResult`; vectorised `mmd_linear_time` (Gretton 2012 Theorem 6, computes h = k(x_a, x_b) + k(y_a, y_b) − k(x_a, y_b) − k(x_b, y_a) over slice indices — no Python loop); `mmd_quadratic` reference for the lin-vs-quad agreement test only; block-permutation `replace_library_distshift` reusing `stationary_bootstrap` + `politis_white_block_length` from VAL-005. RBF kernel with median-heuristic bandwidth on the *concatenated* sample (per AC); the n² pairwise distance is downsampled to 500 via deterministic-by-index strides to keep memory tight on long series. p-value uses the standard `(1 + k) / (1 + B)` plus-one correction. Wired into `synthesize_counterfactual` via three kwargs (`mmd_distshift_window`, `mmd_distshift_context`, `mmd_distshift_n_permutations`); result lands on the new `ValidationResult.mmd_distshift` forward-ref field.
