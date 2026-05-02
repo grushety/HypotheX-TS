@@ -6,6 +6,24 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## UI-017 Gap indicator + missing-data gating for dense-data ops
+
+Created `frontend/src/lib/gaps/{createGapGatingState.js, userSetting.js}` (pure libs) and `frontend/src/components/gaps/{GapIndicator.vue, GapFillPicker.vue}` (presentation), plus light-touch integrations into `createTieredPaletteState`, `ShapeChip.vue`, and `SegmentationOverlay.vue`. State exports `DEFAULT_DENSE_OPS_THRESHOLD_PCT = 30`, `DENSE_DATA_OPS = {cycle_change_frequency, cycle_shift_phase, cycle_add_harmonics, cycle_remove_harmonics, decompose}` (frozen Set — maps the AC's OP-024 names to the frontend op-catalog names; the Tier-3 `decompose` entry point covers ETM/STL fits downstream), `SUPPRESS_STRATEGIES = ['linear','spline','climatology']` matching UI-005, plus `classifyGap`, `isOpBlockedByGap`, `gapDisabledTooltip` (AC-verbatim string), `applyGapGatingToButton`, `buildSuppressPayload`. Settings persistence in `userSetting.js` via `sessionStorage` keyed at `hypothex-ts.gap.dense_ops_threshold_pct.v1`; always clamps on read.
+
+**Critical rounding gotcha** caught by code-reviewer: comparing the rounded `missingnessPct > threshold` lets a true 30.4 % ratio slip past the gate (it rounds to 30). Fix: compare the raw ratio `clampedRatio * 100 > threshold`. Display percent is still rounded for the tooltip, but gating uses raw precision. Pinned by `compares against raw ratio not rounded percent (30.4% IS over 30)` test.
+
+**Gap gating chains AFTER shape gating** in `createTieredPaletteState` — `applyGapGatingToButton` runs at the end of the existing makeButton pipeline so a Tier-2 op already disabled by multi-shape selection stays disabled (the gap-gating doesn't accidentally re-enable it). Backward-compatible: omitted `gapInfo` param leaves all ops untouched.
+
+**Three cycle ops stay enabled on heavy gaps** — `cycle_damp`, `cycle_amplify`, `cycle_scale_amplitude` are deliberately excluded from `DENSE_DATA_OPS` because they don't run an FFT (they scale a single coefficient). Users may legitimately apply these on a gap-heavy region without filling. Documented inline.
+
+**Visual rendering**: `ShapeChip.vue` renders a 45° hatched stripe via `repeating-linear-gradient` when the segment is gap-heavy AND not filled; the cloud-gap badge and the green "filled (strategy)" badge are both rendered when applicable (semantic identity vs raw missingness — a SEG-023 cloud_gap segment with 100 % missingness shows both). `SegmentationOverlay.vue` plumbs the gap props through to each `ShapeChip` with camelCase-or-snake_case tolerance for SEG-023's `semantic_label` field name.
+
+**Two deferred items**: `GapFillPicker.vue` is built and tested but not yet wired into `BenchmarkViewerPage.vue` (one-import-plus-one-handler change); the user setting has no UI surface yet but is fully wired in code via `loadGapThresholdPct()` for a future settings-panel ticket.
+
+35 new tests in `lib/gaps/`, 5 new in `createTieredPaletteState.test.js`, plus the rounding edge case. Full frontend suite 573 → 614 (+41), zero regressions; build 155.25 → 157.68 kB JS (gzipped 53.47) because `GapIndicator` is reachable through `ShapeChip` and pulled into the bundle for the first time.
+
+---
+
 ## UI-009 Reference picker + warping-band slider + method selector (drives OP-031)
 
 Created `frontend/src/lib/alignment/createAlignWarpPanelState.js` (pure state) and three Vue components in `frontend/src/components/alignment/`: `AlignWarpPanel.vue` (two-column container), `AlignmentPreview.vue` (overlay paths + schematic warp grid), `TemplateLibraryPicker.vue` (empty-by-default extensibility stub). State exports `ALIGN_METHODS = ('dtw', 'soft_dtw', 'shapedba')`, `METHOD_LABELS`/`METHOD_DESCRIPTIONS` (citing Sakoe & Chiba 1978 / Cuturi & Blondel 2017 / Petitjean 2011 / Holder 2023 directly in user-facing strings), the three shape sets `COMPATIBLE_SHAPES = {cycle,spike,transient}` / `APPROX_SHAPES = {plateau,trend}` / `INCOMPATIBLE_SHAPES = {noise}` mirroring `backend/app/services/operations/tier3/align_warp.py` frozensets exactly, `MIN_WARPING_BAND=0.01` / `MAX_WARPING_BAND=0.30` / `DEFAULT_WARPING_BAND=0.10` / `DEFAULT_METHOD='dtw'`. Public functions: `clampWarpingBand`, `classifyAlignCompat` (unknown labels → approx, matches the OP-031 fall-through), `buildAlignWarpPayload` (emits `{tier:3, op_name:'align_warp', params:{reference_seg_id, segment_ids, method, warping_band}}`), `createAlignWarpPanelState` (auto-drops the reference id from segmentsToAlign so the user can't self-align), `buildPreviewModel` (unit-square diagonal + Sakoe-Chiba band stripe for DTW only).

@@ -286,3 +286,62 @@ test('multi-select same shape twice: tier2 shows that shape ops without duplicat
   });
   assert.equal(state.tier2.buttons.length, 7, 'deduplication: cycle appears once = 7 buttons');
 });
+
+test('UI-017 gap gating: tier2 cycle FFT ops disabled when gapInfo exceeds threshold', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1'],
+    selectedShapes: ['cycle'],
+    gapInfo: { exceedsThreshold: true, isFilled: false, missingnessPct: 60 },
+  });
+  const fftOps = state.tier2.buttons.filter(
+    (b) => b.op_name === 'cycle_change_frequency' || b.op_name === 'cycle_shift_phase',
+  );
+  assert.equal(fftOps.length, 2);
+  for (const op of fftOps) {
+    assert.equal(op.enabled, false, `${op.op_name} should be gated`);
+    assert.match(op.disabledTooltip, /60% missing/);
+  }
+});
+
+test('UI-017 gap gating: non-FFT cycle ops stay enabled even on heavy gaps', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1'],
+    selectedShapes: ['cycle'],
+    gapInfo: { exceedsThreshold: true, isFilled: false, missingnessPct: 60 },
+  });
+  const damp = state.tier2.buttons.find((b) => b.op_name === 'cycle_damp');
+  assert.ok(damp);
+  assert.equal(damp.enabled, true);
+});
+
+test('UI-017 gap gating: tier3 decompose disabled when gap exceeds threshold', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1'],
+    selectedShapes: ['cycle'],
+    gapInfo: { exceedsThreshold: true, isFilled: false, missingnessPct: 45 },
+  });
+  const decompose = state.tier3.buttons.find((b) => b.op_name === 'decompose');
+  assert.ok(decompose);
+  assert.equal(decompose.enabled, false);
+  assert.match(decompose.disabledTooltip, /45% missing/);
+});
+
+test('UI-017 gap gating: filled segment re-enables dense ops', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1'],
+    selectedShapes: ['cycle'],
+    gapInfo: { exceedsThreshold: true, isFilled: true, missingnessPct: 60 },
+  });
+  const phase = state.tier2.buttons.find((b) => b.op_name === 'cycle_shift_phase');
+  assert.equal(phase.enabled, true);
+});
+
+test('UI-017 gap gating: omitted gapInfo leaves all ops untouched', () => {
+  const state = createTieredPaletteState({
+    selectedSegmentIds: ['seg-1'],
+    selectedShapes: ['cycle'],
+  });
+  for (const btn of state.tier2.buttons) {
+    assert.equal(btn.enabled, true, `${btn.op_name} should be enabled without gapInfo`);
+  }
+});

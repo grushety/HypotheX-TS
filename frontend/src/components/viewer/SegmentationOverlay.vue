@@ -83,6 +83,10 @@ onBeforeUnmount(() => {
         :confidence="segment.confidence ?? null"
         :method="segment.method ?? null"
         :semantic-label="segment.semanticLabel ?? null"
+        :is-cloud-gap="segment.semanticLabel === 'cloud_gap' || segment.semantic_label === 'cloud_gap'"
+        :is-filled="!!(segment.metadata && segment.metadata.filled) || !!segment.filled"
+        :fill-strategy="(segment.metadata && (segment.metadata.fill_strategy || segment.metadata.fillStrategy)) || segment.fillStrategy || null"
+        :missingness-pct="Math.round(((segment.missingness_ratio ?? segment.missingnessRatio ?? 0)) * 100)"
         :selected="segment.id === selectedSegmentId"
         :style="{
           position: 'absolute',
