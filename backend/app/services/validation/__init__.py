@@ -15,6 +15,7 @@ Currently exposes:
   - ``cherry_picking`` — TS adaptation of the Hinns 2026 cherry-picking detector (VAL-013).
   - ``tip_engine`` — Lotse-style YAML-rule tip-generation engine (VAL-020).
   - ``iaaft`` — IAAFT surrogate test, slow path (VAL-030).
+  - ``mbb`` — full moving-block bootstrap, slow path (VAL-031).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -44,6 +45,19 @@ from app.services.validation.iaaft import (
     iaaft_surrogate,
     iaaft_test,
     permutation_entropy,
+)
+from app.services.validation.mbb import (
+    BOOTSTRAP_CIRCULAR,
+    BOOTSTRAP_STATIONARY,
+    DEFAULT_ALPHA as MBB_DEFAULT_ALPHA,
+    DEFAULT_N_REPLICATES,
+    MBBError,
+    MBBResult,
+    cache_key as mbb_cache_key,
+    clear_mbb_cache,
+    mbb_ci,
+    mbb_coefficient_ci,
+    politis_white_block_length as mbb_optimal_block_length,
 )
 from app.services.validation.coefficient_ci import (
     DEFAULT_B,
@@ -199,6 +213,8 @@ from app.services.validation.ynn_plausibility import (
 
 __all__ = [
     "AdmissibleCFSampler",
+    "BOOTSTRAP_CIRCULAR",
+    "BOOTSTRAP_STATIONARY",
     "BandCheckResult",
     "CF_RESULT_TOPIC",
     "CFResultEvent",
@@ -230,6 +246,7 @@ __all__ = [
     "DEFAULT_MIN_ACCEPTED",
     "DEFAULT_MMD_PERMUTATIONS",
     "DEFAULT_MMD_SUBSAMPLE_CAP",
+    "DEFAULT_N_REPLICATES",
     "DEFAULT_MODALITY_SWITCH_AFTER_N",
     "DEFAULT_N_SAMPLES",
     "DEFAULT_N_SURROGATES",
@@ -262,6 +279,9 @@ __all__ = [
     "Forecaster",
     "IAAFTResult",
     "IncrementalDiversityTracker",
+    "MBBError",
+    "MBBResult",
+    "MBB_DEFAULT_ALPHA",
     "KERNEL_DTW_RBF",
     "KERNEL_LATENT_EUCLIDEAN",
     "KERNEL_RBF_MEDIAN",
@@ -314,6 +334,7 @@ __all__ = [
     "YnnPlausibilityValidator",
     "YnnResult",
     "clear_iaaft_cache",
+    "clear_mbb_cache",
     "compute_nun_distances",
     "conservation_mmd_test",
     "conservation_ratio_test",
@@ -327,6 +348,10 @@ __all__ = [
     "iaaft_surrogate",
     "iaaft_test",
     "joint_stationarity_check",
+    "mbb_cache_key",
+    "mbb_ci",
+    "mbb_coefficient_ci",
+    "mbb_optimal_block_length",
     "load_tip_rules",
     "mmd_linear_time",
     "mmd_quadratic",
