@@ -36,6 +36,7 @@ from app.services.events import AuditLog, EventBus
 from app.services.operations.relabeler.label_chip import emit_label_chip
 from app.services.operations.relabeler.relabeler import RelabelResult, relabel
 from app.services.validation import (
+    CoefficientCIValidator,
     ConformalPIDValidator,
     NativeGuideThresholds,
     ProbeModel,
@@ -149,6 +150,7 @@ def synthesize_counterfactual(
     native_guide_thresholds: NativeGuideThresholds | None = None,
     native_guide_metric: Literal["dtw", "euclidean", "l1"] = "dtw",
     run_native_guide: bool = False,
+    coefficient_ci_validator: CoefficientCIValidator | None = None,
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -208,6 +210,12 @@ def synthesize_counterfactual(
                           computes proximity + sparsity even without
                           calibrated thresholds; ``too_dense`` is then
                           ``False`` regardless.
+        coefficient_ci_validator: Optional ``CoefficientCIValidator`` (VAL-005)
+                          built once per segment fit (typically in the
+                          background). When supplied, scores every cached
+                          coefficient against the post-edit value and
+                          attaches the result to
+                          ``CFResult.validation.coefficient_ci``.
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -318,14 +326,24 @@ def synthesize_counterfactual(
             metric=native_guide_metric,
         )
 
+    coefficient_ci_result = None
+    if coefficient_ci_validator is not None:
+        # Tier-2 ops deep-copy internally and return only Tier2OpResult.values,
+        # so working_blob.coefficients still hold the pre-edit values.
+        # Hand the post-edit signal to the validator; it refits the same
+        # method to recover the edited coefficients.
+        coefficient_ci_result = coefficient_ci_validator.validate(X_edit)
+
     validation_result: ValidationResult | None = None
     if (conformal_result is not None or probe_result is not None
-            or ynn_result is not None or native_guide_result is not None):
+            or ynn_result is not None or native_guide_result is not None
+            or coefficient_ci_result is not None):
         validation_result = ValidationResult(
             conformal=conformal_result,
             probe_ir=probe_result,
             ynn=ynn_result,
             native_guide=native_guide_result,
+            coefficient_ci=coefficient_ci_result,
         )
 
     return CFResult(
