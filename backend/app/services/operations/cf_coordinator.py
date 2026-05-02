@@ -39,6 +39,7 @@ from app.services.validation import (
     ConformalPIDValidator,
     ProbeModel,
     ValidationResult,
+    YnnPlausibilityValidator,
     default_sigma_for_op,
     probe_invalidation_rate,
 )
@@ -141,6 +142,8 @@ def synthesize_counterfactual(
     probe_model: ProbeModel | None = None,
     probe_sigma: float | None = None,
     probe_method: Literal["linearised", "monte_carlo"] = "linearised",
+    ynn_validator: YnnPlausibilityValidator | None = None,
+    ynn_target_class: object = None,
 ) -> CFResult:
     """Decomposition-first CF synthesis.
 
@@ -183,6 +186,13 @@ def synthesize_counterfactual(
                           per-op default in ``TIER2_DEFAULT_SIGMA`` when ``None``.
         probe_method:     'linearised' (default; closed-form Pawelczyk Eq. 5)
                           or 'monte_carlo' (slow-path fallback).
+        ynn_validator:    Optional YnnPlausibilityValidator (VAL-003). When
+                          supplied together with ``ynn_target_class``, the
+                          coordinator computes the K-NN plausibility of
+                          ``X_edit`` under DTW and attaches the result to
+                          ``CFResult.validation.ynn``.
+        ynn_target_class: Class label that yNN compares neighbour labels
+                          against; required when ``ynn_validator`` is supplied.
 
     Returns:
         CFResult with edited series, blob, relabel decision, constraint
@@ -272,11 +282,20 @@ def synthesize_counterfactual(
             method=probe_method,
         )
 
+    ynn_result = None
+    if ynn_validator is not None:
+        if ynn_target_class is None:
+            raise ValueError(
+                "synthesize_counterfactual: 'ynn_target_class' is required when 'ynn_validator' is supplied."
+            )
+        ynn_result = ynn_validator.ynn(X_edit, ynn_target_class)
+
     validation_result: ValidationResult | None = None
-    if conformal_result is not None or probe_result is not None:
+    if conformal_result is not None or probe_result is not None or ynn_result is not None:
         validation_result = ValidationResult(
             conformal=conformal_result,
             probe_ir=probe_result,
+            ynn=ynn_result,
         )
 
     return CFResult(
