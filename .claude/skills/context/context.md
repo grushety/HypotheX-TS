@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-041 Pre-registered analysis pipeline (lme4 + brms + TOST + Brier)
+
+Authored the full R/Rmd analysis pipeline under `study/analysis/`: `_constants.R` (single source of truth — every threshold from VAL-040 §9 lives here, parametrically tested); 9 ordered analysis scripts (`00-make-processed-data.R` through `08-tables.Rmd`); `make_synthetic.R` (300-participant CI fixture); `Makefile` (`analyse` / `synthetic-smoke` / `replication-zip` / `clean` targets); `renv.lock` + `pyproject.toml` + `Dockerfile` (`rocker/r-ver:4.4.1`); `study/data/README.md` data dictionary; `study/build_replication_package.sh`. 76 Python invariant tests in `backend/tests/test_pipeline_invariants.py`.
+
+**Runtime-vs-pin separation (load-bearing for any future R-pipeline ticket):** this Python-only CI cannot run R / brms / Stan (would balloon the env). The AC's "make analyse ≤ 30 min on a CI runner" is met *inside the Docker image*, not on the host CI. Python tests pin **structural invariants** (file presence, formula matching VAL-040 character-for-character, single-source-of-truth constants, AC-required reporting items referenced in their files, replication-package bundles every artefact, Dockerfile pins R version, renv.lock lists required packages). Same pattern recommended for any future R-only artefact.
+
+**H1 formula triple-pin (load-bearing):** the canonical `team_accuracy ~ tool * difficulty + trial_index + (1 + tool | participant) + (1 | item)` lives in three places — `_constants.R::FORMULA_H1`, `01-primary-h1-glmer.Rmd::LITERAL_FORMULA` with a `stopifnot(identical(...))` runtime guard, and `preregistration.md` §9. `TestH1FormulaLocked` cross-checks all three. The runtime `stopifnot` is the *belt* if the Python test is the *braces*; even if the Python test is bypassed, R execution fails loudly on drift.
+
+**Ticket-pseudocode-vs-VAL-040 reconciliation:** the VAL-041 ticket's pseudocode used variable names `accuracy / participant_id / item_id`, but VAL-040 §7 + `_constants.R::ALL_OUTCOMES` lock those names as `team_accuracy / participant / item`. The pipeline follows VAL-040 (the binding authority), not the ticket pseudocode. Documented in `_constants.R` + Result Report. Future tickets should follow the same precedence: when the ticket pseudocode and a registered protocol disagree, the protocol wins.
+
+**Single-source-of-truth pattern:** every locked threshold lives in `_constants.R`; every analysis script `source("_constants.R")`; the test suite enforces both invariants. Plot-axis padding values may use raw numerics; threshold-style numbers cannot. Pattern recommended for any future analysis pipeline.
+
+76 new tests; full backend 2514/2516 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-040 Pre-registered user-study spec (OSF v1.0, locked)
 
 Methodology / documentation ticket — no code changes. Authored seven study artefacts under `study/`: `preregistration.md` (14 sections, all numeric constants locked except IRB#); `README.md` (OSF checklist + variable-name contract + mirrored constants table); `deviations.md` (append-only placeholder); `power/h1_simulation.R` (seeded Westfall-Kenny-Judd 2014 simulation, seed 20260502, σ²_p=0.85 σ²_i=0.43); `materials/items.json` (32 items × 8/domain × 4 domains × 7-shape vocab); three `protocol/instructions_*.md`; `pilot/pilot_summary.md` (N=8 appendix). 59 invariant tests in `backend/tests/test_preregistration.py` pin file presence, items.json schema, outcome-variable contract across files, locked-constants presence, deviations.md empty state, R-script seed.

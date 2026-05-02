@@ -1,0 +1,118 @@
+---
+title: "Exploratory analyses (declared in VAL-040 §12)"
+output:
+  html_document:
+    toc: true
+---
+
+> **Reminder.** These contrasts are *exploratory* in label; all are
+> declared up-front in VAL-040 §12. No NHST claim; report estimates +
+> 95 % CIs only. New exploratory contrasts added here would be a
+> registered deviation.
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(lme4)
+  library(parameters)
+})
+
+source("_constants.R")
+set.seed(SEED)
+
+data <- readRDS(file.path("data", "processed", "study.rds"))
+```
+
+## H5 — tip engine increases shape coverage
+
+```{r h5}
+fit_h5 <- lmer(
+  shape_coverage_fraction ~ tool + (1 | participant),
+  data = data %>%
+    dplyr::group_by(participant, tool) %>%
+    dplyr::summarise(
+      shape_coverage_fraction = first(shape_coverage_fraction),
+      .groups = "drop"
+    )
+)
+print(parameters::model_parameters(fit_h5, ci = 0.95))
+
+dir.create("cache", showWarnings = FALSE)
+saveRDS(fit_h5, file.path("cache", "fit_h5.rds"))
+```
+
+## Correlation: cherry-picking risk vs. trust calibration
+
+```{r corr-cp-trust}
+session_level <- data %>%
+  dplyr::group_by(participant, tool) %>%
+  dplyr::summarise(
+    cherry_picking_risk_score = first(cherry_picking_risk_score),
+    trust_calibration_brier = first(trust_calibration_brier),
+    .groups = "drop"
+  )
+
+cor_test <- cor.test(
+  session_level$cherry_picking_risk_score,
+  session_level$trust_calibration_brier,
+  method = "pearson"
+)
+print(cor_test)
+saveRDS(cor_test, file.path("cache", "exploratory_cp_trust_corr.rds"))
+```
+
+## Per-shape-primitive accuracy
+
+```{r per-shape}
+# `shape_primitive` per item is in items.json; data joins it onto trials.
+per_shape <- data %>%
+  dplyr::group_by(tool, shape_primitive) %>%
+  dplyr::summarise(
+    accuracy = mean(team_accuracy),
+    n = dplyr::n(),
+    .groups = "drop"
+  )
+print(per_shape)
+saveRDS(per_shape, file.path("cache", "exploratory_per_shape.rds"))
+```
+
+## Tip-modality effect within `hypothex_tips` only
+
+```{r tip-modality}
+tips_only <- data %>%
+  dplyr::filter(tool == "hypothex_tips" & !is.na(tip_modality))
+
+if (nrow(tips_only) >= 30) {
+  fit_modality <- glmer(
+    team_accuracy ~ tip_modality + (1 | participant) + (1 | item),
+    family = binomial(),
+    data = tips_only
+  )
+  print(parameters::model_parameters(fit_modality, ci = 0.95))
+  saveRDS(fit_modality, file.path("cache", "exploratory_tip_modality.rds"))
+} else {
+  cat("Insufficient hypothex_tips trials with tip_modality recorded;",
+      "skipping per-modality contrast.\n")
+}
+```
+
+## Domain-pack effect on each primary outcome
+
+```{r domain}
+for (outcome in PRIMARY_OUTCOMES) {
+  cat("---", outcome, "---\n")
+  fm <- as.formula(paste0(outcome, " ~ tool * domain_pack + (1 | participant) + (1 | item)"))
+  fit_dom <- tryCatch(
+    if (outcome == "team_accuracy") {
+      glmer(fm, data = data, family = binomial())
+    } else {
+      lmer(fm, data = data)
+    },
+    error = function(e) { cat("  fit failed:", conditionMessage(e), "\n"); NULL }
+  )
+  if (!is.null(fit_dom)) {
+    print(parameters::model_parameters(fit_dom, ci = 0.95))
+    saveRDS(fit_dom, file.path("cache", paste0("exploratory_domain_", outcome, ".rds")))
+  }
+}
+```

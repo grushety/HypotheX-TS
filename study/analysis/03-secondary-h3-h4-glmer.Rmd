@@ -1,0 +1,92 @@
+---
+title: "H3 / H4 — Plausibility + cherry-picking risk (secondary)"
+output:
+  html_document:
+    toc: true
+---
+
+## Locked formulas
+
+H3 and H4 use the *same* fixed-effects + random-effects structure as H1
+(VAL-040 §9), with the dependent variable swapped:
+
+  - H3: `ynn5_dtw_plausibility_mean` (per VAL-003)
+  - H4: `cherry_picking_risk_score` (per VAL-013)
+
+Both are continuous, so we use `lmer` (Gaussian) rather than `glmer`.
+BH q = 0.10 within the secondary family.
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(lme4)
+  library(parameters)
+  library(broom.mixed)
+})
+
+source("_constants.R")
+set.seed(SEED)
+
+data <- readRDS(file.path("data", "processed", "study.rds"))
+```
+
+## H3 — yNN_5 plausibility (per-trial outcome)
+
+```{r fit-h3}
+fit_h3 <- lmer(
+  ynn5_dtw_plausibility_mean ~ tool * difficulty + trial_index +
+    (1 + tool | participant) + (1 | item),
+  data = data,
+  control = lmerControl(optimizer = "bobyqa")
+)
+summary(fit_h3)
+
+p_h3 <- summary(fit_h3)$coefficients["toolhypothex_tips", "Pr(>|t|)"]
+b_h3 <- fixef(fit_h3)["toolhypothex_tips"]
+cat(sprintf("H3: b = %.3f, p = %.4g\n", b_h3, p_h3))
+
+dir.create("cache", showWarnings = FALSE)
+saveRDS(p_h3, file.path("cache", "p_h3.rds"))
+saveRDS(fit_h3, file.path("cache", "fit_h3.rds"))
+```
+
+## H4 — Cherry-picking risk score (session-level outcome)
+
+The score is one number per participant (session-level metric per
+VAL-013), so the model collapses the trial-level random effects.
+We still keep the participant random intercept for interpretability,
+but `(1 + tool | participant)` is dropped because each participant has
+exactly one cherry-picking score.
+
+```{r fit-h4}
+sess <- data %>%
+  dplyr::group_by(participant, tool, item, trial_index) %>%
+  dplyr::summarise(
+    cherry_picking_risk_score = first(cherry_picking_risk_score),
+    .groups = "drop"
+  )
+
+fit_h4 <- lmer(
+  cherry_picking_risk_score ~ tool * difficulty + (1 | participant),
+  data = sess,
+  control = lmerControl(optimizer = "bobyqa")
+)
+summary(fit_h4)
+
+p_h4 <- summary(fit_h4)$coefficients["toolhypothex_tips", "Pr(>|t|)"]
+b_h4 <- fixef(fit_h4)["toolhypothex_tips"]
+cat(sprintf("H4: b = %.3f, p = %.4g\n", b_h4, p_h4))
+
+saveRDS(p_h4, file.path("cache", "p_h4.rds"))
+saveRDS(fit_h4, file.path("cache", "fit_h4.rds"))
+```
+
+## BH correction across the secondary family (H3, H4)
+
+```{r bh}
+p_secondary <- c(p_h3 = p_h3, p_h4 = p_h4)
+p_bh <- p.adjust(p_secondary, method = "BH")
+print(p_bh)
+cat(sprintf("BH q threshold = %.2f\n", BH_Q))
+saveRDS(list(p = p_secondary, p_bh = p_bh, q = BH_Q),
+        file.path("cache", "secondary_bh.rds"))
+```

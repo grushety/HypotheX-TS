@@ -1,0 +1,100 @@
+---
+title: "H1 — Team accuracy (primary, directional)"
+output:
+  html_document:
+    toc: true
+---
+
+## Locked-formula declaration
+
+The H1 model formula is loaded from `_constants.R` (`FORMULA_H1`) and
+**must** match `study/preregistration.md` §9 character-for-character.
+The Python invariant test
+(`backend/tests/test_pipeline_invariants.py::TestH1FormulaLocked`)
+fails CI if the strings drift.
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(lme4)
+  library(parameters)
+  library(emmeans)
+  library(effectsize)
+  library(broom.mixed)
+})
+
+source("_constants.R")
+set.seed(SEED)
+
+data <- readRDS(file.path("data", "processed", "study.rds"))
+
+# Confirm the locked formula matches the constant. If a contributor
+# accidentally edits the literal model line below, this assertion
+# tells them to update _constants.R *and* preregistration.md instead
+# (which is then a registered deviation).
+LITERAL_FORMULA <- "team_accuracy ~ tool * difficulty + trial_index + (1 + tool | participant) + (1 | item)"
+stopifnot(identical(LITERAL_FORMULA, FORMULA_H1))
+```
+
+## Fit
+
+```{r fit-h1}
+fit_h1 <- glmer(
+  formula = as.formula(FORMULA_H1),
+  family = binomial(link = "logit"),
+  data = data,
+  control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+)
+
+summary(fit_h1)
+```
+
+## Effect size — Westfall-Kenny-Judd 2014 d (95 % profile CI)
+
+```{r effect-size}
+# Pull the tool=hypothex_tips fixed-effect coefficient on the logit scale
+# and convert to Westfall-Kenny-Judd standardised d:
+#   d = b / sqrt(σ²_p + σ²_i + π²/3)
+fixef_h1 <- fixef(fit_h1)
+varcomp <- VarCorr(fit_h1)
+sigma2_p <- attr(varcomp$participant, "stddev")[1]^2
+sigma2_i <- attr(varcomp$item, "stddev")[1]^2
+b_tips <- fixef_h1["toolhypothex_tips"]
+d_tips <- b_tips / sqrt(sigma2_p + sigma2_i + (pi^2 / 3))
+
+# Profile CI on the logit-scale coefficient, then converted to d
+ci_b <- confint(fit_h1, parm = "toolhypothex_tips", method = "profile",
+                 level = 0.95)
+ci_d <- ci_b / sqrt(sigma2_p + sigma2_i + (pi^2 / 3))
+
+cat(sprintf("H1 effect size: d = %.3f, 95%% CI [%.3f, %.3f]\n",
+            d_tips, ci_d[1], ci_d[2]))
+```
+
+## p-value (used in Holm correction below)
+
+```{r p-h1}
+p_h1 <- summary(fit_h1)$coefficients["toolhypothex_tips", "Pr(>|z|)"]
+cat(sprintf("H1 raw p-value: %.4g\n", p_h1))
+```
+
+## Holm correction across the H1 / H3 / H4 family
+
+```{r holm}
+# H3 and H4 p-values are produced by `03-secondary-h3-h4-glmer.Rmd`;
+# here we collect them via cached output. The Holm family is locked
+# in _constants.R as HOLM_FAMILY.
+p_h3 <- readRDS(file.path("cache", "p_h3.rds"))
+p_h4 <- readRDS(file.path("cache", "p_h4.rds"))
+
+p_holm <- p.adjust(c(p_h1 = p_h1, p_h3 = p_h3, p_h4 = p_h4), method = "holm")
+print(p_holm)
+```
+
+## Save fit + summary
+
+```{r save}
+dir.create("cache", showWarnings = FALSE)
+saveRDS(fit_h1, file.path("cache", "fit_h1.rds"))
+saveRDS(list(d = d_tips, ci = ci_d, p = p_h1, p_holm = p_holm),
+        file.path("cache", "h1_summary.rds"))
+```

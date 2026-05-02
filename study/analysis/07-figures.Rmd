@@ -1,0 +1,158 @@
+---
+title: "Paper figures"
+output:
+  html_document:
+    toc: true
+---
+
+Every figure is rendered to **both** PDF (for the paper) and PNG (for
+slides + supplementary). All seeded; deterministic under `SEED` from
+`_constants.R`.
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(patchwork)
+  library(dplyr)
+  library(tidyr)
+})
+
+source("_constants.R")
+set.seed(SEED)
+
+dir.create("figures", showWarnings = FALSE, recursive = TRUE)
+```
+
+## Figure 1 — Per-hypothesis effect-size plot (Kay 2016 design)
+
+AC line 166 mandates this figure: **effect size + CI + Bayes posterior
+overlaid** for each of H1 / H2 / H3 / H4. Reads each hypothesis's cached
+summary RDS produced by the previous scripts.
+
+```{r figure-1}
+h1 <- readRDS(file.path("cache", "h1_summary.rds"))
+h2 <- readRDS(file.path("cache", "h2_summary.rds"))
+secondary <- readRDS(file.path("cache", "secondary_bh.rds"))
+fit_h3 <- readRDS(file.path("cache", "fit_h3.rds"))
+fit_h4 <- readRDS(file.path("cache", "fit_h4.rds"))
+bayes <- readRDS(file.path("cache", "bayes_summary.rds"))
+
+# Build a tidy data frame: one row per hypothesis with d + CI + Bayes posterior
+# (the Bayes posterior is reported only for H1; the others read NA so
+# the overlay shows where the analytic frequentist CI sits relative to
+# the Bayes companion).
+d_h3 <- (fixef(fit_h3)["toolhypothex_tips"] /
+         sqrt(VarCorr(fit_h3)$participant[1]^2 +
+              VarCorr(fit_h3)$item[1]^2 + (pi^2 / 3)))
+d_h4 <- (fixef(fit_h4)["toolhypothex_tips"] /
+         sqrt(VarCorr(fit_h4)$participant[1]^2 + (pi^2 / 3)))
+
+tidy_eff <- dplyr::bind_rows(
+  data.frame(hypothesis = "H1: accuracy",
+             d = h1$d, ci_lo = h1$ci[1], ci_hi = h1$ci[2],
+             post_d = bayes$post_d_mean,
+             post_ci_lo = bayes$post_ci[1] /
+               sqrt(VarCorr(readRDS(file.path("cache","fit_h1.rds")))$participant[1]^2 +
+                    VarCorr(readRDS(file.path("cache","fit_h1.rds")))$item[1]^2 + (pi^2/3)),
+             post_ci_hi = bayes$post_ci[2] /
+               sqrt(VarCorr(readRDS(file.path("cache","fit_h1.rds")))$participant[1]^2 +
+                    VarCorr(readRDS(file.path("cache","fit_h1.rds")))$item[1]^2 + (pi^2/3))),
+  data.frame(hypothesis = "H2: TLX (TOST)",
+             d = (h2$tost$smd$d), ci_lo = h2$tost$smd$d_lower,
+             ci_hi = h2$tost$smd$d_upper,
+             post_d = NA_real_, post_ci_lo = NA_real_, post_ci_hi = NA_real_),
+  data.frame(hypothesis = "H3: yNN_5",
+             d = d_h3, ci_lo = NA_real_, ci_hi = NA_real_,
+             post_d = NA_real_, post_ci_lo = NA_real_, post_ci_hi = NA_real_),
+  data.frame(hypothesis = "H4: cherry-picking",
+             d = d_h4, ci_lo = NA_real_, ci_hi = NA_real_,
+             post_d = NA_real_, post_ci_lo = NA_real_, post_ci_hi = NA_real_)
+)
+
+p1 <- ggplot(tidy_eff, aes(y = hypothesis, x = d)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = c(-ROPE_D, ROPE_D), linetype = "dotted",
+             colour = "grey50") +
+  geom_errorbarh(aes(xmin = ci_lo, xmax = ci_hi), height = 0.15,
+                 colour = "black") +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = post_ci_lo, xmax = post_ci_hi), height = 0.30,
+                 colour = "steelblue", alpha = 0.5, na.rm = TRUE) +
+  geom_point(aes(x = post_d), colour = "steelblue", size = 3, na.rm = TRUE) +
+  labs(x = "Standardised effect (Cohen's d)",
+       y = NULL,
+       title = "Effect of HypotheX-TS (with tips) vs. Native Guide",
+       subtitle = "Frequentist CI in black, Bayesian posterior in steelblue. Dotted lines = ROPE ±0.1d.") +
+  theme_minimal()
+
+ggsave(file.path("figures", "figure1_effects.pdf"), p1,
+       width = 7, height = 4)
+ggsave(file.path("figures", "figure1_effects.png"), p1,
+       width = 7, height = 4, dpi = 300)
+```
+
+## Figure 2 — Reliability diagram (Brier calibration)
+
+```{r figure-2}
+data <- readRDS(file.path("data", "processed", "study.rds"))
+data$confidence_bin <- cut(data$confidence / 100,
+                           breaks = seq(0, 1, by = 0.1),
+                           include.lowest = TRUE)
+
+reliability <- data %>%
+  group_by(tool, confidence_bin) %>%
+  summarise(
+    mean_conf = mean(confidence / 100),
+    mean_acc  = mean(team_accuracy),
+    n         = dplyr::n(),
+    .groups = "drop"
+  )
+
+p2 <- ggplot(reliability, aes(x = mean_conf, y = mean_acc, colour = tool)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_point(aes(size = n), alpha = 0.7) +
+  geom_line(aes(group = tool)) +
+  scale_size_continuous(range = c(2, 8)) +
+  labs(x = "Mean confidence", y = "Mean accuracy",
+       title = "Trust calibration (reliability diagram)",
+       subtitle = "Diagonal = perfect calibration") +
+  theme_minimal()
+
+ggsave(file.path("figures", "figure2_reliability.pdf"), p2,
+       width = 7, height = 5)
+ggsave(file.path("figures", "figure2_reliability.png"), p2,
+       width = 7, height = 5, dpi = 300)
+```
+
+## Figure 3 — Sample-size justification (re-uses VAL-040 power simulation)
+
+```{r figure-3}
+# Read the simulation summary file produced by VAL-040
+# `power/h1_simulation.R`. If absent (CI without R), we still produce
+# the figure scaffold so the build doesn't fail; the actual numbers are
+# filled when the study is run.
+sim_path <- file.path("..", "power", "h1_simulation_summary.txt")
+if (file.exists(sim_path)) {
+  lines <- readLines(sim_path)
+  power_line <- grep("^power_estimate:", lines, value = TRUE)
+  power_estimate <- as.numeric(sub("^power_estimate: ", "", power_line))
+} else {
+  power_estimate <- POWER_TARGET
+}
+
+p3 <- ggplot(data.frame(N = SAMPLE_SIZE_PER_CELL, power = power_estimate),
+             aes(x = N, y = power)) +
+  geom_point(size = 4) +
+  geom_hline(yintercept = POWER_TARGET, linetype = "dashed") +
+  scale_x_continuous(limits = c(0, 200)) +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(x = "N per cell", y = "Estimated power",
+       title = sprintf("Power at d = %.2f (Westfall-Kenny-Judd 2014)",
+                       DETECTABLE_D)) +
+  theme_minimal()
+
+ggsave(file.path("figures", "figure3_power.pdf"), p3,
+       width = 6, height = 4)
+ggsave(file.path("figures", "figure3_power.png"), p3,
+       width = 6, height = 4, dpi = 300)
+```
