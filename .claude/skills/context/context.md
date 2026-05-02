@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## VAL-033 PPCEF normalising-flow plausibility for TS decompositions
+
+Added `backend/app/services/validation/ppcef.py`: frozen `PPCEFResult` (log_p, train 5th/50th percentiles, empirical-CDF quantile, is_plausible, flow_method, coefficient_dim, decomposition_method); `PPCEFError`; `CoefficientFlow` wrapping `normflows` (NSF default, RealNVP fallback for `dim < 4`); coefficient-encoder registry (`_COEFF_ENCODERS`, `register_coefficient_encoder`, `encode_blob_to_vector`) — Constant (`level`) and ETM (`x0, linear_rate, n_steps, mean_abs_step`) encoders ship; unregistered methods fall back to a 4-vector summary (count, mean, std, max-abs); `lof_baseline_score` for the publication comparator panel. Added `backend/scripts/train_ppcef.py`. Added `normflows>=1.7` + `scikit-learn>=1.3` to `backend/requirements.txt`. **Per the SOTA review open-research-gaps §3, this is the third publishable contribution.**
+
+**normflows API gotcha (load-bearing for any future flow consumer):** `AffineCouplingBlock` takes a *single* `param_map` MLP that outputs both scale and translation (`MLP([dim//2, hidden, dim], init_zeros=True)`) — not two separate s/t MLPs as the canonical Real-NVP pseudocode suggests. Got this wrong on the first attempt; fixed by reading the normflows source. Documented inline in `_build_realnvp`.
+
+**ETM encoder aggregates variable-length step coefficients (load-bearing for the "interpretable in physical units" claim):** ETM blobs carry a variable number of `step_at_{t_s}` coefficients per Bevis-Brown Eq. 1. The encoder ships fixed-length `[x0, linear_rate, n_steps, mean_abs_step]` — flow input dim is stable across any ETM segment regardless of step count. Trade-off: which step is anomalous is lost (only count + mean abs amplitude survive). Documented as a known limitation per AC.
+
+**Persistence invariants:** μ, σ, training-set log_p distribution, and 5th/50th percentiles are *all* persisted in the JSON sidecar alongside the `.pt` so the empirical-CDF quantile reproduces across processes. Re-deriving the distribution at inference would require re-encoding the entire training corpus.
+
+**Methodological-honesty cross-reference (load-bearing for publications):** PPCEF over coefficient space ≠ plausibility of the raw waveform — they can diverge. The module docstring cross-references VAL-030 (IAAFT) as the complementary signal-space test; production callers should consult both, not one in isolation.
+
+31 new tests; full backend 2379/2381 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-032 CS in decomposition-coefficient space (publishable transplant of Dutta 2022)
 
 Added `backend/app/services/validation/cs_coefficient.py`: frozen `CSResult` (CS, μ, σ, invalidation_rate, frozen-tuple σ_θ, is_robust, target_class, method); `CSCoefficientError`; `cs_coefficient_space` MC implementation of Dutta 2022 §3 (`CS = μ − κσ`, default `κ = 0.5`); `sigma_theta_from_mbb` integration helper that converts each VAL-031 MBB CI into a Gaussian-equivalent σ via `(ci_upper − ci_lower) / (2 · 1.96)`; `cs_analytic_bound` (gated Hamman 2023 closed form). Extended `DecompositionBlob` with an immutable `with_coefficients(coefficients, components=None)` deep-copy method. **Per the SOTA review's open-research-gaps §1, this is the first published deployment of CS in fitted-parametric-decomposition coefficient space with an MBB-calibrated noise model.**

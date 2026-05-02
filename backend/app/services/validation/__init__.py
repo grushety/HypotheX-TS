@@ -17,6 +17,7 @@ Currently exposes:
   - ``iaaft`` — IAAFT surrogate test, slow path (VAL-030).
   - ``mbb`` — full moving-block bootstrap, slow path (VAL-031).
   - ``cs_coefficient`` — CS in decomposition coefficient space (VAL-032 — publishable transplant of Dutta 2022).
+  - ``ppcef`` — PPCEF normalising-flow plausibility over decomposition coefficients (VAL-033 — publishable port of Wielopolski 2024).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
@@ -70,6 +71,17 @@ from app.services.validation.coefficient_ci import (
     politis_white_block_length,
     refit_blob,
     stationary_bootstrap,
+)
+from app.services.validation.ppcef import (
+    DEFAULT_N_EPOCHS,
+    METHOD_NSF,
+    METHOD_REALNVP,
+    CoefficientFlow,
+    PPCEFError,
+    PPCEFResult,
+    encode_blob_to_vector,
+    lof_baseline_score,
+    register_coefficient_encoder,
 )
 from app.services.validation.cs_coefficient import (
     DEFAULT_KAPPA,
@@ -250,6 +262,7 @@ __all__ = [
     "ConservationSignificanceError",
     "CSCoefficientError",
     "CSResult",
+    "CoefficientFlow",
     "CoefficientJacobianFn",
     "CoverageResult",
     "DEFAULT_B",
@@ -267,6 +280,7 @@ __all__ = [
     "DEFAULT_MIN_ACCEPTED",
     "DEFAULT_MMD_PERMUTATIONS",
     "DEFAULT_MMD_SUBSAMPLE_CAP",
+    "DEFAULT_N_EPOCHS",
     "DEFAULT_N_REPLICATES",
     "DEFAULT_MODALITY_SWITCH_AFTER_N",
     "DEFAULT_N_SAMPLES",
@@ -313,10 +327,14 @@ __all__ = [
     "MODALITY_CONTRASTIVE",
     "MODALITY_FEATURE_IMPORTANCE",
     "LABEL_CHIP_TOPIC",
+    "METHOD_NSF",
+    "METHOD_REALNVP",
     "MMDDistShiftError",
     "MMDLinearResult",
     "MMDResult",
     "N_SHAPES",
+    "PPCEFError",
+    "PPCEFResult",
     "METHOD_LINEARISED",
     "METHOD_MONTE_CARLO",
     "METRIC_DTW",
@@ -371,6 +389,7 @@ __all__ = [
     "default_sigma_for_op",
     "default_utility_fn",
     "dpp_log_det_diversity",
+    "encode_blob_to_vector",
     "gini_coefficient",
     "iaaft_cache_key",
     "iaaft_surrogate",
@@ -386,6 +405,7 @@ __all__ = [
     "keogh_envelope",
     "lb_keogh",
     "load_thresholds",
+    "lof_baseline_score",
     "native_guide_proximity",
     "native_guide_sparsity",
     "native_guide_validate",
@@ -394,6 +414,7 @@ __all__ = [
     "politis_white_block_length",
     "probe_invalidation_rate",
     "refit_blob",
+    "register_coefficient_encoder",
     "replace_library_distshift",
     "safe_eval",
     "save_thresholds",
