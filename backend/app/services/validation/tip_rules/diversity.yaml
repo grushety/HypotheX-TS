@@ -1,0 +1,18 @@
+# VAL-020 diversity tips — session-level signals from VAL-010 (coverage)
+# and VAL-013 (cherry-picking).
+
+- id: cherry_picking_high
+  condition: "session.cherry_picking_score > 0.7"
+  degree: prescribing
+  modality: contrastive
+  severity: 3
+  message: "{cherry_picking_recommendation}"
+  paper_ref: "Hinns et al. arXiv 2601.04977 (2026)"
+
+- id: shape_coverage_low
+  condition: "session.shape_coverage < 0.4 and session.edit_count >= 5"
+  degree: orienting
+  modality: contrastive
+  severity: 1
+  message: "You have only explored {shapes_used}/7 shape primitives. Try {underexplored_shape} for contrast."
+  paper_ref: "Wu et al. ScatterShot IUI 2023"

@@ -1,0 +1,14 @@
+# VAL-020 series-effect tip — KPSS (VAL-006) rejects post-edit only.
+# Note: simpleeval supports attribute access via the _Namespace wrapper, so
+# ``metrics.kpss_pre.p`` resolves when metrics.kpss_pre is itself a dict. If
+# VAL-006's emitter posts a flat ``metrics.kpss_pre_p`` instead, this rule
+# falls back to False (safe_eval swallows AttributeError). The dual emitter
+# question is owned by VAL-006's downstream wiring, not this engine.
+
+- id: kpss_post_only
+  condition: "metrics.kpss_pre_p > 0.05 and metrics.kpss_post_p < 0.05"
+  degree: orienting
+  modality: cf
+  severity: 1
+  message: "Edit appears to have introduced non-stationary drift (KPSS rejected post-edit only)."
+  paper_ref: "Kwiatkowski-Phillips-Schmidt-Shin 1992"

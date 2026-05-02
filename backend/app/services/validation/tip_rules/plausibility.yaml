@@ -1,0 +1,8 @@
+# VAL-020 plausibility tip — yNN below threshold from VAL-003.
+- id: ynn_low
+  condition: "metrics.ynn < 0.5"
+  degree: directing
+  modality: contrastive
+  severity: 1
+  message: "Edited series has few same-class neighbours — likely off-manifold. Consider replace_from_library with a Native-Guide donor."
+  paper_ref: "Pawelczyk CARLA NeurIPS 2021 D&B"
