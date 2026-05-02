@@ -12,10 +12,23 @@ Currently exposes:
   - ``coverage`` — session-level shape-vocabulary coverage tracker (VAL-010).
   - ``diversity`` — DPP log-det diversity of accepted CFs (VAL-011).
   - ``validity_rate`` — session-level validity-rate tracker (VAL-012).
+  - ``cherry_picking`` — TS adaptation of the Hinns 2026 cherry-picking detector (VAL-013).
 
 Keep this package free of Flask / DB imports so the validators can be reused
 inside the coordinator and offline calibration scripts.
 """
+from app.services.validation.cherry_picking import (
+    DEFAULT_MIN_ACCEPTED,
+    DEFAULT_N_SAMPLES,
+    DEFAULT_TIP_SCORE_THRESHOLD,
+    DEFAULT_UTILITY_WEIGHTS,
+    AdmissibleCFSampler,
+    CherryPickingDetector,
+    CherryPickingError,
+    CherryPickingScore,
+    UtilityFn,
+    default_utility_fn,
+)
 from app.services.validation.coefficient_ci import (
     DEFAULT_B,
     DEFAULT_Z_THRESHOLD,
@@ -146,9 +159,13 @@ from app.services.validation.ynn_plausibility import (
 )
 
 __all__ = [
+    "AdmissibleCFSampler",
     "BandCheckResult",
     "CF_RESULT_TOPIC",
     "CFResultEvent",
+    "CherryPickingDetector",
+    "CherryPickingError",
+    "CherryPickingScore",
     "CoefficientCIConfig",
     "CoefficientCIError",
     "CoefficientCIResult",
@@ -169,8 +186,10 @@ __all__ = [
     "DEFAULT_EPS_PER_DIM",
     "DEFAULT_K",
     "DEFAULT_MC_SAMPLES",
+    "DEFAULT_MIN_ACCEPTED",
     "DEFAULT_MMD_PERMUTATIONS",
     "DEFAULT_MMD_SUBSAMPLE_CAP",
+    "DEFAULT_N_SAMPLES",
     "DEFAULT_PERMUTATIONS",
     "DEFAULT_PROXIMITY_PERCENTILE",
     "DEFAULT_REGULARISATION",
@@ -179,9 +198,11 @@ __all__ = [
     "DEFAULT_TIP_FRACTION_THRESHOLD",
     "DEFAULT_TIP_MIN_EDITS",
     "DEFAULT_TIP_RATE_THRESHOLD",
+    "DEFAULT_TIP_SCORE_THRESHOLD",
     "DEFAULT_TIP_SKEWNESS_THRESHOLD",
     "DEFAULT_TIP_WINDOW",
     "DEFAULT_TREND_WINDOW_SECONDS",
+    "DEFAULT_UTILITY_WEIGHTS",
     "DEFAULT_Z_THRESHOLD",
     "DistShiftResult",
     "DiversityError",
@@ -213,6 +234,7 @@ __all__ = [
     "ShapeVocabularyCoverageTracker",
     "StationarityError",
     "StationarityResult",
+    "UtilityFn",
     "ValidityRateResult",
     "ValidityRateTracker",
     "TIER2_DEFAULT_SIGMA",
@@ -232,6 +254,7 @@ __all__ = [
     "conservation_residual_ci",
     "conservation_significance",
     "default_sigma_for_op",
+    "default_utility_fn",
     "dpp_log_det_diversity",
     "gini_coefficient",
     "joint_stationarity_check",
