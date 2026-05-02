@@ -102,6 +102,12 @@ Dependencies declared: ✅/❌
 🚫 CHANGES REQUESTED — N blocking issues; fix before commit
 ```
 
+## Output budget
+- Cap each finding to `file:line` + one-line description; do NOT paste diff hunks or source code
+- If >10 NITS, list first 10 by file then summarise the rest by category (`+N more nits in <area>`)
+- Architecture / Scope checklists: keep to one line each (✅/❌ + 5–10 word note)
+- Final report should fit in ~3k tokens
+
 ## Rules
 - Do NOT modify any code
 - Do NOT run tests — that is `tester`'s job
