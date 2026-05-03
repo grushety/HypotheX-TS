@@ -487,11 +487,23 @@ def _dispatch_t3_decompose(
 
     target = next((s for s in new_segs if s.segment_id == target_id), None)
     values: list[float] | None = None
+    decomposition_payload: dict[str, Any] | None = None
     if target is not None and target.decomposition is not None:
+        blob = target.decomposition
         try:
-            values = [float(v) for v in target.decomposition.reassemble()]
+            values = [float(v) for v in blob.reassemble()]
         except Exception:  # noqa: BLE001
             values = None
+        decomposition_payload = {
+            "method": blob.method,
+            "components": {k: _jsonable(v) for k, v in (blob.components or {}).items()},
+            "coefficients": {k: _jsonable(v) for k, v in (blob.coefficients or {}).items()},
+            "fit_metadata": {k: _jsonable(v) for k, v in (blob.fit_metadata or {}).items()},
+        }
+
+    extra: dict[str, Any] = {}
+    if decomposition_payload is not None:
+        extra["decomposition"] = decomposition_payload
 
     return OperationInvokeResponse(
         op_name="decompose",
@@ -503,6 +515,7 @@ def _dispatch_t3_decompose(
         label_chip=None,
         audit_id=pre_call_len,
         aggregate_result=None,
+        extra=extra,
     )
 
 
@@ -571,7 +584,12 @@ def _dispatch_t3_align(
     pre_call_len: int,
 ) -> OperationInvokeResponse:
     arr = np.asarray(req.sample_values, dtype=np.float64)
-    reference_id = req.params.get("reference_segment_id")
+    # The frontend `buildAlignWarpPayload` (UI-009) emits `reference_seg_id`;
+    # accept both spellings so the route is forgiving.
+    reference_id = (
+        req.params.get("reference_segment_id")
+        or req.params.get("reference_seg_id")
+    )
     if reference_id is None:
         raise MalformedParamsError(
             "align_warp requires params.reference_segment_id"
@@ -586,6 +604,18 @@ def _dispatch_t3_align(
         label=ref_spec.label,
         values=arr[ref_spec.start : ref_spec.end + 1].copy(),
     )
+
+    # Optional explicit segment_ids filter (frontend AlignWarpPanel sends
+    # only the user-selected subset). When absent, align every non-reference
+    # segment in the segmentation (the legacy behaviour).
+    requested_ids = req.params.get("segment_ids")
+    if requested_ids is not None:
+        if not isinstance(requested_ids, list) or not all(isinstance(s, str) for s in requested_ids):
+            raise MalformedParamsError("segment_ids must be a list of strings")
+        id_filter = frozenset(requested_ids) - {reference_id}
+    else:
+        id_filter = None
+
     other_segs = [
         AlignableSegment(
             segment_id=s.id,
@@ -593,7 +623,7 @@ def _dispatch_t3_align(
             values=arr[s.start : s.end + 1].copy(),
         )
         for s in req.segments
-        if s.id != reference_id
+        if s.id != reference_id and (id_filter is None or s.id in id_filter)
     ]
 
     method = req.params.get("method", "dtw")
@@ -621,6 +651,11 @@ def _dispatch_t3_align(
     else:
         values = None
 
+    aligned_segments = [
+        {"segment_id": s.segment_id, "values": [float(v) for v in s.values]}
+        for s in aligned
+    ]
+
     return OperationInvokeResponse(
         op_name="align_warp",
         tier=3,
@@ -631,6 +666,7 @@ def _dispatch_t3_align(
         label_chip=None,
         audit_id=pre_call_len,
         aggregate_result=None,
+        extra={"aligned_segments": aligned_segments},
     )
 
 
