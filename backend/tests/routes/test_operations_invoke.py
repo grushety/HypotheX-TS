@@ -146,6 +146,59 @@ def test_tier3_enforce_conservation_happy_path(client):
     assert body["audit_id"] is not None
 
 
+def test_tier3_decompose_returns_decomposition_blob(client):
+    """HTS-105: decompose response must carry the blob payload so the editor can render handles."""
+    payload = {
+        "series_id": "S",
+        "segment_id": "s0",
+        "tier": 3,
+        "op_name": "decompose",
+        "params": {},
+        "domain_hint": None,
+        "sample_values": _values(),
+        "segments": _segments(label="trend"),
+    }
+    rv = client.post("/api/operations/invoke", json=payload)
+    assert rv.status_code == 200, rv.get_json()
+    body = rv.get_json()
+    assert "extra" in body and "decomposition" in body["extra"]
+    blob = body["extra"]["decomposition"]
+    assert "method" in blob
+    assert "components" in blob
+    assert "coefficients" in blob
+
+
+def test_tier3_align_warp_returns_aligned_segments(client):
+    """HTS-105: align_warp response must carry per-segment values for splice."""
+    n = 30
+    series = list(np.linspace(0.0, 5.0, n))
+    payload = {
+        "series_id": "S",
+        "segment_id": "s0",
+        "tier": 3,
+        "op_name": "align_warp",
+        "params": {
+            "reference_seg_id": "s0",
+            "segment_ids": ["s1"],
+            "method": "dtw",
+            "warping_band": 0.1,
+        },
+        "sample_values": series,
+        "segments": [
+            {"id": "s0", "start": 0, "end": 14, "label": "cycle"},
+            {"id": "s1", "start": 15, "end": 29, "label": "cycle"},
+        ],
+    }
+    rv = client.post("/api/operations/invoke", json=payload)
+    assert rv.status_code == 200, rv.get_json()
+    body = rv.get_json()
+    assert "extra" in body and "aligned_segments" in body["extra"]
+    aligned = body["extra"]["aligned_segments"]
+    assert len(aligned) == 1
+    assert aligned[0]["segment_id"] == "s1"
+    assert isinstance(aligned[0]["values"], list) and len(aligned[0]["values"]) == 15
+
+
 def test_tier3_decompose_happy_path(client):
     payload = {
         "series_id": "S",

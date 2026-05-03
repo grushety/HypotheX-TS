@@ -11,6 +11,8 @@ import ConstraintBudgetBar from "../components/constraints/ConstraintBudgetBar.v
 import CompensationModeSelector from "../components/constraints/CompensationModeSelector.vue";
 import PredictedLabelChip from "../components/relabel/PredictedLabelChip.vue";
 import DonorPicker from "../components/donors/DonorPicker.vue";
+import AlignWarpPanel from "../components/alignment/AlignWarpPanel.vue";
+import DecompositionEditor from "../components/decomposition/DecompositionEditor.vue";
 import {
   isCompensationRequired as isCompensationModeRequired,
 } from "../lib/constraints/createCompensationModeSelectorState";
@@ -112,6 +114,9 @@ const compensationModeTouched = ref(false);
 const undoStack = ref([]);
 const UNDO_STACK_LIMIT = 10;
 const donorPickerOpen = ref(false);
+const alignWarpPanelOpen = ref(false);
+const decompositionEditorOpen = ref(false);
+const decompositionBlob = ref(null);
 let compatibilityRequestId = 0;
 
 const semanticPacks = ref([]);
@@ -629,7 +634,28 @@ async function handleOpInvoked({ tier, op_name, params = {} }) {
       operationFeedback.value = 'replace_from_library: select a segment first.';
       return;
     }
+    closeAllPanels();
     donorPickerOpen.value = true;
+    return;
+  }
+
+  if (tier === 3 && op_name === 'align_warp') {
+    if (!sample.value || tieredPaletteSelectedIds.value.length < 2) {
+      operationFeedback.value = 'align_warp: select 2+ segments first.';
+      return;
+    }
+    closeAllPanels();
+    alignWarpPanelOpen.value = true;
+    return;
+  }
+
+  if (tier === 3 && op_name === 'decompose') {
+    if (!sample.value || !selectedSegment.value) {
+      operationFeedback.value = 'decompose: select a segment first.';
+      return;
+    }
+    closeAllPanels();
+    await dispatchDecomposeAndOpenEditor();
     return;
   }
 
@@ -742,6 +768,19 @@ watch(selectedSegmentId, () => {
   compensationModeTouched.value = false;
 });
 
+function handleGlobalEscape(event) {
+  if (event.key !== 'Escape') return;
+  if (alignWarpPanelOpen.value) {
+    handleAlignPanelClose();
+  } else if (decompositionEditorOpen.value) {
+    handleDecompositionEditorClose();
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') window.addEventListener('keydown', handleGlobalEscape);
+});
+
 function handleChipAccept({ chipId, segmentId, newShape, opId }) {
   if (!sample.value || !segmentId || !newShape) return;
   const segs = (sample.value.segments ?? []).map((seg) =>
@@ -788,6 +827,12 @@ function handleChipOverride({ chipId, segmentId, chosenShape, opId }) {
   );
 }
 
+function closeAllPanels() {
+  donorPickerOpen.value = false;
+  alignWarpPanelOpen.value = false;
+  decompositionEditorOpen.value = false;
+}
+
 function handleDonorAccepted({ tier, op_name, params }) {
   donorPickerOpen.value = false;
   if (!params || !Array.isArray(params.donor_values) || params.donor_values.length === 0) {
@@ -799,6 +844,82 @@ function handleDonorAccepted({ tier, op_name, params }) {
 
 function handleDonorPickerClose() {
   donorPickerOpen.value = false;
+}
+
+function handleAlignApplied({ tier, op_name, params }) {
+  alignWarpPanelOpen.value = false;
+  dispatchTier123Op({ tier, op_name, params, bypassPickerCheck: true });
+}
+
+function handleAlignPanelClose() {
+  alignWarpPanelOpen.value = false;
+}
+
+async function dispatchDecomposeAndOpenEditor() {
+  if (!sample.value || !selectedSegment.value) return;
+
+  let plan;
+  try {
+    plan = buildInvokeRequest({
+      tier: 3,
+      op_name: 'decompose',
+      params: {},
+      sample: sample.value,
+      selectedSegment: selectedSegment.value,
+      gapInfo: selectedSegmentGapInfo.value,
+      domain_hint: activeDomainHint.value,
+      bypassPickerCheck: true,
+    });
+  } catch (buildError) {
+    operationFeedback.value = buildError.message ?? 'decompose: failed to build request.';
+    return;
+  }
+  if (plan.kind !== 'request') {
+    operationFeedback.value = plan.message ?? 'decompose: cannot dispatch.';
+    return;
+  }
+
+  pendingOpName.value = 'decompose';
+  try {
+    const response = await invokeOperation(plan.body);
+    decompositionBlob.value = response.extra?.decomposition ?? null;
+    if (!decompositionBlob.value) {
+      operationFeedback.value = 'decompose: response did not include a decomposition blob.';
+      return;
+    }
+    decompositionEditorOpen.value = true;
+    operationFeedback.value = 'decompose: blob loaded; edit components below.';
+    auditEvents.value = appendAuditEvent(
+      auditEvents.value,
+      createOperationAuditEvent(
+        { type: 'decompose', tier: 3, op_name: 'decompose', params: {} },
+        {
+          ok: true,
+          constraintStatus: SOFT_CONSTRAINT_STATUS.PASS,
+          warnings: [],
+          operationResult: { affectedSegmentIds: [selectedSegmentId.value].filter(Boolean) },
+          message: 'decompose: blob loaded.',
+          selectedSegmentId: selectedSegmentId.value,
+        },
+        { sampleId: sample.value?.sampleId ?? null, selectedSegmentId: selectedSegmentId.value },
+      ),
+    );
+  } catch (requestError) {
+    operationFeedback.value =
+      requestError instanceof Error ? requestError.message : 'decompose: request failed.';
+  } finally {
+    pendingOpName.value = null;
+  }
+}
+
+function handleDecompositionEditorOp({ op_name, params, segmentId }) {
+  if (!op_name || !params) return;
+  dispatchTier123Op({ tier: 2, op_name, params });
+}
+
+function handleDecompositionEditorClose() {
+  decompositionEditorOpen.value = false;
+  decompositionBlob.value = null;
 }
 
 function handleChipUndo({ chipId, segmentId, opId }) {
@@ -826,7 +947,18 @@ function handleChipUndo({ chipId, segmentId, opId }) {
 }
 
 function applyInvokeResponse({ tier, op_name, params, response }) {
-  if (Array.isArray(response.values) && selectedSegment.value && Array.isArray(sample.value?.values)) {
+  const alignedSegments = response.extra?.aligned_segments;
+  if (Array.isArray(alignedSegments) && alignedSegments.length > 0 && Array.isArray(sample.value?.values)) {
+    const segById = new Map((sample.value.segments ?? []).map((s) => [s.id, s]));
+    const next = sample.value.values.slice();
+    for (const aligned of alignedSegments) {
+      const seg = segById.get(aligned.segment_id);
+      if (!seg || !Array.isArray(aligned.values)) continue;
+      const len = Math.min(aligned.values.length, seg.end - seg.start + 1);
+      for (let i = 0; i < len; i += 1) next[seg.start + i] = aligned.values[i];
+    }
+    sample.value = { ...sample.value, values: next };
+  } else if (Array.isArray(response.values) && selectedSegment.value && Array.isArray(sample.value?.values)) {
     const seg = selectedSegment.value;
     const next = sample.value.values.slice();
     const len = Math.min(response.values.length, seg.end - seg.start + 1);
@@ -1217,6 +1349,15 @@ watch(
             @close="handleDonorPickerClose"
           />
 
+          <AlignWarpPanel
+            v-if="alignWarpPanelOpen && sample"
+            :segments="sample.segments ?? []"
+            :selected-segment-ids="tieredPaletteSelectedIds"
+            :initial-reference-segment-id="selectedSegmentId"
+            :series-values="sample.values"
+            @op-invoked="handleAlignApplied"
+          />
+
           <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
         </div>
 
@@ -1300,6 +1441,20 @@ watch(
           :pending-op="pendingOpName"
           @op-invoked="handleOpInvoked"
         />
+
+        <div v-if="decompositionEditorOpen" class="decomposition-editor-panel">
+          <button
+            type="button"
+            class="decomposition-editor-panel__close"
+            aria-label="Close decomposition editor"
+            @click="handleDecompositionEditorClose"
+          >Close decomposition editor</button>
+          <DecompositionEditor
+            :blob="decompositionBlob"
+            :segment-id="selectedSegmentId"
+            @op-invoked="handleDecompositionEditorOp"
+          />
+        </div>
 
         <ModelComparisonPanel
           :state="comparisonState"

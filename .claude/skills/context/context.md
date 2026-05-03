@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-105 Tier-3 panels (AlignWarp + DecompositionEditor)
+
+End-to-end wiring for the two Tier-3 panel-bound ops:
+- **`align_warp`**: `handleOpInvoked` opens `AlignWarpPanel` when `tieredPaletteSelectedIds.length >= 2`. Apply forwards the panel's payload through `dispatchTier123Op(..., bypassPickerCheck:true)`. Backend response carries per-segment values via `extra.aligned_segments`; the page splices each into `sample.values` in one pass.
+- **`decompose`**: `dispatchDecomposeAndOpenEditor()` runs Tier-3 `decompose` first, reads `response.extra.decomposition = {method, components, coefficients, fit_metadata}`, sets `decompositionBlob`, then opens `DecompositionEditor` against it. Slider commits route through `dispatchTier123Op({tier:2, op_name, params})` — labels / chips / audit reuse the standard pipeline. Reset is client-side (no op-invoked event per UI-007 contract).
+
+**Key naming bridge (load-bearing):** UI-009's `buildAlignWarpPayload` emits `reference_seg_id`; the original HTS-100 route expected `reference_segment_id`. Rather than break either side, `_dispatch_t3_align` now reads both spellings. Future Tier-3 ops should pick one canonical name up front.
+
+**Multi-select prerequisite (load-bearing):** the AC gates `align_warp` on `tieredPaletteSelectedIds.length >= 2`. Today the page only produces single-select; HTS-106 (scope/gap pickers) lands the multi-select state, at which point the panel mounts automatically. HTS-105's wiring is complete and unit-tested at the backend level — only the page-level multi-select feed is blocked.
+
+**Closeable panels invariant (load-bearing):** new `closeAllPanels()` helper enforces "at most one panel open." Donor / AlignWarp / Decomposition all share this gate. A window-level Escape handler closes whichever panel is open (AlignWarp first, then Decomposition); cancel emits no audit. Future panels (e.g. ScopePicker in HTS-106) should also enroll in `closeAllPanels()`.
+
+2 new backend route tests (decomposition blob in extra; aligned_segments in extra). pytest 14/14 invoke + 9/9 donors; npm test 695/695; npm run build clean.
+
+---
+
 ## HTS-104 Donor flow (`POST /api/donors/propose` + DonorPicker for `replace_from_library`)
 
 End-to-end Tier-1 `replace_from_library` flow. New backend route `POST /api/donors/propose` (`backend/app/routes/donors.py`) ranks the dataset's training-corpus members of `target_class` by DTW distance and returns the candidate at offset `k` after removing `exclude_ids` (mirrors the picker's "one at a time, walked via k" pattern). SETSDonor / DiscordDonor / TimeGAN / ShapeDBA → 501 with `{supported: ['NativeGuide', 'UserDrawn']}`. UserDrawn → 400 (frontend bypasses the network). Frontend mounts DonorPicker in the chart panel when `replace_from_library` is clicked; on Accept, the picker's payload (with inlined `donor_values`) flows through the standard HTS-101 dispatcher with a new `bypassPickerCheck: true` flag.
