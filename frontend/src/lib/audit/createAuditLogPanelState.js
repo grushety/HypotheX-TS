@@ -23,25 +23,34 @@ function plausibilityFromConfidence(confidence) {
 }
 
 function makeRow(event, chip) {
-  const tier = chip?.tier ?? ACTION_TIER.get(event.actionType) ?? null;
+  const eventChip = event.chip ?? null;
+  const effectiveChip = chip ?? eventChip;
+  const tier = effectiveChip?.tier ?? ACTION_TIER.get(event.actionType) ?? null;
+  const compensationMode =
+    event.request?.compensationMode ??
+    event.request?.compensation_mode ??
+    event.request?.params?.compensation_mode ??
+    null;
+  const constraintResidual =
+    event.constraintResidual ?? (event.warnings?.length ? event.warnings : null);
   return {
     id: `${event.sequence ?? 'pending'}-${event.kind}-${event.actionType}`,
     timestamp: event.timestamp ?? null,
     tier,
     op: event.actionType ?? null,
     segmentId: event.affectedSegmentIds?.[0] ?? event.selectedSegmentId ?? null,
-    preShape: chip?.old_shape ?? null,
-    postShape: chip?.new_shape ?? null,
-    ruleClass: chip?.rule_class ?? null,
-    compensationMode: event.request?.compensationMode ?? null,
-    plausibilityBadge: plausibilityFromConfidence(chip?.confidence ?? null),
-    constraintResidual: event.warnings?.length ? event.warnings : null,
+    preShape: effectiveChip?.old_shape ?? null,
+    postShape: effectiveChip?.new_shape ?? null,
+    ruleClass: effectiveChip?.rule_class ?? null,
+    compensationMode,
+    plausibilityBadge: plausibilityFromConfidence(effectiveChip?.confidence ?? null),
+    constraintResidual,
     sequence: event.sequence ?? null,
     actionStatus: event.actionStatus ?? null,
     constraintStatus: event.constraintStatus ?? null,
     kind: event.kind ?? null,
     fullEvent: event,
-    fullChip: chip ?? null,
+    fullChip: effectiveChip ?? null,
   };
 }
 

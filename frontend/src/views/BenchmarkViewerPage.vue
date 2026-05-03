@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
-import HistoryPanel from "../components/history/HistoryPanel.vue";
+import AuditLogPanel from "../components/audit/AuditLogPanel.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
@@ -20,17 +20,12 @@ import {
   createOperationAuditEvent,
   createSuggestionAuditEvent,
 } from "../lib/audit/auditEvents";
-import { createHistoryEntries } from "../lib/audit/createHistoryEntries";
 import { createSessionPanelState } from "../lib/audit/createSessionPanelState";
 import { createPredictionPanelState } from "../lib/benchmarks/createPredictionPanelState";
 import { createViewerSampleFromApi } from "../lib/benchmarks/createViewerSampleFromApi";
 import { createBenchmarkSelectorState } from "../lib/benchmarks/createBenchmarkSelectorState";
 import { reconcileBenchmarkSelection } from "../lib/benchmarks/reconcileBenchmarkSelection";
 import { SOFT_CONSTRAINT_STATUS } from "../lib/constraints/evaluateSoftConstraints";
-import {
-  createInteractionLogExport,
-  downloadInteractionLogExport,
-} from "../lib/export/createInteractionLogExport";
 import { createOperationPaletteState } from "../lib/operations/createOperationPaletteState";
 import { createTieredPaletteState } from "../lib/operations/createTieredPaletteState";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
@@ -144,7 +139,6 @@ const enrichedSample = computed(() => {
   return { ...sample.value, segments: semanticAnnotatedSegments.value };
 });
 const pageState = computed(() => createViewerPageState(sample.value, selectedSegment.value));
-const historyEntries = computed(() => createHistoryEntries(auditEvents.value));
 const sessionPanelState = computed(() => createSessionPanelState(auditEvents.value, sample.value));
 const warningDisplay = computed(() =>
   createViewerWarningDisplay({
@@ -831,6 +825,8 @@ function applyInvokeResponse({ tier, op_name, params, response }) {
         operationResult: { affectedSegmentIds: [selectedSegmentId.value].filter(Boolean) },
         message: `${op_name}: applied.`,
         selectedSegmentId: selectedSegmentId.value,
+        chip: response.label_chip ?? null,
+        constraintResidual: response.constraint_residual ?? null,
       },
       {
         sampleId: sample.value?.sampleId ?? null,
@@ -988,24 +984,6 @@ function handleClearCustomPack() {
   semanticLabelResults.value = [];
   semanticCustomError.value = null;
   saveSemanticLayerSession({ activePackKey: semanticActivePackKey.value, customYamlText: null });
-}
-
-function handleExportLog() {
-  if (!auditEvents.value.length) {
-    return;
-  }
-
-  const exportArtifact = createInteractionLogExport(auditEvents.value, {
-    sessionId: sessionPanelState.value.sessionId,
-    seriesId: sessionPanelState.value.seriesId,
-    segmentationId: sessionPanelState.value.segmentationId,
-    startedAt: sessionPanelState.value.startedAt,
-    endedAt: sessionPanelState.value.endedAt,
-    sampleId: sample.value?.sampleId ?? null,
-    datasetName: sample.value?.datasetName ?? null,
-  });
-
-  downloadInteractionLogExport(exportArtifact);
 }
 
 watch(
@@ -1330,10 +1308,9 @@ watch(
           </span>
         </summary>
         <div class="strip-body">
-          <HistoryPanel
-            :entries="historyEntries"
+          <AuditLogPanel
+            :events="auditEvents"
             :session="sessionPanelState"
-            @export-log="handleExportLog"
           />
         </div>
       </details>

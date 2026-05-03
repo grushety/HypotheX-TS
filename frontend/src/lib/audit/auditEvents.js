@@ -27,6 +27,8 @@ function createAuditEvent(kind, actionType, request, options = {}) {
     request,
     timestamp: options.timestamp ?? null,
     sequence: options.sequence ?? null,
+    chip: options.chip ?? null,
+    constraintResidual: options.constraintResidual ?? null,
   };
 }
 
@@ -66,6 +68,8 @@ export function createOperationAuditEvent(request, result, context = {}) {
       message: result.message,
       sampleId: context.sampleId ?? null,
       selectedSegmentId: result.selectedSegmentId ?? context.selectedSegmentId ?? null,
+      chip: result.chip ?? context.chip ?? null,
+      constraintResidual: result.constraintResidual ?? context.constraintResidual ?? null,
     });
   }
 
