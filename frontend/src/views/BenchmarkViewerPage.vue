@@ -13,6 +13,9 @@ import PredictedLabelChip from "../components/relabel/PredictedLabelChip.vue";
 import DonorPicker from "../components/donors/DonorPicker.vue";
 import AlignWarpPanel from "../components/alignment/AlignWarpPanel.vue";
 import DecompositionEditor from "../components/decomposition/DecompositionEditor.vue";
+import GapFillPicker from "../components/gaps/GapFillPicker.vue";
+import ScopeAttributeEditor from "../components/scope/ScopeAttributeEditor.vue";
+import { updateSegmentScope } from "../services/api/segmentsApi";
 import {
   isCompensationRequired as isCompensationModeRequired,
 } from "../lib/constraints/createCompensationModeSelectorState";
@@ -117,6 +120,11 @@ const donorPickerOpen = ref(false);
 const alignWarpPanelOpen = ref(false);
 const decompositionEditorOpen = ref(false);
 const decompositionBlob = ref(null);
+const gapFillPickerOpen = ref(false);
+const scopeEditorOpen = ref(false);
+const scopeEditorSegment = ref(null);
+const scopeEditorError = ref(null);
+const segmentContextMenu = ref(null);
 let compatibilityRequestId = 0;
 
 const semanticPacks = ref([]);
@@ -639,6 +647,18 @@ async function handleOpInvoked({ tier, op_name, params = {} }) {
     return;
   }
 
+  if (tier === 1 && op_name === 'suppress'
+      && selectedSegmentGapInfo.value?.exceedsThreshold
+      && !selectedSegmentGapInfo.value?.isFilled) {
+    if (!sample.value || !selectedSegment.value) {
+      operationFeedback.value = 'suppress: select a segment first.';
+      return;
+    }
+    closeAllPanels();
+    gapFillPickerOpen.value = true;
+    return;
+  }
+
   if (tier === 3 && op_name === 'align_warp') {
     if (!sample.value || tieredPaletteSelectedIds.value.length < 2) {
       operationFeedback.value = 'align_warp: select 2+ segments first.';
@@ -770,7 +790,11 @@ watch(selectedSegmentId, () => {
 
 function handleGlobalEscape(event) {
   if (event.key !== 'Escape') return;
-  if (alignWarpPanelOpen.value) {
+  if (segmentContextMenu.value) {
+    segmentContextMenu.value = null;
+  } else if (gapFillPickerOpen.value) {
+    handleGapFillClose();
+  } else if (alignWarpPanelOpen.value) {
     handleAlignPanelClose();
   } else if (decompositionEditorOpen.value) {
     handleDecompositionEditorClose();
@@ -831,6 +855,9 @@ function closeAllPanels() {
   donorPickerOpen.value = false;
   alignWarpPanelOpen.value = false;
   decompositionEditorOpen.value = false;
+  gapFillPickerOpen.value = false;
+  scopeEditorOpen.value = false;
+  segmentContextMenu.value = null;
 }
 
 function handleDonorAccepted({ tier, op_name, params }) {
@@ -920,6 +947,78 @@ function handleDecompositionEditorOp({ op_name, params, segmentId }) {
 function handleDecompositionEditorClose() {
   decompositionEditorOpen.value = false;
   decompositionBlob.value = null;
+}
+
+function handleGapFillApplied({ tier, op_name, params }) {
+  gapFillPickerOpen.value = false;
+  dispatchTier123Op({ tier, op_name, params, bypassPickerCheck: true });
+}
+
+function handleGapFillClose() {
+  gapFillPickerOpen.value = false;
+}
+
+function handleSegmentContextMenu(event, segment) {
+  if (!segment) return;
+  event.preventDefault();
+  closeAllPanels();
+  segmentContextMenu.value = {
+    segmentId: segment.id,
+    x: event.clientX ?? 0,
+    y: event.clientY ?? 0,
+  };
+}
+
+function handleContextMenuEditScope() {
+  const ctx = segmentContextMenu.value;
+  if (!ctx) return;
+  const seg = (sample.value?.segments ?? []).find((s) => s.id === ctx.segmentId);
+  segmentContextMenu.value = null;
+  if (!seg) return;
+  scopeEditorSegment.value = seg;
+  scopeEditorError.value = null;
+  scopeEditorOpen.value = true;
+}
+
+function handleScopeEditorClose() {
+  scopeEditorOpen.value = false;
+  scopeEditorError.value = null;
+}
+
+async function handleScopeUpdated(payload) {
+  if (!payload || !payload.segmentId || !payload.scope) return;
+  scopeEditorError.value = null;
+  pendingOpName.value = 'scope_updated';
+  try {
+    const response = await updateSegmentScope(payload);
+    const segs = (sample.value?.segments ?? []).map((seg) =>
+      seg.id === payload.segmentId
+        ? { ...seg, scope: { ...response.scope, domainHintKey: response.scope.domain_hint ?? null } }
+        : seg,
+    );
+    sample.value = { ...sample.value, segments: segs };
+    auditEvents.value = appendAuditEvent(
+      auditEvents.value,
+      createOperationAuditEvent(
+        { type: 'scope_updated', segmentId: payload.segmentId, previousScope: payload.previousScope, nextScope: response.scope, triggerReclassify: payload.triggerReclassify },
+        {
+          ok: true,
+          constraintStatus: SOFT_CONSTRAINT_STATUS.PASS,
+          warnings: [],
+          operationResult: { affectedSegmentIds: [payload.segmentId] },
+          message: `scope_updated on ${payload.segmentId}.`,
+          selectedSegmentId: payload.segmentId,
+        },
+        { sampleId: sample.value?.sampleId ?? null, selectedSegmentId: payload.segmentId },
+      ),
+    );
+    scopeEditorOpen.value = false;
+  } catch (requestError) {
+    scopeEditorError.value =
+      requestError instanceof Error ? requestError.message : 'Failed to save scope.';
+  } finally {
+    pendingOpName.value = null;
+  }
 }
 
 function handleChipUndo({ chipId, segmentId, opId }) {
@@ -1358,6 +1457,13 @@ watch(
             @op-invoked="handleAlignApplied"
           />
 
+          <GapFillPicker
+            v-if="gapFillPickerOpen && selectedSegment"
+            :segment-id="selectedSegment.id"
+            :missingness-pct="selectedSegmentGapInfo?.missingnessPct ?? 0"
+            @op-invoked="handleGapFillApplied"
+          />
+
           <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
         </div>
 
@@ -1373,6 +1479,7 @@ watch(
               :key="segment.id"
               class="overlay-segment-item"
               :class="{ 'overlay-segment-item-active': segment.id === selectedSegmentId }"
+              @contextmenu="handleSegmentContextMenu($event, segment)"
             >
               <span class="segment-chip" :class="`segment-chip-${segment.label}`">{{ segment.label }}</span>
               <button class="segment-select-button" type="button" @click="handleSelectSegment(segment.id)">
@@ -1515,5 +1622,37 @@ watch(
         </div>
       </details>
     </footer>
+
+    <ScopeAttributeEditor
+      v-if="scopeEditorOpen && scopeEditorSegment"
+      :segment="scopeEditorSegment"
+      :series-length="sample?.values?.length ?? null"
+      :project-domain-hint="activeDomainHint"
+      :open="scopeEditorOpen"
+      @scope-updated="handleScopeUpdated"
+      @close="handleScopeEditorClose"
+    />
+    <p
+      v-if="scopeEditorOpen && scopeEditorError"
+      class="scope-editor-inline-error"
+      role="alert"
+    >{{ scopeEditorError }}</p>
+
+    <ul
+      v-if="segmentContextMenu"
+      class="segment-context-menu"
+      role="menu"
+      :style="{ top: `${segmentContextMenu.y}px`, left: `${segmentContextMenu.x}px` }"
+      @click.stop
+    >
+      <li role="none">
+        <button
+          type="button"
+          role="menuitem"
+          class="segment-context-menu__item"
+          @click="handleContextMenuEditScope"
+        >Edit scope…</button>
+      </li>
+    </ul>
   </div>
 </template>
