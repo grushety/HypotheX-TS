@@ -15,7 +15,9 @@ import AlignWarpPanel from "../components/alignment/AlignWarpPanel.vue";
 import DecompositionEditor from "../components/decomposition/DecompositionEditor.vue";
 import GapFillPicker from "../components/gaps/GapFillPicker.vue";
 import ScopeAttributeEditor from "../components/scope/ScopeAttributeEditor.vue";
+import GuardrailsSidebar from "../components/guardrails/GuardrailsSidebar.vue";
 import { updateSegmentScope } from "../services/api/segmentsApi";
+import { validationBus } from "../lib/audit/validationBus";
 import {
   isCompensationRequired as isCompensationModeRequired,
 } from "../lib/constraints/createCompensationModeSelectorState";
@@ -1069,6 +1071,16 @@ function applyInvokeResponse({ tier, op_name, params, response }) {
     labelChipBus.publish(response.label_chip);
   }
 
+  if (tier === 1 || tier === 2) {
+    const residual = response.constraint_residual;
+    const converged = residual ? (residual.converged ?? true) : true;
+    validationBus.publish('validity_update', {
+      rate: converged ? 1.0 : 0.0,
+      tipShouldFire: residual ? !converged : false,
+      recommendation: converged ? null : 'Constraint residual exceeded tolerance.',
+    });
+  }
+
   operationConstraintResult.value = response.constraint_residual ?? null;
 
   if (response.aggregate_result != null) {
@@ -1622,6 +1634,12 @@ watch(
         </div>
       </details>
     </footer>
+
+    <GuardrailsSidebar
+      :event-bus="validationBus"
+      initial-dock="bottom"
+      :initial-collapsed="true"
+    />
 
     <ScopeAttributeEditor
       v-if="scopeEditorOpen && scopeEditorSegment"

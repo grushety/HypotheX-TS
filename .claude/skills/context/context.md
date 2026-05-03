@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-107 GuardrailsSidebar wired into main page
+
+`<GuardrailsSidebar/>` (VAL-014, previously unmounted) now mounts in `BenchmarkViewerPage.vue` with `initial-dock="bottom"` + `initial-collapsed=true` so it starts as an icon strip (avoids any 1280×800 layout collision). Subscribes to a new project-wide `validationBus` (topic-aware in-process pub/sub) injected via the `eventBus` prop. Every Tier-1 / Tier-2 op response now publishes a coarse `validity_update` (`rate=1.0` if constraint converged or no residual; `rate=0.0` + `tipShouldFire=true` otherwise) so the sidebar receives at least one event per op.
+
+**Why a new bus (load-bearing):** the existing `labelChipBus` is topic-less (`subscribe(handler)` only — one event type, the chip). `GuardrailsSidebar` expects `bus.subscribe(topic, handler)` so it can attach one handler per metric. Rather than retrofit the chip bus, `lib/audit/validationBus.js` is a parallel topic-aware surface. The two buses don't share state. Future VAL-010..014 frontend extensions that publish coverage / diversity / cherry-picking payloads should use `validationBus` (not `labelChipBus`).
+
+**Validity payload shape (load-bearing):** the validity applier reads `payload.rate ?? null` (NOT `value`). The page publishes `{rate, tipShouldFire, recommendation}`. Coverage uses `coverageFraction`, diversity uses `logDet`, cherry-picking uses `score`, forking-paths uses `count`. Each metric has its own canonical payload key — see `createGuardrailsState.js` `apply*Update` extractors.
+
+4 new tests; npm test 702/702; npm run build clean.
+
+---
+
 ## HTS-106 GapFillPicker + ScopeAttributeEditor wired into main page
 
 End-to-end wiring for the two timeline-side picker components.
