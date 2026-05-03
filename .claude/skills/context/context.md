@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-103 AuditLogPanel replaces HistoryPanel in bottom strip
+
+`BenchmarkViewerPage.vue` now mounts `<AuditLogPanel/>` (UI-015) inside the `.history-strip` `<details>` instead of `<HistoryPanel/>`. The new panel ships the full column set (tier / rule_class / compensation_mode / plausibility_badge / constraint_residual) plus filters and CSV+JSON export — what the user-study analysis pipeline needs. `HistoryPanel` stays in the codebase for chip-with-status uses elsewhere; only the page mount swapped.
+
+**Chip / residual on the event (load-bearing):** the original UI-015 panel design only matched chips to events via `event.sequence`. HTS-101 publishes chips to the bus AND attaches them to the audit event. To bridge, HTS-103 extended `createAuditEvent` with two nullable fields (`chip`, `constraintResidual`) and `createAuditLogPanelState.makeRow` now reads both paths — event-attached (HTS-101) OR bus-published-by-sequence (UI-015 legacy). Future tickets that carry chip data on either path will Just Work. The deepEqual snapshot in `auditEvents.test.js` was updated for the schema bump; no backwards-compat shim was added (the fields default to `null` so existing consumers are unaffected).
+
+**Removed code:** `handleExportLog` + `createInteractionLogExport` / `downloadInteractionLogExport` imports (the new panel owns export); `createHistoryEntries` import + `historyEntries` computed (no longer needed). `HistoryPanel.vue` itself stays as-is for future use.
+
+2 new tests; npm test 694/694; npm run build clean.
+
+---
+
 ## HTS-102 Op-result visual surface (budget bar + compensation selector + label chip)
 
 `BenchmarkViewerPage.vue` now mounts the three previously-built-but-unmounted components: `ConstraintBudgetBar` (above the palette, renders only when the latest op response carries a recognised `law` — i.e. Tier-3 `enforce_conservation`), `CompensationModeSelector` (inline above the palette, visible iff `isCompensationRequired(activeDomainHint, opCategory)` is true), and `PredictedLabelChip` (inside the chart panel, self-subscribes to `labelChipBus`). The chip's `accept` / `override` / `undo` events are wired to update the segment label / restore the pre-op snapshot from a 10-deep undo stack and append typed audit events.

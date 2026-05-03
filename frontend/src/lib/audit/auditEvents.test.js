@@ -78,6 +78,8 @@ test("createEditAuditEvent captures warned label edits in a stable schema", () =
     },
     timestamp: null,
     sequence: null,
+    chip: null,
+    constraintResidual: null,
   });
 });
 
