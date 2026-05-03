@@ -64,7 +64,10 @@ export function buildAcceptPayload({ backend, candidate, crossfadeWidth }) {
     donor_id: candidate.donor_id,
     crossfade_width: width,
   };
-  if (backend === USER_DRAWN_BACKEND && Array.isArray(candidate.values)) {
+  // HTS-104: always inline the resolved donor signal so the backend invoke
+  // route (HTS-100) can build a stub DonorEngine without needing to re-fetch
+  // or look up the donor by id. Without this, NativeGuide picks would 400.
+  if (Array.isArray(candidate.values)) {
     params.donor_values = candidate.values;
   }
   return {

@@ -10,6 +10,7 @@ import WarningPanel from "../components/warnings/WarningPanel.vue";
 import ConstraintBudgetBar from "../components/constraints/ConstraintBudgetBar.vue";
 import CompensationModeSelector from "../components/constraints/CompensationModeSelector.vue";
 import PredictedLabelChip from "../components/relabel/PredictedLabelChip.vue";
+import DonorPicker from "../components/donors/DonorPicker.vue";
 import {
   isCompensationRequired as isCompensationModeRequired,
 } from "../lib/constraints/createCompensationModeSelectorState";
@@ -110,6 +111,7 @@ const selectedCompensationMode = ref(null);
 const compensationModeTouched = ref(false);
 const undoStack = ref([]);
 const UNDO_STACK_LIMIT = 10;
+const donorPickerOpen = ref(false);
 let compatibilityRequestId = 0;
 
 const semanticPacks = ref([]);
@@ -209,6 +211,16 @@ const compensationSelectorVisible = computed(() =>
   isCompensationModeRequired(activeDomainHint.value, selectedSegmentOpCategory.value),
 );
 const lastConstraintLaw = computed(() => operationConstraintResult.value?.law ?? null);
+const donorPickerTargetClass = computed(() => {
+  const candidates = sample.value?.classes ?? sample.value?.metadata?.classes ?? null;
+  const currentLabel = sample.value?.label ?? null;
+  if (Array.isArray(candidates)) {
+    const other = candidates.find((c) => c && c !== currentLabel);
+    if (other) return other;
+    if (candidates[0]) return candidates[0];
+  }
+  return currentLabel ?? 'class-1';
+});
 const comparisonState = computed(() =>
   createModelComparisonState({
     currentSegments: sample.value?.segments ?? [],
@@ -612,6 +624,15 @@ async function handleRunOperation(request) {
 }
 
 async function handleOpInvoked({ tier, op_name, params = {} }) {
+  if (tier === 1 && op_name === 'replace_from_library') {
+    if (!sample.value || !selectedSegment.value) {
+      operationFeedback.value = 'replace_from_library: select a segment first.';
+      return;
+    }
+    donorPickerOpen.value = true;
+    return;
+  }
+
   if (tier === 0) {
     pendingOpName.value = op_name;
     try {
@@ -644,7 +665,7 @@ async function handleOpInvoked({ tier, op_name, params = {} }) {
   await dispatchTier123Op({ tier, op_name, params });
 }
 
-async function dispatchTier123Op({ tier, op_name, params }) {
+async function dispatchTier123Op({ tier, op_name, params, bypassPickerCheck = false }) {
   if (!sample.value || !selectedSegment.value) {
     operationFeedback.value = `${op_name}: select a segment first.`;
     return;
@@ -666,6 +687,7 @@ async function dispatchTier123Op({ tier, op_name, params }) {
       gapInfo: selectedSegmentGapInfo.value,
       domain_hint: activeDomainHint.value,
       compensation_mode: compensationSelectorVisible.value ? selectedCompensationMode.value : null,
+      bypassPickerCheck,
     });
   } catch (buildError) {
     operationFeedback.value =
@@ -764,6 +786,19 @@ function handleChipOverride({ chipId, segmentId, chosenShape, opId }) {
       { sampleId: sample.value?.sampleId ?? null, selectedSegmentId: segmentId },
     ),
   );
+}
+
+function handleDonorAccepted({ tier, op_name, params }) {
+  donorPickerOpen.value = false;
+  if (!params || !Array.isArray(params.donor_values) || params.donor_values.length === 0) {
+    operationFeedback.value = 'replace_from_library: picker did not provide donor values.';
+    return;
+  }
+  dispatchTier123Op({ tier, op_name, params, bypassPickerCheck: true });
+}
+
+function handleDonorPickerClose() {
+  donorPickerOpen.value = false;
 }
 
 function handleChipUndo({ chipId, segmentId, opId }) {
@@ -1170,6 +1205,16 @@ watch(
             @accept="handleChipAccept"
             @override="handleChipOverride"
             @undo="handleChipUndo"
+          />
+
+          <DonorPicker
+            v-if="donorPickerOpen && selectedSegment && sample"
+            :segment-values="sample.values.slice(selectedSegment.start, selectedSegment.end + 1)"
+            :target-class="donorPickerTargetClass"
+            :segment-id="selectedSegment.id"
+            :dataset="sample.datasetName ?? null"
+            @op-invoked="handleDonorAccepted"
+            @close="handleDonorPickerClose"
           />
 
           <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
