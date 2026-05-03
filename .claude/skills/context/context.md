@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-100 Backend op-invocation route (`POST /api/operations/invoke`)
+
+Single HTTP entry point for invoking any Tier 1, Tier 2, or Tier 3 operation on a selected segment. Adds `app/routes/operations.py` (thin route), `app/services/operations/invoke_service.py` (dispatch), `app/schemas/operation_invoke.py` (frozen DTOs), and `schemas/operation-invoke.schema.json`. Tier 0 (`edit_boundary` / `split` / `merge`) keeps its existing routes and is *not* routed through this endpoint. Frontend palette names (`plateau_scale`, `trend_change_slope`, …) map to backend op functions via `_TIER1_REGISTRY` / `_TIER2_REGISTRY` — backend op names alone are ambiguous (e.g. three modules export `amplify`).
+
+**Tier-2 dual-path dispatch (load-bearing):** the registry holds two kinds of Tier-2 ops. Decomposition-first ops take `blob` as their first positional arg (plateau, trend, cycle, transient, noise, step) and are routed through `cf_coordinator.synthesize_counterfactual` so OP-051 projection + OP-040 relabel + OP-041 chip emission all run via the existing pipeline. Raw-signal ops take `X_seg` as their first positional arg (every spike op) and would crash if passed through the coordinator (which calls `op_tier2(blob, **params)`). The dispatcher inspects the first parameter name with `inspect.signature` and routes accordingly; raw-signal Tier-2 ops emit the `LabelChip` manually with `tier=2` and `edit_space="signal"` instead of `"coefficient"`. Future Tier-2 op authors: keep the convention — first param is either `blob` or `X_seg`, not both.
+
+**audit_id contract:** snapshot `len(default_audit_log)` *before* invoking the op; if any record was appended, `audit_id` is the pre-call length (the index of the just-appended record). Tier-3 `aggregate` is read-only by design and returns `audit_id=None`. Tests pin this via `default_audit_log.records[audit_id] == returned_chip`.
+
+**Param-injection helpers:** `t` (segment time axis) and `pre_shape` are auto-injected into op_params if the op signature accepts them and the caller did not supply them. This lets the frontend send minimal payloads (e.g. `{alpha: 0.5}` for `change_slope`) without knowing each op's full signature.
+
+12 new tests; full backend 2509/2511 (only the 2 pre-existing unrelated failures remain).
+
+---
+
 ## VAL-041 Pre-registered analysis pipeline (lme4 + brms + TOST + Brier)
 
 Authored the full R/Rmd analysis pipeline under `study/analysis/`: `_constants.R` (single source of truth — every threshold from VAL-040 §9 lives here, parametrically tested); 9 ordered analysis scripts (`00-make-processed-data.R` through `08-tables.Rmd`); `make_synthetic.R` (300-participant CI fixture); `Makefile` (`analyse` / `synthetic-smoke` / `replication-zip` / `clean` targets); `renv.lock` + `pyproject.toml` + `Dockerfile` (`rocker/r-ver:4.4.1`); `study/data/README.md` data dictionary; `study/build_replication_package.sh`. 76 Python invariant tests in `backend/tests/test_pipeline_invariants.py`.
