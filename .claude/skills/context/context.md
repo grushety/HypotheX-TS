@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-102 Op-result visual surface (budget bar + compensation selector + label chip)
+
+`BenchmarkViewerPage.vue` now mounts the three previously-built-but-unmounted components: `ConstraintBudgetBar` (above the palette, renders only when the latest op response carries a recognised `law` — i.e. Tier-3 `enforce_conservation`), `CompensationModeSelector` (inline above the palette, visible iff `isCompensationRequired(activeDomainHint, opCategory)` is true), and `PredictedLabelChip` (inside the chart panel, self-subscribes to `labelChipBus`). The chip's `accept` / `override` / `undo` events are wired to update the segment label / restore the pre-op snapshot from a 10-deep undo stack and append typed audit events.
+
+**Compensation-mode gate (load-bearing):** the AC asks for "op button disabled until the user picks a mode." Since OperationButton doesn't accept a per-call disabled prop, the page implements the same effect at the dispatcher: when `compensationSelectorVisible && !compensationModeTouched`, `dispatchTier123Op` short-circuits with the AC hint message and never fires the request. From the user's standpoint this is identical to a disabled button — they see the same prompt, click the mode, then click the op. Future tickets that thread per-button gating into OperationPalette can swap this for visual disabled state without changing the gate logic.
+
+**Domain-hint resolution (load-bearing):** `activeDomainHint` prefers `selectedSegment.scope.domainHintKey`, falls back to `sample.domainHint` / `sample.metadata?.domainHint`, else null. The current benchmark loader populates neither path, so the selector stays hidden in today's prototype data. As soon as HTS-106 (scope/domain picker) lands or a domain-typed dataset arrives, the selector mounts automatically — no extra wiring needed.
+
+**Undo stack:** every successful op-call snapshots `{values, segments}` deep copies and pushes onto `undoStack` (FIFO-eviction past 10). Chip-undo pops the top and restores. Aggregate / picker-pending / failed dispatches do not mutate the stack — only round-trips that successfully changed sample state.
+
+**No Vue mount harness:** the integration smoke test (`dispatchIntegration.test.js`) pins the contracts the page wires up (labelChipBus round-trip, isCompensationRequired truth table, createConstraintBudgetState shape, buildInvokeRequest forwarding) rather than mounting `BenchmarkViewerPage.vue` directly. Frontend test runner is plain `node --test` — no jsdom, no @vue/test-utils. Future page-level mount tests would need a separate harness ticket.
+
+4 new tests; npm test 692/692; npm run build clean.
+
+---
+
 ## HTS-101 Frontend op dispatcher (Tier 1/2 + picker-free Tier-3)
 
 `BenchmarkViewerPage.handleOpInvoked` now actually invokes Tier 1/2/3 ops via `POST /api/operations/invoke` instead of returning `"<op_name> (tier <n>): not yet implemented"`. New `frontend/src/services/api/operationsApi.js` (`invokeOperation`) handles the HTTP call; new pure `frontend/src/lib/operations/buildInvokeRequest.js` builds the request body or returns a `{kind: 'picker-pending', message}` sentinel for the four picker-bound ops (`replace_from_library`, `decompose`, `align_warp`, and `suppress` on a gap-heavy segment). The pickers themselves arrive in HTS-104/105/106.
