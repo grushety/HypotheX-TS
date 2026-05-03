@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "operation-invoke.schema.json",
+  "title": "POST /api/operations/invoke request payload (HTS-100)",
+  "description": "Request body for invoking a Tier 1, Tier 2, or Tier 3 operation on a selected segment. Tier 0 (edit_boundary, split, merge) keeps its existing routes and is not handled by this schema.",
+  "type": "object",
+  "required": ["series_id", "segment_id", "tier", "op_name", "sample_values", "segments"],
+  "additionalProperties": false,
+  "properties": {
+    "series_id": {
+      "type": "string",
+      "description": "Identifier of the time series containing the target segment."
+    },
+    "segment_id": {
+      "type": "string",
+      "description": "Identifier of the segment that the operation targets."
+    },
+    "tier": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "Operation tier. Tier 0 is not routed through this endpoint."
+    },
+    "op_name": {
+      "type": "string",
+      "description": "Canonical operation name as registered in the dispatch table (frontend palette names)."
+    },
+    "params": {
+      "type": "object",
+      "description": "Op-specific parameters. Validated per op by the service layer.",
+      "default": {}
+    },
+    "domain_hint": {
+      "type": ["string", "null"],
+      "description": "Optional domain specialisation (e.g. 'remote-sensing', 'seismo-geodesy')."
+    },
+    "sample_values": {
+      "type": "array",
+      "items": { "type": "number" },
+      "description": "Full series values."
+    },
+    "segments": {
+      "type": "array",
+      "description": "All segments of the segmentation. Bounds are inclusive integer indices into sample_values.",
+      "items": {
+        "type": "object",
+        "required": ["id", "start", "end", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "start": { "type": "integer", "minimum": 0 },
+          "end": { "type": "integer", "minimum": 0 },
+          "label": { "type": "string" }
+        }
+      }
+    },
+    "compensation_mode": {
+      "type": ["string", "null"],
+      "enum": ["naive", "local", "coupled", null],
+      "description": "Required for ops in OP-051's required-mode set; ignored otherwise."
+    },
+    "target_class": {
+      "type": ["integer", "null"],
+      "description": "Target class label for validators that need it (e.g. yNN)."
+    }
+  }
+}
