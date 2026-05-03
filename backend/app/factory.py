@@ -8,6 +8,7 @@ from app.routes.benchmarks import benchmarks_bp
 from app.routes.donors import donors_bp
 from app.routes.health import health_bp
 from app.routes.operations import operations_bp
+from app.routes.segments import segments_bp
 from app.routes.semantic_packs import semantic_packs_bp
 from app.services.suggestions import BoundarySuggestionService
 
@@ -38,4 +39,5 @@ def create_app(config_object: type[Config] = Config) -> Flask:
     app.register_blueprint(semantic_packs_bp)
     app.register_blueprint(operations_bp)
     app.register_blueprint(donors_bp)
+    app.register_blueprint(segments_bp)
     return app

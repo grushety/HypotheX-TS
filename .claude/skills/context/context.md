@@ -6,6 +6,24 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-106 GapFillPicker + ScopeAttributeEditor wired into main page
+
+End-to-end wiring for the two timeline-side picker components.
+
+**GapFillPicker:** `handleOpInvoked` for `{tier:1, op_name:'suppress'}` now routes to the picker when the selected segment is gap-heavy (`gapInfo.exceedsThreshold && !gapInfo.isFilled`) — this replaces the HTS-101 "picker-pending" sentinel for that exact case. Apply forwards `buildSuppressPayload`'s output through `dispatchTier123Op(..., bypassPickerCheck:true)`. Cancel/Escape just closes.
+
+**ScopeAttributeEditor:** new backend route `POST /api/segments/<id>/scope` (`backend/app/routes/segments.py`) validates the scope dict (`window_size` ≥ 1; `mode ∈ {fixed, sliding}`; `reference` required for `fixed`; `domain_hint` string-or-null), persists on an in-process `ScopeStore`, appends a typed `ScopeUpdateAudit` to `default_audit_log`. Frontend wires a right-click on the segment-list chip → `Edit scope…` context menu → opens the modal. On Save, `updateSegmentScope` POSTs to the new route; on success the segment's `scope` is spliced onto `sample.segments` and a `scope_updated` audit event is appended; on failure an inline error renders next to the modal.
+
+**Permissive scope-store policy (load-bearing):** the route does not 404 on unknown segments by default. Today's prototype loader doesn't pre-register segments (they're re-derived from the dataset each `load_sample` call), so a strict 404 would block every legitimate edit. The route exposes `SCOPE_REQUIRE_KNOWN_SEGMENT` as an opt-in for future tickets that promote segment state into a real registry. The audit log is the source-of-truth for "this edit happened" until then.
+
+**Trigger-reclassify pass-through (load-bearing):** the frontend always emits `triggerReclassify: true` on Save; the backend stores the flag on the audit record and echoes it in the response but does NOT yet invoke OP-040 reclassifier — that integration belongs to a future ticket. The audit log preserves the intent so a later OP-040 subscriber can replay flagged audits without data loss.
+
+**Closeable-panels invariant extension:** `closeAllPanels()` now also dismisses GapFillPicker / scope context menu / scope editor. Global Escape handler closes context-menu → gap-fill → align-warp → decomposition-editor in priority order.
+
+10 new backend route tests + 3 new frontend tests; pytest 33/33 routes total; npm test 698/698; npm run build clean.
+
+---
+
 ## HTS-105 Tier-3 panels (AlignWarp + DecompositionEditor)
 
 End-to-end wiring for the two Tier-3 panel-bound ops:
