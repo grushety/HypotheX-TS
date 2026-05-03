@@ -7,6 +7,12 @@ import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
 import WarningPanel from "../components/warnings/WarningPanel.vue";
+import ConstraintBudgetBar from "../components/constraints/ConstraintBudgetBar.vue";
+import CompensationModeSelector from "../components/constraints/CompensationModeSelector.vue";
+import PredictedLabelChip from "../components/relabel/PredictedLabelChip.vue";
+import {
+  isCompensationRequired as isCompensationModeRequired,
+} from "../lib/constraints/createCompensationModeSelectorState";
 import { AVAILABLE_SEGMENT_LABELS } from "../lib/segments/updateSegmentLabel";
 import {
   appendAuditEvent,
@@ -105,6 +111,10 @@ const adaptVersionId = ref(null);
 const selectedLabeler = ref("prototype");
 const pendingOpName = ref(null);
 const aggregateResult = ref(null);
+const selectedCompensationMode = ref(null);
+const compensationModeTouched = ref(false);
+const undoStack = ref([]);
+const UNDO_STACK_LIMIT = 10;
 let compatibilityRequestId = 0;
 
 const semanticPacks = ref([]);
@@ -193,6 +203,18 @@ const selectedSegmentGapInfo = computed(() => {
   const segmentValues = values.slice(seg.start, seg.end + 1);
   return classifyGap({ segment: seg, segmentValues });
 });
+const activeDomainHint = computed(() => {
+  const segDomain = selectedSegment.value?.scope?.domainHintKey;
+  if (segDomain) return segDomain;
+  return sample.value?.domainHint ?? sample.value?.metadata?.domainHint ?? null;
+});
+const selectedSegmentOpCategory = computed(() => {
+  return selectedSegment.value?.shape ?? selectedSegment.value?.label ?? null;
+});
+const compensationSelectorVisible = computed(() =>
+  isCompensationModeRequired(activeDomainHint.value, selectedSegmentOpCategory.value),
+);
+const lastConstraintLaw = computed(() => operationConstraintResult.value?.law ?? null);
 const comparisonState = computed(() =>
   createModelComparisonState({
     currentSegments: sample.value?.segments ?? [],
@@ -634,6 +656,11 @@ async function dispatchTier123Op({ tier, op_name, params }) {
     return;
   }
 
+  if (compensationSelectorVisible.value && !compensationModeTouched.value) {
+    operationFeedback.value = 'Choose a compensation mode to confirm this op.';
+    return;
+  }
+
   let plan;
   try {
     plan = buildInvokeRequest({
@@ -643,6 +670,8 @@ async function dispatchTier123Op({ tier, op_name, params }) {
       sample: sample.value,
       selectedSegment: selectedSegment.value,
       gapInfo: selectedSegmentGapInfo.value,
+      domain_hint: activeDomainHint.value,
+      compensation_mode: compensationSelectorVisible.value ? selectedCompensationMode.value : null,
     });
   } catch (buildError) {
     operationFeedback.value =
@@ -659,7 +688,11 @@ async function dispatchTier123Op({ tier, op_name, params }) {
 
   pendingOpName.value = op_name;
   try {
+    const snapshot = sample.value
+      ? { values: [...(sample.value.values ?? [])], segments: (sample.value.segments ?? []).map((s) => ({ ...s })) }
+      : null;
     const response = await invokeOperation(plan.body);
+    if (snapshot) pushUndoSnapshot(snapshot);
     applyInvokeResponse({ tier, op_name, params, response });
   } catch (requestError) {
     operationFeedback.value =
@@ -667,6 +700,100 @@ async function dispatchTier123Op({ tier, op_name, params }) {
   } finally {
     pendingOpName.value = null;
   }
+}
+
+function pushUndoSnapshot(snapshot) {
+  const next = [...undoStack.value, snapshot];
+  if (next.length > UNDO_STACK_LIMIT) next.shift();
+  undoStack.value = next;
+}
+
+function popUndoSnapshot() {
+  if (undoStack.value.length === 0) return null;
+  const next = [...undoStack.value];
+  const top = next.pop();
+  undoStack.value = next;
+  return top;
+}
+
+function handleCompensationModeChange(mode) {
+  selectedCompensationMode.value = mode;
+  compensationModeTouched.value = true;
+}
+
+watch(selectedSegmentId, () => {
+  selectedCompensationMode.value = null;
+  compensationModeTouched.value = false;
+});
+
+function handleChipAccept({ chipId, segmentId, newShape, opId }) {
+  if (!sample.value || !segmentId || !newShape) return;
+  const segs = (sample.value.segments ?? []).map((seg) =>
+    seg.id === segmentId ? { ...seg, label: newShape, shape: newShape } : seg,
+  );
+  sample.value = { ...sample.value, segments: segs };
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createOperationAuditEvent(
+      { type: 'chip-accept', chipId, segmentId, newShape, opId },
+      {
+        ok: true,
+        constraintStatus: SOFT_CONSTRAINT_STATUS.PASS,
+        warnings: [],
+        operationResult: { affectedSegmentIds: [segmentId] },
+        message: `Accepted predicted label "${newShape}".`,
+        selectedSegmentId: segmentId,
+      },
+      { sampleId: sample.value?.sampleId ?? null, selectedSegmentId: segmentId },
+    ),
+  );
+}
+
+function handleChipOverride({ chipId, segmentId, chosenShape, opId }) {
+  if (!sample.value || !segmentId || !chosenShape) return;
+  const segs = (sample.value.segments ?? []).map((seg) =>
+    seg.id === segmentId ? { ...seg, label: chosenShape, shape: chosenShape } : seg,
+  );
+  sample.value = { ...sample.value, segments: segs };
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createOperationAuditEvent(
+      { type: 'chip-override', chipId, segmentId, chosenShape, opId },
+      {
+        ok: true,
+        constraintStatus: SOFT_CONSTRAINT_STATUS.PASS,
+        warnings: [],
+        operationResult: { affectedSegmentIds: [segmentId] },
+        message: `Overrode predicted label to "${chosenShape}".`,
+        selectedSegmentId: segmentId,
+      },
+      { sampleId: sample.value?.sampleId ?? null, selectedSegmentId: segmentId },
+    ),
+  );
+}
+
+function handleChipUndo({ chipId, segmentId, opId }) {
+  const snapshot = popUndoSnapshot();
+  if (!snapshot || !sample.value) {
+    operationFeedback.value = 'Nothing to undo.';
+    return;
+  }
+  sample.value = { ...sample.value, values: snapshot.values, segments: snapshot.segments };
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createOperationAuditEvent(
+      { type: 'chip-undo', chipId, segmentId, opId },
+      {
+        ok: true,
+        constraintStatus: SOFT_CONSTRAINT_STATUS.PASS,
+        warnings: [],
+        operationResult: { affectedSegmentIds: [segmentId].filter(Boolean) },
+        message: 'Reverted last operation.',
+        selectedSegmentId: segmentId ?? selectedSegmentId.value,
+      },
+      { sampleId: sample.value?.sampleId ?? null, selectedSegmentId: segmentId ?? selectedSegmentId.value },
+    ),
+  );
 }
 
 function applyInvokeResponse({ tier, op_name, params, response }) {
@@ -1061,6 +1188,12 @@ watch(
             @move-boundary="handleMoveBoundary"
           />
 
+          <PredictedLabelChip
+            @accept="handleChipAccept"
+            @override="handleChipOverride"
+            @undo="handleChipUndo"
+          />
+
           <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
         </div>
 
@@ -1118,6 +1251,25 @@ watch(
             </select>
           </label>
         </div>
+
+        <ConstraintBudgetBar
+          v-if="lastConstraintLaw"
+          :law="lastConstraintLaw"
+          :compensation-mode="operationConstraintResult?.compensation_mode ?? null"
+          :initial-residual="operationConstraintResult?.initial_residual ?? null"
+          :final-residual="operationConstraintResult?.final_residual ?? null"
+          :tolerance="operationConstraintResult?.tolerance ?? null"
+        />
+
+        <CompensationModeSelector
+          v-if="compensationSelectorVisible"
+          :domain-hint="activeDomainHint"
+          :op-category="selectedSegmentOpCategory"
+          :model-value="selectedCompensationMode"
+          :has-explicit-choice="compensationModeTouched"
+          :disabled="pendingOpName !== null"
+          @update:model-value="handleCompensationModeChange"
+        />
 
         <OperationPalette
           :selected-segment-ids="tieredPaletteSelectedIds"
