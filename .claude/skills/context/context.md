@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-101 Frontend op dispatcher (Tier 1/2 + picker-free Tier-3)
+
+`BenchmarkViewerPage.handleOpInvoked` now actually invokes Tier 1/2/3 ops via `POST /api/operations/invoke` instead of returning `"<op_name> (tier <n>): not yet implemented"`. New `frontend/src/services/api/operationsApi.js` (`invokeOperation`) handles the HTTP call; new pure `frontend/src/lib/operations/buildInvokeRequest.js` builds the request body or returns a `{kind: 'picker-pending', message}` sentinel for the four picker-bound ops (`replace_from_library`, `decompose`, `align_warp`, and `suppress` on a gap-heavy segment). The pickers themselves arrive in HTS-104/105/106.
+
+**Slider-commit alias contract (load-bearing):** the UI-016 amplify/dampen slider emits `op_name: 'amplify_amplitude'` (the *backend function name*, not the palette name) so that signed-α handles both directions through one op. The backend `_TIER2_REGISTRY` now holds both palette keys (`cycle_amplify`, `cycle_damp`) AND the slider-commit alias (`amplify_amplitude`). Any future slider whose `commitOpName` differs from its palette `op_name` must add the alias to `_TIER2_REGISTRY` or the round-trip will 400.
+
+**Picker-pending sentinel pattern (load-bearing):** `buildInvokeRequest` returns `{kind: 'request', body}` *or* `{kind: 'picker-pending', message}` — never null, never throw for picker cases. The Vue dispatcher reads the discriminant once. UnknownOp is the only synchronous throw (caught and shown to the user before any backend round-trip). This pattern keeps the dispatcher branch-free per op type.
+
+**Default-params helper:** `defaultParamsFor(opName, params)` fills sensible defaults for button-only ops the user clicks without slider input (`mute_zero` → `{fill:'zero'}`, `aggregate` → `{metric:'peak'}`, etc.). Slider-driven ops always pass explicit `{alpha}`. Future Tier-1/2/3 ops added to the dispatch sets must extend this helper if they need defaults — otherwise the backend op will receive `params={}` and either succeed (if all kwargs default) or 400.
+
+9 new frontend tests (688 total now pass); npm run build clean; backend invoke route still 12/12.
+
+---
+
 ## HTS-100 Backend op-invocation route (`POST /api/operations/invoke`)
 
 Single HTTP entry point for invoking any Tier 1, Tier 2, or Tier 3 operation on a selected segment. Adds `app/routes/operations.py` (thin route), `app/services/operations/invoke_service.py` (dispatch), `app/schemas/operation_invoke.py` (frozen DTOs), and `schemas/operation-invoke.schema.json`. Tier 0 (`edit_boundary` / `split` / `merge`) keeps its existing routes and is *not* routed through this endpoint. Frontend palette names (`plateau_scale`, `trend_change_slope`, …) map to backend op functions via `_TIER1_REGISTRY` / `_TIER2_REGISTRY` — backend op names alone are ambiguous (e.g. three modules export `amplify`).

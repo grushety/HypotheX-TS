@@ -154,6 +154,7 @@ _TIER2_REGISTRY: dict[str, Callable[..., Any]] = {
     "cycle_shift_phase": _t2_cycle.phase_shift,
     "cycle_amplify": _t2_cycle.amplify_amplitude,
     "cycle_damp": _t2_cycle.dampen_amplitude,
+    "amplify_amplitude": _t2_cycle.amplify_amplitude,  # slider-commit alias (UI-016)
     "cycle_change_frequency": _t2_cycle.change_period,
     "cycle_remove_harmonics": _t2_cycle.change_harmonic_content,
     "cycle_add_harmonics": _t2_cycle.change_harmonic_content,

@@ -28,6 +28,10 @@ import {
 import { createOperationPaletteState } from "../lib/operations/createOperationPaletteState";
 import { createTieredPaletteState } from "../lib/operations/createTieredPaletteState";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
+import { buildInvokeRequest, UnknownOpError } from "../lib/operations/buildInvokeRequest";
+import { invokeOperation } from "../services/api/operationsApi";
+import { labelChipBus } from "../lib/audit/labelChipBus";
+import { classifyGap } from "../lib/gaps/createGapGatingState";
 import {
   executeMoveBoundaryAction,
   executeUpdateSegmentLabelAction,
@@ -100,6 +104,7 @@ const adaptError = ref("");
 const adaptVersionId = ref(null);
 const selectedLabeler = ref("prototype");
 const pendingOpName = ref(null);
+const aggregateResult = ref(null);
 let compatibilityRequestId = 0;
 
 const semanticPacks = ref([]);
@@ -180,6 +185,13 @@ const tieredPaletteSelectedIds = computed(() =>
 const tieredPaletteSelectedShapes = computed(() => {
   const shape = selectedSegment.value?.shape ?? selectedSegment.value?.label ?? null;
   return shape ? [shape] : [];
+});
+const selectedSegmentGapInfo = computed(() => {
+  const seg = selectedSegment.value;
+  const values = sample.value?.values;
+  if (!seg || !Array.isArray(values)) return null;
+  const segmentValues = values.slice(seg.start, seg.end + 1);
+  return classifyGap({ segment: seg, segmentValues });
 });
 const comparisonState = computed(() =>
   createModelComparisonState({
@@ -583,7 +595,7 @@ async function handleRunOperation(request) {
   editConstraintResult.value = null;
 }
 
-async function handleOpInvoked({ tier, op_name }) {
+async function handleOpInvoked({ tier, op_name, params = {} }) {
   if (tier === 0) {
     pendingOpName.value = op_name;
     try {
@@ -610,9 +622,95 @@ async function handleOpInvoked({ tier, op_name }) {
     } finally {
       pendingOpName.value = null;
     }
-  } else {
-    operationFeedback.value = `${op_name} (tier ${tier}): not yet implemented.`;
+    return;
   }
+
+  await dispatchTier123Op({ tier, op_name, params });
+}
+
+async function dispatchTier123Op({ tier, op_name, params }) {
+  if (!sample.value || !selectedSegment.value) {
+    operationFeedback.value = `${op_name}: select a segment first.`;
+    return;
+  }
+
+  let plan;
+  try {
+    plan = buildInvokeRequest({
+      tier,
+      op_name,
+      params,
+      sample: sample.value,
+      selectedSegment: selectedSegment.value,
+      gapInfo: selectedSegmentGapInfo.value,
+    });
+  } catch (buildError) {
+    operationFeedback.value =
+      buildError instanceof UnknownOpError
+        ? `${op_name}: unknown op.`
+        : (buildError.message ?? `${op_name}: failed to build request.`);
+    return;
+  }
+
+  if (plan.kind === 'picker-pending') {
+    operationFeedback.value = plan.message;
+    return;
+  }
+
+  pendingOpName.value = op_name;
+  try {
+    const response = await invokeOperation(plan.body);
+    applyInvokeResponse({ tier, op_name, params, response });
+  } catch (requestError) {
+    operationFeedback.value =
+      requestError instanceof Error ? requestError.message : `${op_name}: request failed.`;
+  } finally {
+    pendingOpName.value = null;
+  }
+}
+
+function applyInvokeResponse({ tier, op_name, params, response }) {
+  if (Array.isArray(response.values) && selectedSegment.value && Array.isArray(sample.value?.values)) {
+    const seg = selectedSegment.value;
+    const next = sample.value.values.slice();
+    const len = Math.min(response.values.length, seg.end - seg.start + 1);
+    for (let i = 0; i < len; i += 1) next[seg.start + i] = response.values[i];
+    sample.value = { ...sample.value, values: next };
+  }
+
+  if (response.label_chip) {
+    labelChipBus.publish(response.label_chip);
+  }
+
+  operationConstraintResult.value = response.constraint_residual ?? null;
+
+  if (response.aggregate_result != null) {
+    aggregateResult.value = response.aggregate_result;
+    operationFeedback.value = `${op_name}: ${JSON.stringify(response.aggregate_result)}`;
+  } else {
+    operationFeedback.value = `${op_name}: applied.`;
+  }
+  editFeedback.value = "";
+  editConstraintResult.value = null;
+
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createOperationAuditEvent(
+      { type: op_name, tier, op_name, params },
+      {
+        ok: true,
+        constraintStatus: response.constraint_residual ? SOFT_CONSTRAINT_STATUS.WARN : SOFT_CONSTRAINT_STATUS.PASS,
+        warnings: [],
+        operationResult: { affectedSegmentIds: [selectedSegmentId.value].filter(Boolean) },
+        message: `${op_name}: applied.`,
+        selectedSegmentId: selectedSegmentId.value,
+      },
+      {
+        sampleId: sample.value?.sampleId ?? null,
+        selectedSegmentId: selectedSegmentId.value,
+      },
+    ),
+  );
 }
 
 function handleUpdateLabeler(labeler) {
