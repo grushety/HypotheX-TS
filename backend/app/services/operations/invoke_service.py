@@ -245,6 +245,9 @@ def _dispatch_tier1(
     params = dict(req.params)
     params.setdefault("pre_shape", seg.label)
 
+    if req.op_name == "replace_from_library":
+        params = _prepare_replace_from_library_params(params)
+
     try:
         if req.op_name in ("scale", "offset", "mute_zero"):
             params.setdefault("blob", None)
@@ -723,3 +726,45 @@ def _jsonable(value: Any) -> Any:
     if isinstance(value, (np.floating, np.integer)):
         return float(value)
     return value
+
+
+class _PrebuiltDonorEngine:
+    """Tier-1 donor engine that returns pre-fetched donor values verbatim.
+
+    The HTS-104 picker resolves the donor signal client-side (NativeGuide
+    via ``/api/donors/propose`` then accepted into ``params.donor_values``;
+    UserDrawn from the sketchpad). The invoke route therefore never needs
+    to construct a full DonorEngine — it just wraps the resolved values
+    in this stub so ``replace_from_library`` can call ``propose_donor``.
+    """
+
+    def __init__(self, backend_name: str, donor_values: np.ndarray) -> None:
+        self.backend_name = backend_name
+        self._values = np.asarray(donor_values, dtype=np.float64)
+
+    def propose_donor(self, target_segment: np.ndarray, target_class: str):  # noqa: ARG002
+        return self._values
+
+
+def _prepare_replace_from_library_params(params: dict[str, Any]) -> dict[str, Any]:
+    """Translate the picker's ``{backend, donor_id, donor_values, …}`` params
+    into the kwargs ``replace_from_library`` expects.
+
+    The picker (HTS-104) inlines donor_values into ``params.donor_values``
+    so the route never needs to know which dataset / corpus the donor
+    came from. We unwrap that into a ``_PrebuiltDonorEngine`` and a
+    ``target_class`` (defaulted to an empty string when the picker has
+    no class — the engine ignores it).
+    """
+    new_params: dict[str, Any] = dict(params)
+    backend = new_params.pop("backend", "Prebuilt")
+    new_params.pop("donor_id", None)
+    donor_values = new_params.pop("donor_values", None)
+    if donor_values is None:
+        raise MalformedParamsError(
+            "replace_from_library: params.donor_values is required (the picker "
+            "must inline the resolved donor signal before invocation)."
+        )
+    new_params["donor_engine"] = _PrebuiltDonorEngine(str(backend), donor_values)
+    new_params.setdefault("target_class", "")
+    return new_params

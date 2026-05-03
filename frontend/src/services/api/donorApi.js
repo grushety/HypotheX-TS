@@ -56,7 +56,7 @@ async function readJsonResponse(response, label) {
 }
 
 export async function proposeDonor(
-  { backend, segmentValues, targetClass, k = 0, excludeIds = [] },
+  { backend, segmentValues, targetClass, k = 0, excludeIds = [], dataset = null },
   fetchImpl = fetch,
 ) {
   if (!backend) throw new Error('proposeDonor requires backend.');
@@ -73,6 +73,7 @@ export async function proposeDonor(
     k: Number(k) || 0,
     exclude_ids: Array.isArray(excludeIds) ? excludeIds : [],
   };
+  if (dataset) body.dataset = String(dataset);
   const response = await fetchImpl('/api/donors/propose', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

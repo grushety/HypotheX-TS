@@ -118,6 +118,25 @@ test('mute_zero default fill is "zero"', () => {
   assert.equal(plan.body.params.fill, 'zero');
 });
 
+test('bypassPickerCheck=true lets replace_from_library through to a real request (HTS-104)', () => {
+  const plan = buildInvokeRequest({
+    tier: 1,
+    op_name: 'replace_from_library',
+    params: {
+      backend: 'NativeGuide',
+      donor_id: 'native_guide:0',
+      donor_values: [0.1, 0.2, 0.3, 0.4, 0.5],
+      crossfade_width: 0.1,
+    },
+    sample: SAMPLE,
+    selectedSegment: SELECTED,
+    bypassPickerCheck: true,
+  });
+  assert.equal(plan.kind, 'request');
+  assert.equal(plan.body.op_name, 'replace_from_library');
+  assert.deepEqual(plan.body.params.donor_values, [0.1, 0.2, 0.3, 0.4, 0.5]);
+});
+
 test('amplify_amplitude (slider commit alias) dispatches as Tier-2', () => {
   const plan = buildInvokeRequest({
     tier: 2,

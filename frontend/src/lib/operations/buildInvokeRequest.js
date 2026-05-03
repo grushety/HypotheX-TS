@@ -119,6 +119,7 @@ export function buildInvokeRequest({
   domain_hint = null,
   compensation_mode = null,
   target_class = null,
+  bypassPickerCheck = false,
 }) {
   const knownTiers = { 1: TIER1_OPS, 2: TIER2_OPS, 3: TIER3_OPS };
   const tierOps = knownTiers[tier];
@@ -129,10 +130,10 @@ export function buildInvokeRequest({
     throw new UnknownOpError(op_name);
   }
 
-  if (PICKER_BOUND_OPS.has(op_name)) {
+  if (PICKER_BOUND_OPS.has(op_name) && !bypassPickerCheck) {
     return { kind: 'picker-pending', message: `${op_name}: picker pending` };
   }
-  if (op_name === 'suppress' && segmentIsGapHeavy(gapInfo)) {
+  if (op_name === 'suppress' && segmentIsGapHeavy(gapInfo) && !bypassPickerCheck) {
     return { kind: 'picker-pending', message: 'suppress: GapFillPicker pending' };
   }
 

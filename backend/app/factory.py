@@ -5,6 +5,7 @@ from app.extensions import cors, db
 import app.models  # noqa: F401 - Register SQLAlchemy models before create_all.
 from app.routes.audit import audit_bp
 from app.routes.benchmarks import benchmarks_bp
+from app.routes.donors import donors_bp
 from app.routes.health import health_bp
 from app.routes.operations import operations_bp
 from app.routes.semantic_packs import semantic_packs_bp
@@ -36,4 +37,5 @@ def create_app(config_object: type[Config] = Config) -> Flask:
     app.register_blueprint(audit_bp)
     app.register_blueprint(semantic_packs_bp)
     app.register_blueprint(operations_bp)
+    app.register_blueprint(donors_bp)
     return app

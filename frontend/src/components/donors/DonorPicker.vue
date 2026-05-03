@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import {
   DEFAULT_BACKEND,
@@ -18,6 +18,7 @@ const props = defineProps({
   segmentValues: { type: Array, default: () => [] },
   targetClass: { type: String, default: '' },
   segmentId: { type: String, default: null },
+  dataset: { type: String, default: null },
   fetchImpl: { type: Function, default: null },
 });
 
@@ -102,6 +103,7 @@ async function loadCandidates() {
         targetClass: props.targetClass,
         k: kIndex.value,
         excludeIds: excludeIds.value,
+        dataset: props.dataset,
       },
       fetcher,
     );
@@ -177,8 +179,17 @@ watch(
   },
 );
 
+function handleEscape(event) {
+  if (event.key === 'Escape') emit('close');
+}
+
 onMounted(() => {
   if (!state.value.isUserDrawn) loadCandidates();
+  if (typeof window !== 'undefined') window.addEventListener('keydown', handleEscape);
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') window.removeEventListener('keydown', handleEscape);
 });
 </script>
 

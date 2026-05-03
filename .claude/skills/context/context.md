@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## HTS-104 Donor flow (`POST /api/donors/propose` + DonorPicker for `replace_from_library`)
+
+End-to-end Tier-1 `replace_from_library` flow. New backend route `POST /api/donors/propose` (`backend/app/routes/donors.py`) ranks the dataset's training-corpus members of `target_class` by DTW distance and returns the candidate at offset `k` after removing `exclude_ids` (mirrors the picker's "one at a time, walked via k" pattern). SETSDonor / DiscordDonor / TimeGAN / ShapeDBA → 501 with `{supported: ['NativeGuide', 'UserDrawn']}`. UserDrawn → 400 (frontend bypasses the network). Frontend mounts DonorPicker in the chart panel when `replace_from_library` is clicked; on Accept, the picker's payload (with inlined `donor_values`) flows through the standard HTS-101 dispatcher with a new `bypassPickerCheck: true` flag.
+
+**Donor-id-vs-values trade-off (load-bearing):** the original UI-008 design used `donor_id` alone (assumed a server-side per-session donor cache). HTS-104 inlines `donor_values` directly into the invoke params instead. The new `_PrebuiltDonorEngine` (in `invoke_service.py`) is a `DonorEngine`-shaped stub that returns the inlined values — no cache, no session state, identical code path for both NativeGuide and UserDrawn. Cost: ~one segment-length array of floats per invocation. Future donor backends can opt into the same pattern by setting `donor_values` in the picker payload.
+
+**`bypassPickerCheck` flag (load-bearing):** `buildInvokeRequest` returns `{kind: 'picker-pending'}` for `replace_from_library` / `decompose` / `align_warp` / gap-heavy `suppress` so the user gets immediate "picker pending" feedback. After a picker resolves, the caller passes `bypassPickerCheck: true` to opt out of the gate. HTS-105 (Tier-3 pickers) and HTS-106 (gap/scope pickers) will use the same flag.
+
+**Dataset-name in donor request (load-bearing):** `proposeDonor` now accepts and forwards a `dataset` field; the route uses it to load the training corpus via `DatasetRegistry`. Without this, the route can't know which corpus to rank against. The frontend passes `sample.datasetName`; non-benchmark sources (manual sketch input) won't reach this route at all.
+
+9 new backend route tests, 1 new frontend test (696 total — 695 frontend + 1 backend recount); npm run build clean.
+
+---
+
 ## HTS-103 AuditLogPanel replaces HistoryPanel in bottom strip
 
 `BenchmarkViewerPage.vue` now mounts `<AuditLogPanel/>` (UI-015) inside the `.history-strip` `<details>` instead of `<HistoryPanel/>`. The new panel ships the full column set (tier / rule_class / compensation_mode / plausibility_badge / constraint_residual) plus filters and CSV+JSON export — what the user-study analysis pipeline needs. `HistoryPanel` stays in the codebase for chip-with-status uses elsewhere; only the page mount swapped.
