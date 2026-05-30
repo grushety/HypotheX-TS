@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-05 Fidelity "Model sees this" strip
+
+Added the EVIDENCE-zone trust feature: a collapsible strip showing the exact preprocessed series the model consumed, plus an ordered list of every input-side transform. `frontend/src/components/evidence/FidelityStrip.vue` collapses to a one-liner ("Model sees this · N transforms · ✓ compatible · L values") and expands to a numbered transform list + raw-vs-model SVG overlay + compatibility-warning block (`role="alert"`). For typical 1-D float input via `predict-values` the strip shows "identity (0 transforms)" with an "identical to edit" tag in the overlay legend. Mounted via EvidenceZone's `fidelity` slot — replaces the REWORK-04 placeholder stub.
+
+**Single source of truth (load-bearing).** Backend centralised cast+flatten in `PredictionService._transform_input(sample)` (`backend/app/services/inference.py`). Both `predict()` and `predict_values()` call it; the adapter's own `_vectorize_sample` becomes idempotent on the result. The frontend lib `createFidelityStripState.js` only **formats** the descriptors backend produced — it does not re-derive any transform. JSDoc and module docstring both say so explicitly to prevent future parallel implementations.
+
+**Schema additions (backwards-compat).** `PredictionResponse` and `AdHocPredictionResponse` gained two optional fields: `transforms: tuple[PredictionTransform, ...]` (default `()`) and `model_input_length: int | None` (default `None`). New frozen dataclass `PredictionTransform(name, params, before_shape, after_shape)`. Route helper `_serialize_transforms` shapes the JSON. Existing consumers that destructure only legacy fields are unaffected.
+
+**Prototype-side resampling is intentionally NOT in `_transform_input`.** `PrototypeInferenceAdapter._resample_vector` still adapts each prototype to the user's input length, but that operation does not modify the user's series. The "Model sees this" strip describes what happens to the user's edited values — the prototype side is a model-internal adapter detail. Docstring spells this out so a future maintainer doesn't "fix" the apparent omission.
+
+**Forward-compat shape**: if a future ticket adds windowing, z-score normalization, or any other input-side transform, the new step is just another `PredictionTransform` entry — the strip surfaces it with no UI change. Multivariate flatten (`n_channels > 1`) already produces correct descriptors today; just no benchmarks exercise it.
+
+npm test 747/747 (+7 new); backend benchmark routes 16/16 (+2 new transform tests).
+
+---
+
 ## REWORK-04 Evidence zone default view
 
 Assembled the EVIDENCE zone's calm-by-default view: `frontend/src/components/evidence/EvidenceZone.vue` composes four real-data plausibility gauges, a probe-toggle row (Saliency / Δ-sources / Min-flip — affordances real, behaviour deferred to REWORK-07/-08/-09), a fidelity-strip slot (REWORK-05), and caret-collapsed heavy panels (Warnings / Constraint budget / Audit log / Layers stub / Model stub). `PlausibilityGauges.vue` renders four SVG radial meters; `createPlausibilityGaugesState.js` is the pure derivation. WarningPanel + ConstraintBudgetBar + AuditLogPanel moved out of the page template and into the carets — only one direct mount remains: GuardrailsSidebar still floats (REWORK-06 will absorb it).

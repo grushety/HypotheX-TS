@@ -157,6 +157,8 @@ def predict_sample():
             "true_label": prediction.true_label,
             "task": prediction.task,
             "scores": _serialize_scores(prediction.scores),
+            "transforms": _serialize_transforms(prediction.transforms),
+            "model_input_length": prediction.model_input_length,
         }
     )
 
@@ -200,6 +202,8 @@ def predict_values():
             "predicted_label": prediction.predicted_label,
             "task": prediction.task,
             "scores": _serialize_scores(prediction.scores),
+            "transforms": _serialize_transforms(prediction.transforms),
+            "model_input_length": prediction.model_input_length,
         }
     )
 
@@ -426,6 +430,18 @@ def _serialize_scores(scores):
             "probability": score.probability,
         }
         for score in scores
+    ]
+
+
+def _serialize_transforms(transforms):
+    return [
+        {
+            "name": transform.name,
+            "params": dict(transform.params),
+            "before_shape": list(transform.before_shape),
+            "after_shape": list(transform.after_shape),
+        }
+        for transform in transforms
     ]
 
 

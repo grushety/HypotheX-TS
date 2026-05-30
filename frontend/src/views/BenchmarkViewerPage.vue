@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
 import OutputPanel from "../components/output/OutputPanel.vue";
 import EvidenceZone from "../components/evidence/EvidenceZone.vue";
+import FidelityStrip from "../components/evidence/FidelityStrip.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
@@ -17,6 +18,7 @@ import ScopeAttributeEditor from "../components/scope/ScopeAttributeEditor.vue";
 import GuardrailsSidebar from "../components/guardrails/GuardrailsSidebar.vue";
 import { createOutputPanelState } from "../lib/output/createOutputPanelState";
 import { createPlausibilityGaugesState } from "../lib/evidence/createPlausibilityGaugesState";
+import { createFidelityStripState } from "../lib/fidelity/createFidelityStripState";
 import { updateSegmentScope } from "../services/api/segmentsApi";
 import { validationBus } from "../lib/audit/validationBus";
 import {
@@ -307,6 +309,17 @@ const plausibilityGaugesState = computed(() =>
     events: auditEvents.value,
     plausibility: plausibilityResult.value,
     hasEdit: seriesVersion.value > 0,
+  }),
+);
+
+const fidelityStripState = computed(() =>
+  createFidelityStripState({
+    // Prefer the most recent current prediction — when the user has scored an
+    // edited series, that response carries the transforms actually applied to
+    // their values. Fall back to baseline before any edit lands.
+    prediction: currentPrediction.value ?? baselinePrediction.value,
+    compatibility: compatibilityResult.value,
+    rawInputLength: Array.isArray(sample.value?.values) ? sample.value.values.length : null,
   }),
 );
 
@@ -1835,7 +1848,14 @@ watch(
               @toggle-saliency="handleToggleSaliency"
               @toggle-delta-sources="handleToggleDeltaSources"
               @probe-min-flip="handleProbeMinFlip"
-            />
+            >
+              <template #fidelity>
+                <FidelityStrip
+                  :state="fidelityStripState"
+                  :raw-values="sample?.values ?? null"
+                />
+              </template>
+            </EvidenceZone>
           </div>
         </section>
       </div>

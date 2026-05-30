@@ -5,7 +5,12 @@ from typing import Any
 
 import numpy as np
 
-from app.schemas.prediction import AdHocPredictionResponse, PredictionResponse, PredictionScore
+from app.schemas.prediction import (
+    AdHocPredictionResponse,
+    PredictionResponse,
+    PredictionScore,
+    PredictionTransform,
+)
 from app.services.compatibility import CompatibilityValidator
 from app.services.datasets import DatasetRegistry, LoadedDataset
 from app.services.models import ModelArtifactHandle, ModelRegistry
@@ -159,7 +164,10 @@ class PredictionService:
         adapter = self._resolve_adapter(handle)
 
         sample, true_label = self._select_sample(dataset, split, sample_index)
-        score_entries, best_index = self._score(adapter, handle, sample, dataset_name=dataset_name)
+        model_input, transforms = self._transform_input(sample)
+        score_entries, best_index = self._score(
+            adapter, handle, model_input, dataset_name=dataset_name
+        )
 
         return PredictionResponse(
             dataset_name=dataset_name,
@@ -169,6 +177,8 @@ class PredictionService:
             predicted_label=score_entries[best_index].label,
             true_label=true_label,
             scores=score_entries,
+            transforms=transforms,
+            model_input_length=int(model_input.shape[0]),
         )
 
     def predict_values(
@@ -184,19 +194,71 @@ class PredictionService:
         if values is None:
             raise SampleSelectionError("Prediction values vector is required.")
 
-        sample = np.asarray(values, dtype=np.float64).reshape(-1)
+        sample = np.asarray(values)
         if sample.size == 0:
             raise SampleSelectionError("Prediction values vector must be non-empty.")
 
+        model_input, transforms = self._transform_input(sample)
         handle = self._model_registry.load_artifact(artifact_id)
         adapter = self._resolve_adapter(handle)
-        score_entries, best_index = self._score(adapter, handle, sample, dataset_name=None)
+        score_entries, best_index = self._score(
+            adapter, handle, model_input, dataset_name=None
+        )
 
         return AdHocPredictionResponse(
             artifact_id=artifact_id,
             predicted_label=score_entries[best_index].label,
             scores=score_entries,
+            transforms=transforms,
+            model_input_length=int(model_input.shape[0]),
         )
+
+    @staticmethod
+    def _transform_input(sample: np.ndarray) -> tuple[np.ndarray, tuple[PredictionTransform, ...]]:
+        """Apply + describe the deterministic input-side preprocessing.
+
+        This is the single source of truth for what the model sees on the
+        **input side**. The returned vector is the exact 1-D float64 array
+        passed to the adapter; the returned tuple lists every transform
+        applied to get there. The adapter's own ``_vectorize_sample``
+        becomes idempotent on the result, so this list IS the full
+        input-side preprocessing path.
+
+        Prototype-side resampling (``PrototypeInferenceAdapter._resample_vector``)
+        is intentionally NOT included here — that operation adapts each
+        prototype to the user's input length and does not modify the user's
+        series. The "Model sees this" fidelity strip describes what happens
+        to the user's edited values; the prototype side is a model-internal
+        adapter detail.
+        """
+        arr = np.asarray(sample)
+        transforms: list[PredictionTransform] = []
+
+        if arr.dtype != np.float64:
+            before_dtype = str(arr.dtype)
+            transforms.append(
+                PredictionTransform(
+                    name="cast_float64",
+                    params={"from_dtype": before_dtype, "to_dtype": "float64"},
+                    before_shape=tuple(int(dim) for dim in arr.shape),
+                    after_shape=tuple(int(dim) for dim in arr.shape),
+                )
+            )
+            arr = arr.astype(np.float64)
+
+        if arr.ndim != 1:
+            before_shape = tuple(int(dim) for dim in arr.shape)
+            arr = arr.reshape(-1)
+            transforms.append(
+                PredictionTransform(
+                    name="flatten",
+                    params={"order": "C"},
+                    before_shape=before_shape,
+                    after_shape=(int(arr.shape[0]),),
+                )
+            )
+
+        return arr, tuple(transforms)
 
     def _resolve_adapter(self, handle: ModelArtifactHandle) -> InferenceAdapter:
         adapter = self._ADAPTERS.get(handle.artifact.family)
