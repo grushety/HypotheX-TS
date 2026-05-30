@@ -1,35 +1,48 @@
 /**
  * createPlausibilityGaugesState — derive the four EVIDENCE-zone plausibility
- * gauges from real backend numbers + the local audit stream.
+ * gauges from real backend numbers + the local prediction-rerun stream.
  *
- * Mapping (REWORK-04):
+ * Mapping (REWORK-06):
  *
- *   - **Pass rate**    ← audit events. Fraction of recent operation events
- *                        whose constraint status is PASS. This is NOT the
- *                        same as VAL-012's `validity_rate` — VAL-012 defines
- *                        validity as `predicted_class == target_class` per
- *                        edit, which requires target-class semantics that
- *                        the audit log doesn't carry yet. Until those land
- *                        end-to-end, the gauge labels itself honestly as a
- *                        constraint-pass rate so we don't fabricate VAL-012
- *                        numbers from the wrong source.
+ *   - **Validity**     ← VAL-012 `validity_rate.py` semantic, specialised
+ *                        for our prototype classifier. An edit "is_valid"
+ *                        iff the rerun prediction differs from the locked
+ *                        baseline (`current.predicted_label !==
+ *                        baseline.predicted_label`). The gauge is the
+ *                        session-cumulative rate across reruns. Source: the
+ *                        prediction service (REWORK-02) produced the
+ *                        prediction labels; this lib aggregates them.
+ *                        Refs: Verma et al. *ACM CSUR* 56:312 (2024) Eq. 3;
+ *                        Mothilal et al. "DiCE," FAccT 2020 §3.1.
  *   - **Proximity**    ← VAL-004 native_guide.proximity_pct when calibration
  *                        is loaded; otherwise null + uncalibrated hint
- *                        showing the raw DTW distance.
+ *                        showing the raw DTW distance. Ref: Delaney et al.
+ *                        "Instance-based Counterfactual Explanations for
+ *                        Time Series Classification," ICCBR 2021.
  *   - **Sparsity**     ← VAL-004 native_guide.sparsity (always in [0,1]).
- *   - **Plausibility** ← VAL-003 ynn_plausibility.ynn (top-K target-class
- *                        neighbour fraction). null when the index could not
- *                        be built (rendered as "n/a").
+ *                        Ref: same paper, §3.2.
+ *   - **Plausibility** ← VAL-003 ynn_plausibility.ynn (fraction of top-K
+ *                        target-class neighbours). null when the index
+ *                        could not be built (rendered as "n/a"). Ref:
+ *                        Verma et al. *CSUR* 2024 §4.4 (yNN plausibility
+ *                        proxy), Pawelczyk et al. *NeurIPS* 2020.
  *
  * `null` values are honest "no data" — the UI renders them as "n/a" with a
  * descriptive hint, never as a hardcoded zero.
+ *
+ * Tone thresholds are presentation-only and live alongside the gauge tone
+ * computation in this module — they describe WHEN to escalate visually, not
+ * what the metric means.
  */
-
-import { SOFT_CONSTRAINT_STATUS } from "../constraints/evaluateSoftConstraints.js";
 
 const TONE_CONFIDENT = "confident";
 const TONE_MODERATE = "moderate";
 const TONE_UNCERTAIN = "uncertain";
+
+/** Below this, the plausibility gauge fires the cluster-level
+ * "OFF-DISTRIBUTION" badge. Matches `toneForValue`'s uncertain cutoff so
+ * "uncertain plausibility" and "off-distribution" mean the same thing. */
+const OFF_DISTRIBUTION_THRESHOLD = 0.4;
 
 function clamp01(value) {
   // Returns null for non-finite or out-of-range inputs. The backend's
@@ -59,33 +72,31 @@ function formatDistance(value) {
 }
 
 /**
- * Walk the audit events, count how many emitted a constraint status, and
- * return the share that passed. Events without a constraintStatus field
- * (e.g. raw segment edits, suggestion-accepts) are excluded — they don't
- * represent a constraint judgement.
+ * Aggregate per-rerun validity outcomes. Each entry is `{flipped: boolean}`
+ * representing one successful prediction rerun (REWORK-02). Returns the
+ * session-cumulative rate plus counters for the tooltip caption.
  */
-function computeValidityFromEvents(events) {
-  if (!Array.isArray(events) || events.length === 0) {
-    return { value: null, total: 0, passes: 0 };
+function computeValidity(validityRuns) {
+  if (!Array.isArray(validityRuns) || validityRuns.length === 0) {
+    return { value: null, total: 0, flipped: 0 };
   }
   let total = 0;
-  let passes = 0;
-  for (const event of events) {
-    const status = event?.payload?.constraintStatus ?? event?.constraintStatus ?? null;
-    if (status == null) continue;
+  let flipped = 0;
+  for (const run of validityRuns) {
+    if (!run || typeof run.flipped !== "boolean") continue;
     total += 1;
-    if (status === SOFT_CONSTRAINT_STATUS.PASS) passes += 1;
+    if (run.flipped) flipped += 1;
   }
-  if (total === 0) return { value: null, total: 0, passes: 0 };
-  return { value: passes / total, total, passes };
+  if (total === 0) return { value: null, total: 0, flipped: 0 };
+  return { value: flipped / total, total, flipped };
 }
 
 export function createPlausibilityGaugesState({
-  events = [],
+  validityRuns = [],
   plausibility = null,
   hasEdit = false,
 } = {}) {
-  const validity = computeValidityFromEvents(events);
+  const validity = computeValidity(validityRuns);
 
   const proxPct = plausibility?.proximity_pct;
   const proxRaw = plausibility?.proximity;
@@ -99,16 +110,18 @@ export function createPlausibilityGaugesState({
 
   const gauges = [
     {
-      key: "pass_rate",
-      label: "Pass rate",
+      key: "validity",
+      label: "Validity",
       value: validityClamped,
       displayValue: validityClamped == null ? "—" : formatPct(validityClamped),
       tone: toneForValue(validityClamped),
       hint:
         validityClamped == null
-          ? "Apply an operation to start tracking constraint-pass rate."
-          : `${validity.passes}/${validity.total} edits passed constraint checks`,
-      source: "constraint engine · session audit (not VAL-012 yet)",
+          ? "Rerun the prediction after an edit to start tracking validity."
+          : `${validity.flipped}/${validity.total} reruns flipped the model from baseline`,
+      source: "VAL-012 validity_rate",
+      reference:
+        "Verma et al. ACM CSUR 56:312 (2024) §3; Mothilal et al. DiCE, FAccT 2020 §3.1",
     },
     {
       key: "proximity",
@@ -123,6 +136,7 @@ export function createPlausibilityGaugesState({
             ? `DTW distance ${formatDistance(proxRaw)} · no dataset calibration loaded`
             : `DTW distance ${formatDistance(proxRaw)} vs dataset NUN distribution`,
       source: "VAL-004 native_guide.proximity",
+      reference: "Delaney et al. ICCBR 2021 (Native-Guide, §3.1)",
     },
     {
       key: "sparsity",
@@ -135,6 +149,7 @@ export function createPlausibilityGaugesState({
           ? "Apply an edit to compute sparsity (fraction of unchanged timesteps)."
           : "Share of timesteps left unchanged by the edit",
       source: "VAL-004 native_guide.sparsity",
+      reference: "Delaney et al. ICCBR 2021 (Native-Guide, §3.2)",
     },
     {
       key: "plausibility",
@@ -149,12 +164,27 @@ export function createPlausibilityGaugesState({
             : "Apply an edit to score the current series on the training manifold."
           : `${Math.round(ynnClamped * (plausibility?.plausibility_k ?? 0))}/${plausibility?.plausibility_k ?? "?"} neighbours match target class`,
       source: "VAL-003 yNN target-class fraction",
+      reference: "Verma et al. ACM CSUR 56:312 (2024) §4.4; Pawelczyk et al. NeurIPS 2020",
     },
   ];
+
+  // Cluster-level "off-distribution" warning. Fires only on real plausibility
+  // data (null → no claim; the calibration just isn't loaded). Sparsity
+  // collapse is a strong corroborating signal — when the edit also touches
+  // almost every timestep, the manifold drift is more likely real.
+  const offDistribution =
+    Number.isFinite(ynnClamped) && ynnClamped < OFF_DISTRIBUTION_THRESHOLD;
+  const lowSparsity = Number.isFinite(sparsityClamped) && sparsityClamped < 0.5;
 
   return {
     hasEdit,
     gauges,
+    offDistribution,
+    offDistributionReason: offDistribution
+      ? lowSparsity
+        ? `Few training neighbours share the target class (yNN ${formatPct(ynnClamped)}) AND the edit touches more than half of the series.`
+        : `Few training neighbours share the target class (yNN ${formatPct(ynnClamped)}).`
+      : null,
   };
 }
 
@@ -163,3 +193,5 @@ export const GAUGE_TONES = Object.freeze({
   MODERATE: TONE_MODERATE,
   UNCERTAIN: TONE_UNCERTAIN,
 });
+
+export { OFF_DISTRIBUTION_THRESHOLD };
