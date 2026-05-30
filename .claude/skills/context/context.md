@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-07 Min-flip probe
+
+One-click "smallest edit that flips the model" probe. Backend `MinFlipService` (`backend/app/services/operations/min_flip.py`) implements the **closed-form L2-minimal flip in nearest-prototype geometry**: the decision boundary between classes c* and c′ is the perpendicular bisector of `p_{c*} ↔ p_{c′}`; pick `min over c′` of signed distance, edit = `x + (d + ε)·(−n/‖n‖)`. **Exact for binary classifiers**, lower-bound for ≥3 classes. For multi-class, the service re-classifies the resulting edit and downgrades to `found=False` with a Voronoi-containment reason rather than falsely claiming a flip. Reference: Wachter, Mittelstadt, Russell, *HJLT* 31:841 (2018), arXiv:1711.00399 §3.1 Eq. 3 — minimum-distance counterfactual, prototype-geometry simplification.
+
+**Why closed-form (load-bearing).** The ticket's primary recommendation was coefficient-space gradient or NSGA-II over decomposition coefficients via `cf_coordinator.synthesize_counterfactual`. That requires either a differentiable inference adapter (PrototypeInferenceAdapter doesn't expose `gradient`) or thousands of `predict-values` calls inside an evolutionary loop. The closed-form is **exact** for the actual classifier in this codebase — no optimizer needed. Coefficient-space search remains the right tool when a differentiable adapter ships; the docstring spells this out so a future ticket doesn't trip on the omission.
+
+**Route + UI**. `POST /api/operations/min-flip` takes `{artifact_id, baseline_values}` and returns `{found, baseline_class, flipped_class, distance, edit_values, method, reference, reason}`. Frontend `findMinimalFlip` client + new `MinFlipStrip.vue` in OUTPUT (via new `<slot name="probe" />` on OutputPanel). Dashed-accent ghost overlay on TimelineViewer via `createLineChartModel` extension (`options.ghostValues` — y-range computed from union of values + ghost so both lines stay aligned). Probe button in EVIDENCE (REWORK-04 stub now real).
+
+**Seed choice (load-bearing).** `handleProbeMinFlip` POSTs `baselineValues.value` (the locked snapshot from sample-load, REWORK-02), NOT the user's mid-edit `sample.value.values`. The probe asks "smallest edit *from baseline* to flip" — sending the current series would give the smallest *additional* edit, which is a different question. Comment at the seed-selection site guards against well-meaning "fixes."
+
+**Apply-edit audit (load-bearing).** `handleApplyMinFlip` mutates the series and emits an AuditEvent with the probe's full provenance (method + paper reference + distance + flipped class + points touched) per CLAUDE.md's non-optional audit rule. The mutation also calls `bumpSeriesVersion()` so REWORK-04's plausibility gauges re-fire — implausible flips surface via REWORK-06's OFF-DISTRIBUTION badge, satisfying the ticket's "passes or is flagged by validators" requirement.
+
+backend benchmark routes 19/19 (+3); frontend 752/752 unchanged.
+
+---
+
 ## REWORK-06 Live plausibility meter
 
 Closed the two REWORK-04 gaps: the "Pass rate" placeholder gauge becomes real VAL-012 Validity, and every gauge now carries a paper reference. **Validity** is derived in `BenchmarkViewerPage` from a new `validityRuns = ref([])` log — every successful `handleRerunPrediction` appends `{version, flipped: result.predicted_label !== baselinePrediction.predicted_label}`. The gauge value is the session-cumulative rate. Resets in `clearPredictionState`. The lib helper `createPlausibilityGaugesState.js` now takes `validityRuns` instead of `events`. Tooltip per gauge (role=tooltip, aria-describedby) carries `hint + source + reference`; the always-visible source footer is removed. Cluster-level OFF-DISTRIBUTION badge fires only when yNN is finite AND below `OFF_DISTRIBUTION_THRESHOLD = 0.4` — null plausibility is no claim, not a low claim. Reason text corroborates with low sparsity ("touches more than half of the series"). Per-card `.tone-warn` modifier on uncertain-tone gauges.

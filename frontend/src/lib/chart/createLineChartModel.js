@@ -38,6 +38,10 @@ export function createLineChartModel(values, options = {}) {
   const width = options.width ?? DEFAULT_WIDTH;
   const height = options.height ?? DEFAULT_HEIGHT;
   const bounds = options.bounds ?? DEFAULT_BOUNDS;
+  // REWORK-07: optional overlay (e.g. a min-flip ghost) drawn against the
+  // same axes. The y-range is computed from the union of `values` and
+  // `ghostValues` so the two lines stay aligned in the chart frame.
+  const ghostValues = Array.isArray(options.ghostValues) ? options.ghostValues : [];
 
   const innerWidth = width - bounds.left - bounds.right;
   const innerHeight = height - bounds.top - bounds.bottom;
@@ -55,30 +59,44 @@ export function createLineChartModel(values, options = {}) {
       points: [],
       linePath: "",
       areaPath: "",
+      ghostPath: "",
       xTicks: [],
       yTicks: [],
     };
   }
 
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
+  const spanValues = ghostValues.length > 0 ? [...values, ...ghostValues] : values;
+  const minValue = Math.min(...spanValues);
+  const maxValue = Math.max(...spanValues);
   const yMin = minValue === maxValue ? minValue - 1 : minValue;
   const yMax = minValue === maxValue ? maxValue + 1 : maxValue;
   const range = yMax - yMin || 1;
 
-  const scaleX = (index) =>
-    bounds.left + (values.length === 1 ? innerWidth / 2 : (index / (values.length - 1)) * innerWidth);
+  const scaleX = (index, length) =>
+    bounds.left + (length === 1 ? innerWidth / 2 : (index / (length - 1)) * innerWidth);
   const scaleY = (value) => bounds.top + ((yMax - value) / range) * innerHeight;
 
   const points = values.map((value, index) => ({
     index,
     value,
-    x: scaleX(index),
+    x: scaleX(index, values.length),
     y: scaleY(value),
   }));
 
   const linePath = toPointString(points);
   const areaPath = `${linePath} L ${points.at(-1).x.toFixed(2)} ${(height - bounds.bottom).toFixed(2)} L ${points[0].x.toFixed(2)} ${(height - bounds.bottom).toFixed(2)} Z`;
+
+  const ghostPath = ghostValues.length === 0
+    ? ""
+    : toPointString(
+        ghostValues.map((value, index) => ({
+          index,
+          value,
+          x: scaleX(index, ghostValues.length),
+          y: scaleY(value),
+        })),
+      );
+
   const yTicks = createTicks(yMin, yMax, 4).map((tick) => ({
     ...tick,
     y: scaleY(tick.value),
@@ -87,7 +105,7 @@ export function createLineChartModel(values, options = {}) {
   const xTicks = xTickIndexes.map((index) => ({
     value: index,
     label: `${index}`,
-    x: scaleX(index),
+    x: scaleX(index, values.length),
   }));
 
   return {
@@ -102,6 +120,7 @@ export function createLineChartModel(values, options = {}) {
     points,
     linePath,
     areaPath,
+    ghostPath,
     xTicks,
     yTicks,
   };

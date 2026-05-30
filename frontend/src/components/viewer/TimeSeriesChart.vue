@@ -12,9 +12,15 @@ const props = defineProps({
     type: String,
     default: "Time-series chart",
   },
+  ghostValues: {
+    type: Array,
+    default: null,
+  },
 });
 
-const chartModel = computed(() => createLineChartModel(props.values));
+const chartModel = computed(() =>
+  createLineChartModel(props.values, { ghostValues: props.ghostValues ?? [] }),
+);
 </script>
 
 <template>
@@ -54,6 +60,12 @@ const chartModel = computed(() => createLineChartModel(props.values));
 
       <path class="chart-area" :d="chartModel.areaPath" />
       <path class="chart-line" :d="chartModel.linePath" />
+      <path
+        v-if="chartModel.ghostPath"
+        class="chart-ghost-line"
+        :d="chartModel.ghostPath"
+        aria-label="Minimal-flip ghost overlay"
+      />
     </svg>
   </div>
 </template>
