@@ -1,0 +1,249 @@
+/* ============================================================
+   ZONES — three-zone workspace frame (INPUT / OUTPUT / EVIDENCE)
+   Loaded after styles.css so it overrides legacy layout rules.
+   Source: forClaude/designs/zones.css + forClaude/designs/styles.css
+   ============================================================ */
+
+:root {
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --bg-app:    #e7ebf0;
+  --bg-panel:  #ffffff;
+  --bg-sunken: #f3f5f8;
+  --bg-bar:    #fbfcfd;
+  --bg-hover:  #eef2f7;
+
+  --ink:       #161b26;
+  --ink-2:     #4a5566;
+  --ink-3:     #7a8698;
+  --ink-4:     #aab3c2;
+
+  --line:        #dde3eb;
+  --line-2:      #c9d1dc;
+  --line-strong: #aeb8c6;
+
+  --accent:     #2b4ad6;
+  --accent-ink: #1b32a0;
+  --accent-bg:  #eaeeff;
+
+  --st-pass:    #2f9e44;
+  --st-warn:    #e8870c;
+  --st-fail:    #e03131;
+  --st-idle:    #aab3c2;
+  --st-pass-bg: #e7f6ec;
+  --st-warn-bg: #fdf0dd;
+  --st-fail-bg: #fce8e8;
+  --st-idle-bg: #eef1f5;
+
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 9px;
+  --shadow-rail: 0 1px 2px rgba(20, 27, 38, 0.05);
+  --shadow-pop:  0 8px 28px -6px rgba(20, 27, 38, 0.28), 0 2px 6px -2px rgba(20, 27, 38, 0.16);
+}
+
+/* ---- workspace frame: Input (left) | right column (Output / Evidence) ---- */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 6px;
+  padding: 8px 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.zone-right {
+  display: grid;
+  grid-template-rows: minmax(0, 1.32fr) minmax(0, 1fr);
+  gap: 6px;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* zone label — low-key, top-left of each zone */
+.zlabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.zlabel .zi {
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.zlabel .zi svg {
+  width: 13px;
+  height: 13px;
+}
+.zlabel .zt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.zlabel .zsub {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+/* ============================================================
+   ZONE 1 — INPUT (neutral working surface, most space)
+   ============================================================ */
+.zone-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  min-width: 0;
+}
+.zone-input > .zlabel {
+  padding: 2px 2px 0;
+}
+.zone-input .zi {
+  background: var(--bg-hover);
+  color: var(--ink-2);
+}
+.zone-input .zt {
+  color: var(--ink-2);
+}
+
+.z1-main {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 6px;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.z1-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 1px;
+}
+.z1-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ============================================================
+   ZONE 2 — OUTPUT (raised, tinted, the ONLY accent zone)
+   ============================================================ */
+.zone-output {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: linear-gradient(180deg, #f4f6ff, #edf0fb);
+  border: 1px solid #c4cdf5;
+  box-shadow: 0 8px 24px -10px rgba(43, 74, 214, 0.30),
+              0 1px 3px rgba(20, 27, 38, 0.07);
+}
+.zone-output > .zlabel {
+  padding: 9px 12px 7px;
+  border-bottom: 1px solid rgba(43, 74, 214, 0.14);
+}
+.zone-output .zi {
+  background: rgba(43, 74, 214, 0.10);
+  color: var(--accent-ink);
+}
+.zone-output .zt {
+  color: var(--accent-ink);
+}
+.zone-output-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ============================================================
+   ZONE 3 — EVIDENCE (flat, muted, glanceable diagnostics)
+   ============================================================ */
+.zone-evidence {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+}
+.zone-evidence > .zlabel {
+  padding: 9px 12px 7px;
+  border-bottom: 1px solid var(--line);
+}
+.zone-evidence .zi {
+  background: var(--bg-hover);
+  color: var(--ink-3);
+}
+.zone-evidence .zt {
+  color: var(--ink-2);
+}
+.ev-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+/* ============================================================
+   No-page-scroll: viewport stays fixed, scroll lives in zones.
+   Flex column survives the conditional error banner; the
+   workspace always claims the remaining vertical space.
+   ============================================================ */
+.research-viewport.zones-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.research-viewport.zones-frame > .research-topbar,
+.research-viewport.zones-frame > .topbar-error {
+  flex: none;
+}
+.research-viewport.zones-frame > .workspace {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ============================================================
+   MOBILE — vertical ACT (Input) → READ (Output) → JUDGE (Evidence)
+   ============================================================ */
+@media (max-width: 900px) {
+  .research-viewport.zones-frame {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .zone-right {
+    grid-template-rows: auto auto;
+  }
+  .z1-main {
+    grid-template-columns: 1fr;
+  }
+  .z1-rail,
+  .z1-canvas {
+    overflow: visible;
+  }
+}
