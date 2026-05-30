@@ -1331,7 +1331,7 @@ watch(
 </script>
 
 <template>
-  <div class="research-viewport">
+  <div class="research-viewport zones-frame">
     <!-- Topbar: selectors + compatibility indicator + Run Prediction button -->
     <header class="research-topbar">
       <div class="topbar-selectors">
@@ -1423,217 +1423,241 @@ watch(
       {{ error || selectorState.error }}
     </p>
 
-    <!-- Main content: left column (chart + segment list) + right column (controls) -->
-    <div class="viewport-body">
-      <section class="col-left" aria-label="Timeline and segments">
-        <div class="chart-panel">
-          <div class="chart-panel-header">
-            <span class="section-label">
-              {{ sample?.datasetName ?? (loading ? "Loading…" : "No sample") }}
-              <span v-if="sample"> · Sample {{ sample.sampleId }}</span>
-            </span>
-            <span class="surface-tag">{{ sample?.seriesLength ?? "--" }} pts</span>
-          </div>
-
-          <TimelineViewer
-            :sample="enrichedSample"
-            :selected-segment-id="selectedSegmentId"
-            :segment-uncertainty="uncertaintyPayload?.segmentUncertainty ?? []"
-            :boundary-uncertainty="uncertaintyPayload?.boundaryUncertainty ?? []"
-            @select-segment="handleSelectSegment"
-            @move-boundary="handleMoveBoundary"
-          />
-
-          <PredictedLabelChip
-            @accept="handleChipAccept"
-            @override="handleChipOverride"
-            @undo="handleChipUndo"
-          />
-
-          <DonorPicker
-            v-if="donorPickerOpen && selectedSegment && sample"
-            :segment-values="sample.values.slice(selectedSegment.start, selectedSegment.end + 1)"
-            :target-class="donorPickerTargetClass"
-            :segment-id="selectedSegment.id"
-            :dataset="sample.datasetName ?? null"
-            @op-invoked="handleDonorAccepted"
-            @close="handleDonorPickerClose"
-          />
-
-          <AlignWarpPanel
-            v-if="alignWarpPanelOpen && sample"
-            :segments="sample.segments ?? []"
-            :selected-segment-ids="tieredPaletteSelectedIds"
-            :initial-reference-segment-id="selectedSegmentId"
-            :series-values="sample.values"
-            @op-invoked="handleAlignApplied"
-          />
-
-          <GapFillPicker
-            v-if="gapFillPickerOpen && selectedSegment"
-            :segment-id="selectedSegment.id"
-            :missingness-pct="selectedSegmentGapInfo?.missingnessPct ?? 0"
-            @op-invoked="handleGapFillApplied"
-          />
-
-          <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
+    <!-- Three-zone workspace: INPUT (left) | OUTPUT over EVIDENCE (right) -->
+    <div class="workspace">
+      <!-- ZONE 1 · INPUT — what I feed the model -->
+      <section class="zone-input" aria-label="Input — what I feed the model">
+        <div class="zlabel">
+          <span class="zi" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z" />
+            </svg>
+          </span>
+          <span class="zt">Input</span>
+          <span class="zsub">what I feed the model</span>
         </div>
 
-        <div class="segment-list-panel">
-          <div class="segment-list-header">
-            <span class="section-label">Segment index</span>
-            <span class="surface-tag">{{ sample?.segments?.length ?? 0 }} segments</span>
+        <div class="z1-main">
+          <div class="z1-rail" aria-label="Editing controls">
+            <SemanticLayerPanel
+              :built-in-packs="semanticPacks"
+              :active-pack-key="semanticActivePackKey"
+              :active-pack="semanticActivePack"
+              :label-results="semanticLabelResults"
+              :custom-error="semanticCustomError"
+              :custom-yaml-text="semanticCustomYamlText"
+              :loading="semanticPacksLoading"
+              @select-pack="handleSelectSemanticPack"
+              @upload-custom-yaml="handleUploadCustomYaml"
+              @clear-custom="handleClearCustomPack"
+            />
+
+            <div v-if="selectedSegment" class="label-editor">
+              <label class="label-editor-field">
+                <span class="sidebar-label">Segment label</span>
+                <select
+                  class="label-editor-select"
+                  :value="selectedSegment.label"
+                  @change="handleUpdateSegmentLabel($event.target.value)"
+                >
+                  <option v-for="label in AVAILABLE_SEGMENT_LABELS" :key="label" :value="label">
+                    {{ label }}
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <CompensationModeSelector
+              v-if="compensationSelectorVisible"
+              :domain-hint="activeDomainHint"
+              :op-category="selectedSegmentOpCategory"
+              :model-value="selectedCompensationMode"
+              :has-explicit-choice="compensationModeTouched"
+              :disabled="pendingOpName !== null"
+              @update:model-value="handleCompensationModeChange"
+            />
+
+            <OperationPalette
+              :selected-segment-ids="tieredPaletteSelectedIds"
+              :selected-shapes="tieredPaletteSelectedShapes"
+              :pending-op="pendingOpName"
+              @op-invoked="handleOpInvoked"
+            />
+
+            <div v-if="decompositionEditorOpen" class="decomposition-editor-panel">
+              <button
+                type="button"
+                class="decomposition-editor-panel__close"
+                aria-label="Close decomposition editor"
+                @click="handleDecompositionEditorClose"
+              >Close decomposition editor</button>
+              <DecompositionEditor
+                :blob="decompositionBlob"
+                :segment-id="selectedSegmentId"
+                @op-invoked="handleDecompositionEditorOp"
+              />
+            </div>
           </div>
 
-          <ul v-if="sample?.segments?.length" class="overlay-segment-list segment-list-scroll">
-            <li
-              v-for="segment in sample.segments"
-              :key="segment.id"
-              class="overlay-segment-item"
-              :class="{ 'overlay-segment-item-active': segment.id === selectedSegmentId }"
-              @contextmenu="handleSegmentContextMenu($event, segment)"
-            >
-              <span class="segment-chip" :class="`segment-chip-${segment.label}`">{{ segment.label }}</span>
-              <button class="segment-select-button" type="button" @click="handleSelectSegment(segment.id)">
-                {{ segment.start }}-{{ segment.end }}
-              </button>
-            </li>
-          </ul>
-          <div v-else class="overlay-placeholder">
-            {{ loading ? "Preparing segments…" : "No segments loaded." }}
+          <div class="z1-canvas" aria-label="Timeline and segments">
+            <div class="chart-panel">
+              <div class="chart-panel-header">
+                <span class="section-label">
+                  {{ sample?.datasetName ?? (loading ? "Loading…" : "No sample") }}
+                  <span v-if="sample"> · Sample {{ sample.sampleId }}</span>
+                </span>
+                <span class="surface-tag">{{ sample?.seriesLength ?? "--" }} pts</span>
+              </div>
+
+              <TimelineViewer
+                :sample="enrichedSample"
+                :selected-segment-id="selectedSegmentId"
+                :segment-uncertainty="uncertaintyPayload?.segmentUncertainty ?? []"
+                :boundary-uncertainty="uncertaintyPayload?.boundaryUncertainty ?? []"
+                @select-segment="handleSelectSegment"
+                @move-boundary="handleMoveBoundary"
+              />
+
+              <PredictedLabelChip
+                @accept="handleChipAccept"
+                @override="handleChipOverride"
+                @undo="handleChipUndo"
+              />
+
+              <DonorPicker
+                v-if="donorPickerOpen && selectedSegment && sample"
+                :segment-values="sample.values.slice(selectedSegment.start, selectedSegment.end + 1)"
+                :target-class="donorPickerTargetClass"
+                :segment-id="selectedSegment.id"
+                :dataset="sample.datasetName ?? null"
+                @op-invoked="handleDonorAccepted"
+                @close="handleDonorPickerClose"
+              />
+
+              <AlignWarpPanel
+                v-if="alignWarpPanelOpen && sample"
+                :segments="sample.segments ?? []"
+                :selected-segment-ids="tieredPaletteSelectedIds"
+                :initial-reference-segment-id="selectedSegmentId"
+                :series-values="sample.values"
+                @op-invoked="handleAlignApplied"
+              />
+
+              <GapFillPicker
+                v-if="gapFillPickerOpen && selectedSegment"
+                :segment-id="selectedSegment.id"
+                :missingness-pct="selectedSegmentGapInfo?.missingnessPct ?? 0"
+                @op-invoked="handleGapFillApplied"
+              />
+
+              <p v-if="editFeedback" class="drag-feedback">{{ editFeedback }}</p>
+            </div>
+
+            <div class="segment-list-panel">
+              <div class="segment-list-header">
+                <span class="section-label">Segment index</span>
+                <span class="surface-tag">{{ sample?.segments?.length ?? 0 }} segments</span>
+              </div>
+
+              <ul v-if="sample?.segments?.length" class="overlay-segment-list segment-list-scroll">
+                <li
+                  v-for="segment in sample.segments"
+                  :key="segment.id"
+                  class="overlay-segment-item"
+                  :class="{ 'overlay-segment-item-active': segment.id === selectedSegmentId }"
+                  @contextmenu="handleSegmentContextMenu($event, segment)"
+                >
+                  <span class="segment-chip" :class="`segment-chip-${segment.label}`">{{ segment.label }}</span>
+                  <button class="segment-select-button" type="button" @click="handleSelectSegment(segment.id)">
+                    {{ segment.start }}-{{ segment.end }}
+                  </button>
+                </li>
+              </ul>
+              <div v-else class="overlay-placeholder">
+                {{ loading ? "Preparing segments…" : "No segments loaded." }}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Right column: label editor + operations + model comparison + session stats -->
-      <aside class="col-right" aria-label="Controls and comparison">
-        <SemanticLayerPanel
-          :built-in-packs="semanticPacks"
-          :active-pack-key="semanticActivePackKey"
-          :active-pack="semanticActivePack"
-          :label-results="semanticLabelResults"
-          :custom-error="semanticCustomError"
-          :custom-yaml-text="semanticCustomYamlText"
-          :loading="semanticPacksLoading"
-          @select-pack="handleSelectSemanticPack"
-          @upload-custom-yaml="handleUploadCustomYaml"
-          @clear-custom="handleClearCustomPack"
-        />
-
-        <div v-if="selectedSegment" class="label-editor">
-          <label class="label-editor-field">
-            <span class="sidebar-label">Segment label</span>
-            <select
-              class="label-editor-select"
-              :value="selectedSegment.label"
-              @change="handleUpdateSegmentLabel($event.target.value)"
-            >
-              <option v-for="label in AVAILABLE_SEGMENT_LABELS" :key="label" :value="label">
-                {{ label }}
-              </option>
-            </select>
-          </label>
-        </div>
-
-        <ConstraintBudgetBar
-          v-if="lastConstraintLaw"
-          :law="lastConstraintLaw"
-          :compensation-mode="operationConstraintResult?.compensation_mode ?? null"
-          :initial-residual="operationConstraintResult?.initial_residual ?? null"
-          :final-residual="operationConstraintResult?.final_residual ?? null"
-          :tolerance="operationConstraintResult?.tolerance ?? null"
-        />
-
-        <CompensationModeSelector
-          v-if="compensationSelectorVisible"
-          :domain-hint="activeDomainHint"
-          :op-category="selectedSegmentOpCategory"
-          :model-value="selectedCompensationMode"
-          :has-explicit-choice="compensationModeTouched"
-          :disabled="pendingOpName !== null"
-          @update:model-value="handleCompensationModeChange"
-        />
-
-        <OperationPalette
-          :selected-segment-ids="tieredPaletteSelectedIds"
-          :selected-shapes="tieredPaletteSelectedShapes"
-          :pending-op="pendingOpName"
-          @op-invoked="handleOpInvoked"
-        />
-
-        <div v-if="decompositionEditorOpen" class="decomposition-editor-panel">
-          <button
-            type="button"
-            class="decomposition-editor-panel__close"
-            aria-label="Close decomposition editor"
-            @click="handleDecompositionEditorClose"
-          >Close decomposition editor</button>
-          <DecompositionEditor
-            :blob="decompositionBlob"
-            :segment-id="selectedSegmentId"
-            @op-invoked="handleDecompositionEditorOp"
-          />
-        </div>
-
-        <ModelComparisonPanel
-          :state="comparisonState"
-          @request-suggestion="handleRequestSuggestion"
-          @accept-suggestion="handleAcceptSuggestion"
-          @override-suggestion="handleOverrideSuggestion"
-          @adapt-model="handleAdaptModel"
-          @update-labeler="handleUpdateLabeler"
-        />
-
-        <div class="session-stats-panel">
-          <div class="session-stats-header">
-            <span class="section-label">Session · {{ sessionPanelState.eventCount }} events</span>
+      <!-- ZONE 2 (OUTPUT) over ZONE 3 (EVIDENCE) -->
+      <div class="zone-right">
+        <!-- ZONE 2 · OUTPUT — what the model says -->
+        <section class="zone-output" aria-label="Output — what the model says">
+          <div class="zlabel">
+            <span class="zi" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </span>
+            <span class="zt">Output</span>
+            <span class="zsub">what the model says</span>
           </div>
-          <ul class="status-strip-inline">
-            <li v-for="item in pageState.statusItems" :key="item.label" class="status-pill">
-              <span class="status-pill-label">{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-            </li>
-          </ul>
-          <ul v-if="pageState.sidebarItems.length" class="sidebar-list sidebar-list-compact">
-            <li v-for="item in pageState.sidebarItems" :key="item.label" class="sidebar-item">
-              <span class="sidebar-label">{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-            </li>
-          </ul>
-        </div>
-      </aside>
+          <div class="zone-output-body">
+            <ModelComparisonPanel
+              :state="comparisonState"
+              @request-suggestion="handleRequestSuggestion"
+              @accept-suggestion="handleAcceptSuggestion"
+              @override-suggestion="handleOverrideSuggestion"
+              @adapt-model="handleAdaptModel"
+              @update-labeler="handleUpdateLabeler"
+            />
+
+            <div class="session-stats-panel">
+              <div class="session-stats-header">
+                <span class="section-label">Session · {{ sessionPanelState.eventCount }} events</span>
+              </div>
+              <ul class="status-strip-inline">
+                <li v-for="item in pageState.statusItems" :key="item.label" class="status-pill">
+                  <span class="status-pill-label">{{ item.label }}</span>
+                  <strong>{{ item.value }}</strong>
+                </li>
+              </ul>
+              <ul v-if="pageState.sidebarItems.length" class="sidebar-list sidebar-list-compact">
+                <li v-for="item in pageState.sidebarItems" :key="item.label" class="sidebar-item">
+                  <span class="sidebar-label">{{ item.label }}</span>
+                  <strong>{{ item.value }}</strong>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ZONE 3 · EVIDENCE — can I trust it -->
+        <section class="zone-evidence" aria-label="Evidence — can I trust it">
+          <div class="zlabel">
+            <span class="zi" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+            </span>
+            <span class="zt">Evidence</span>
+            <span class="zsub">can I trust it</span>
+          </div>
+          <div class="ev-body">
+            <WarningPanel :warning="warningDisplay" />
+
+            <ConstraintBudgetBar
+              v-if="lastConstraintLaw"
+              :law="lastConstraintLaw"
+              :compensation-mode="operationConstraintResult?.compensation_mode ?? null"
+              :initial-residual="operationConstraintResult?.initial_residual ?? null"
+              :final-residual="operationConstraintResult?.final_residual ?? null"
+              :tolerance="operationConstraintResult?.tolerance ?? null"
+            />
+
+            <AuditLogPanel
+              :events="auditEvents"
+              :session="sessionPanelState"
+            />
+          </div>
+        </section>
+      </div>
     </div>
-
-    <!-- Bottom strip: warnings pill + audit log -->
-    <footer class="bottom-strip">
-      <details class="strip-item warnings-strip">
-        <summary class="strip-summary">
-          <span
-            class="strip-pill"
-            :class="warningDisplay ? 'strip-pill-warn' : 'strip-pill-ok'"
-          >
-            {{ warningDisplay ? `⚠ ${warningDisplay.status}` : "✓ No warnings" }}
-          </span>
-        </summary>
-        <div class="strip-body">
-          <WarningPanel :warning="warningDisplay" />
-        </div>
-      </details>
-
-      <details class="strip-item history-strip">
-        <summary class="strip-summary">
-          <span class="strip-pill">
-            {{ sessionPanelState.eventCount }} audit event{{ sessionPanelState.eventCount !== 1 ? "s" : "" }}
-          </span>
-        </summary>
-        <div class="strip-body">
-          <AuditLogPanel
-            :events="auditEvents"
-            :session="sessionPanelState"
-          />
-        </div>
-      </details>
-    </footer>
 
     <GuardrailsSidebar
       :event-bus="validationBus"

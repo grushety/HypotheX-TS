@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-01 Three-zone workspace frame
+
+Replaced the old `.viewport-body` (2-col) + `.bottom-strip` (collapsible warnings/audit pills) layout in `BenchmarkViewerPage.vue` with a CSS-grid three-zone frame: **INPUT** (left, ~1.35fr — selectors/palette/canvas) | **OUTPUT** (right-top, ~1.32fr — ModelComparisonPanel + session stats — the only accent-tinted zone) over **EVIDENCE** (right-bottom, ~1fr — WarningPanel + ConstraintBudgetBar + AuditLogPanel, flat/muted). New `frontend/src/zones.css` imported after `styles.css` in `main.js` ports the design tokens (`--ink`, `--bg-*`, `--accent`, `--st-*`, `--r-*`, `--font-mono`) and the zone rules. Foundation for all remaining REWORK-NN tickets.
+
+**Token-introduction side effect (load-bearing):** six existing components (`ScopeAttributeEditor`, `AlignWarpPanel`, `DonorCard`, `SemanticLayerPanel`, `PlausibilityBadge`, `CompensationModeSelector`) already referenced these vars but had no values defined — they now pick up the real palette automatically. If a follow-up REWORK ticket needs to re-skin one of these, prefer overriding the local component CSS rather than tweaking the global token, which is cascade-shared.
+
+**Topbar + floating overlays unchanged:** `.research-topbar` still hosts dataset/model/split/sample + compat chip + run button above the zones; `GuardrailsSidebar` (dock=bottom, collapsed), `ScopeAttributeEditor` (modal), and `segment-context-menu` are still floating overlays — REWORK-06 will rework guardrails into the Evidence zone.
+
+**No-page-scroll invariant:** `.research-viewport.zones-frame` is `display:flex; flex-direction:column; height:100vh; overflow:hidden`; the workspace claims the remaining vertical space; every zone has `min-height:0` and its inner body scrolls. Mobile (≤900px) collapses to a single column in ACT→READ→JUDGE order.
+
+npm test 702/702; backend untouched (3 pre-existing failures unrelated to this ticket: missing `schemas/fixtures/operation-result.sample.json`, stale assertion in `test_segment_encoder_feature_matrix`, untracked `llm_labeler.py` missing `LlmSegmentLabelerConfig` export).
+
+---
+
 ## HTS-107 GuardrailsSidebar wired into main page
 
 `<GuardrailsSidebar/>` (VAL-014, previously unmounted) now mounts in `BenchmarkViewerPage.vue` with `initial-dock="bottom"` + `initial-collapsed=true` so it starts as an icon strip (avoids any 1280×800 layout collision). Subscribes to a new project-wide `validationBus` (topic-aware in-process pub/sub) injected via the `eventBus` prop. Every Tier-1 / Tier-2 op response now publishes a coarse `validity_update` (`rate=1.0` if constraint converged or no residual; `rate=0.0` + `tipShouldFire=true` otherwise) so the sidebar receives at least one event per op.
