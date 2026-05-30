@@ -22,6 +22,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  ghostValues: {
+    type: Array,
+    default: null,
+  },
 });
 
 const emit = defineEmits(["select-segment", "move-boundary"]);
@@ -45,7 +49,11 @@ const timelineModel = computed(() =>
     </div>
 
     <div v-if="sample?.values?.length" class="timeline-stage">
-      <TimeSeriesChart :values="sample.values" :title="timelineModel.title" />
+      <TimeSeriesChart
+        :values="sample.values"
+        :ghost-values="ghostValues"
+        :title="timelineModel.title"
+      />
       <SegmentationOverlay
         v-if="sample?.segments?.length"
         :segments="sample.segments"

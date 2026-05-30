@@ -446,3 +446,66 @@ def test_evidence_plausibility_endpoint_returns_proximity_sparsity_and_null_plau
     # plausibility is honestly null rather than a fabricated number.
     assert payload["plausibility"] is None
     assert payload["plausibility_k"] is None
+
+
+def test_min_flip_endpoint_rejects_missing_artifact_id(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/operations/min-flip",
+        data=json.dumps({"baseline_values": [0.0, 0.0, 0.0]}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "artifact_id" in response.get_json()["error"].lower()
+
+
+def test_min_flip_endpoint_rejects_non_finite_baseline(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/operations/min-flip",
+        data=json.dumps(
+            {"artifact_id": "fcn-gunpoint", "baseline_values": [0.1, float("nan"), 0.0]}
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "finite" in response.get_json()["error"].lower()
+
+
+def test_min_flip_endpoint_returns_closed_form_flip_for_prototype_classifier(tmp_path):
+    client = create_benchmark_client(tmp_path)
+    # Prototypes in the fixture are [0,0,0] (class-0) and [1,1,1] (class-1).
+    # Baseline [0.1, 0.0, 0.1] is closer to class-0; the closed-form flip
+    # crosses the perpendicular bisector (x1 + x2 + x3 = 1.5) toward class-1.
+    response = client.post(
+        "/api/operations/min-flip",
+        data=json.dumps(
+            {"artifact_id": "fcn-gunpoint", "baseline_values": [0.1, 0.0, 0.1]}
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["found"] is True
+    assert payload["baseline_class"] == "class-0"
+    assert payload["flipped_class"] == "class-1"
+    # Distance to the bisector: signed_distance = (||p0||² - ||p1||²)/2 maths.
+    # ((p0 - p1)·x - ((|p0|² - |p1|²)/2)) / |p0 - p1|
+    # = ((-1,-1,-1)·(0.1,0,0.1) - (0 - 3)/2) / sqrt(3)
+    # = (-0.2 - (-1.5)) / sqrt(3) = 1.3 / sqrt(3) ≈ 0.7506
+    expected = 1.3 / (3 ** 0.5)
+    assert abs(payload["distance"] - expected) < 1e-6
+    # Edit lives just past the boundary toward class-1 — every coordinate
+    # bumps by roughly the same amount in the +1 direction.
+    edit = payload["edit_values"]
+    assert len(edit) == 3
+    assert all(e > b for e, b in zip(edit, [0.1, 0.0, 0.1]))
+    # Method + reference are surfaced for provenance.
+    assert "closed-form" in payload["method"]
+    assert "Wachter" in payload["reference"]
+    assert payload["reason"] is None

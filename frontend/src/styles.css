@@ -660,6 +660,21 @@ h3 {
   stroke-linecap: round;
 }
 
+/* REWORK-07: dashed ghost overlay for the min-flip probe.
+   Drawn on top of the primary line so the proposed edit is glanceable
+   against the user's current series. Accent-tinted to match OUTPUT (the
+   probe answers "what does the model want me to do?", which is an OUTPUT
+   question). */
+.chart-ghost-line {
+  fill: none;
+  stroke: #2b4ad6;
+  stroke-width: 2.4;
+  stroke-dasharray: 6 4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.92;
+}
+
 .chart-empty-state {
   display: grid;
   place-items: center;

@@ -46,3 +46,23 @@ export async function invokeOperation(request, fetchImpl = fetch) {
   });
   return readJsonResponse(response, 'Invoke operation');
 }
+
+/**
+ * REWORK-07. Find the smallest L2 edit that flips the prototype classifier
+ * on the given baseline series. The backend returns the proposed edit
+ * (already past the decision boundary), the distance, the flipped class,
+ * and provenance (method + paper reference). When no flip is reachable
+ * (degenerate prototypes), `found` is false with a `reason` string.
+ */
+export async function findMinimalFlip({ artifactId, baselineValues }, fetchImpl = fetch) {
+  const response = await fetchImpl('/api/operations/min-flip', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ artifact_id: artifactId, baseline_values: baselineValues }),
+  });
+  const payload = await readJsonResponse(response, 'Min-flip probe');
+  if (typeof payload.found !== 'boolean') {
+    throw new Error('Min-flip probe response must include a `found` boolean.');
+  }
+  return payload;
+}

@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
 import OutputPanel from "../components/output/OutputPanel.vue";
+import MinFlipStrip from "../components/output/MinFlipStrip.vue";
 import EvidenceZone from "../components/evidence/EvidenceZone.vue";
 import FidelityStrip from "../components/evidence/FidelityStrip.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
@@ -41,7 +42,7 @@ import { createOperationPaletteState } from "../lib/operations/createOperationPa
 import { createTieredPaletteState } from "../lib/operations/createTieredPaletteState";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
 import { buildInvokeRequest, UnknownOpError } from "../lib/operations/buildInvokeRequest";
-import { invokeOperation } from "../services/api/operationsApi";
+import { findMinimalFlip, invokeOperation } from "../services/api/operationsApi";
 import { labelChipBus } from "../lib/audit/labelChipBus";
 import { classifyGap } from "../lib/gaps/createGapGatingState";
 import {
@@ -119,6 +120,10 @@ let plausibilityRequestId = 0;
 // "flipped" iff the rerun's predicted_label differs from the locked baseline.
 // VAL-012's session-cumulative rate is `flipped / total` over this list.
 const validityRuns = ref([]);
+// REWORK-07: min-flip probe state.
+const minFlipResult = ref(null);
+const minFlipError = ref(null);
+let minFlipRequestId = 0;
 const probeFlags = ref({ saliency: false, deltaSources: false, minFlipSearching: false });
 const operationRegistry = ref(null);
 const proposalSegments = ref([]);
@@ -285,6 +290,8 @@ function clearPredictionState() {
   plausibilityVersion.value = null;
   plausibilityError.value = null;
   validityRuns.value = [];
+  minFlipResult.value = null;
+  minFlipError.value = null;
   probeFlags.value = { saliency: false, deltaSources: false, minFlipSearching: false };
 }
 
@@ -396,15 +403,93 @@ function handleToggleDeltaSources() {
   };
 }
 
-function handleProbeMinFlip() {
-  // REWORK-07 will wire the actual probe; for REWORK-04 the button is a
-  // discoverable affordance that confirms intent (briefly flips the spinner).
+async function handleProbeMinFlip() {
   if (probeFlags.value.minFlipSearching) return;
+  const artifact = selectorState.value?.selectedArtifact;
+  // The probe asks "what is the smallest edit *from the baseline* that flips
+  // the model?" — so we always seed from the locked baseline snapshot, never
+  // the user's mid-edit series. baselineValues is captured at sample-load
+  // (REWORK-02); if it is missing (no sample yet), there is nothing to probe.
+  const seed = Array.isArray(baselineValues.value)
+    ? baselineValues.value
+    : Array.isArray(sample.value?.values)
+      ? sample.value.values
+      : null;
+  if (!artifact || !seed) {
+    minFlipError.value = "Load a sample and pick a model before probing for a minimal flip.";
+    return;
+  }
+  const requestId = ++minFlipRequestId;
   probeFlags.value = { ...probeFlags.value, minFlipSearching: true };
-  setTimeout(() => {
-    probeFlags.value = { ...probeFlags.value, minFlipSearching: false };
-  }, 600);
+  minFlipError.value = null;
+  try {
+    const result = await findMinimalFlip({
+      artifactId: artifact.artifact_id,
+      baselineValues: seed,
+    });
+    if (requestId !== minFlipRequestId) return;
+    minFlipResult.value = result;
+  } catch (requestError) {
+    if (requestId !== minFlipRequestId) return;
+    minFlipResult.value = null;
+    minFlipError.value =
+      requestError instanceof Error ? requestError.message : "Min-flip probe failed.";
+  } finally {
+    if (requestId === minFlipRequestId) {
+      probeFlags.value = { ...probeFlags.value, minFlipSearching: false };
+    }
+  }
 }
+
+function handleApplyMinFlip() {
+  const result = minFlipResult.value;
+  const edit = result?.edit_values;
+  if (!Array.isArray(edit) || edit.length === 0 || !sample.value) return;
+  if (!Array.isArray(sample.value.values) || sample.value.values.length !== edit.length) return;
+  // Mutating the series via the same channel as applyInvokeResponse keeps the
+  // downstream state machine (OUTPUT staleness, EVIDENCE refresh) honest.
+  sample.value = { ...sample.value, values: [...edit] };
+  bumpSeriesVersion();
+  // CLAUDE.md: every user operation produces an AuditEvent. Apply-min-flip
+  // mutates the series, so it must be logged with the probe's provenance
+  // (method + paper reference + distance + flipped class).
+  auditEvents.value = appendAuditEvent(
+    auditEvents.value,
+    createOperationAuditEvent(
+      {
+        type: 'min-flip-apply',
+        method: result.method,
+        reference: result.reference,
+        distance: result.distance,
+        baseline_class: result.baseline_class,
+        flipped_class: result.flipped_class,
+        points_touched: edit.length,
+      },
+      {
+        ok: true,
+        constraintStatus: SOFT_CONSTRAINT_STATUS.PASS,
+        warnings: [],
+        operationResult: { affectedSegmentIds: [] },
+        message: `Applied min-flip edit · ${result.baseline_class} → ${result.flipped_class}`,
+        selectedSegmentId: selectedSegmentId.value,
+      },
+      { sampleId: sample.value?.sampleId ?? null, selectedSegmentId: selectedSegmentId.value },
+    ),
+  );
+  // Dismiss the strip + ghost — the edit is now the user's current series.
+  minFlipResult.value = null;
+  minFlipError.value = null;
+}
+
+function handleClearMinFlip() {
+  minFlipResult.value = null;
+  minFlipError.value = null;
+}
+
+const minFlipGhostValues = computed(() => {
+  const edit = minFlipResult.value?.edit_values;
+  return Array.isArray(edit) && edit.length > 0 ? edit : null;
+});
 
 function clearSuggestionState() {
   suggestionPayload.value = null;
@@ -1731,6 +1816,7 @@ watch(
                 :selected-segment-id="selectedSegmentId"
                 :segment-uncertainty="uncertaintyPayload?.segmentUncertainty ?? []"
                 :boundary-uncertainty="uncertaintyPayload?.boundaryUncertainty ?? []"
+                :ghost-values="minFlipGhostValues"
                 @select-segment="handleSelectSegment"
                 @move-boundary="handleMoveBoundary"
               />
@@ -1818,7 +1904,17 @@ watch(
               :artifact-label="outputPanelArtifactLabel"
               @request-prediction="handleRequestPrediction"
               @rerun-prediction="handleRerunPrediction"
-            />
+            >
+              <template #probe>
+                <MinFlipStrip
+                  :result="minFlipResult"
+                  :searching="probeFlags.minFlipSearching"
+                  :error="minFlipError"
+                  @apply="handleApplyMinFlip"
+                  @clear="handleClearMinFlip"
+                />
+              </template>
+            </OutputPanel>
 
             <div class="session-stats-panel">
               <div class="session-stats-header">

@@ -314,6 +314,10 @@ function ppFromUnitInterval(value) {
           </div>
         </div>
       </template>
+
+      <!-- REWORK-07: optional probe-result strip (e.g. min-flip) rendered
+           beneath the main output body, only when the parent supplies it. -->
+      <slot name="probe" />
     </div>
   </div>
 </template>
