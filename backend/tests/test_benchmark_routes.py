@@ -255,6 +255,30 @@ def test_prediction_endpoint_returns_normalized_prediction_schema(tmp_path):
     assert len(payload["scores"]) == 2
 
 
+def test_prediction_endpoint_surfaces_transform_chain_and_input_length(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.get(
+        "/api/benchmarks/prediction?dataset=GunPoint&artifact_id=fcn-gunpoint&split=test&sample_index=0"
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    # GunPoint sample is stored as float32 (1, 3) → cast_float64 then flatten.
+    assert payload["model_input_length"] == 3
+    names = [t["name"] for t in payload["transforms"]]
+    assert names == ["cast_float64", "flatten"]
+    cast = payload["transforms"][0]
+    assert cast["params"]["from_dtype"] == "float32"
+    assert cast["params"]["to_dtype"] == "float64"
+    assert cast["before_shape"] == [1, 3]
+    assert cast["after_shape"] == [1, 3]
+    flatten = payload["transforms"][1]
+    assert flatten["before_shape"] == [1, 3]
+    assert flatten["after_shape"] == [3]
+    assert flatten["params"]["order"] == "C"
+
+
 def test_sample_endpoint_returns_real_sample_payload(tmp_path):
     client = create_benchmark_client(tmp_path)
 
@@ -334,6 +358,23 @@ def test_suggestion_endpoint_unknown_labeler_defaults_to_prototype(tmp_path):
 
     assert response.status_code == 200
     assert response.get_json()["labeler"] == "prototype"
+
+
+def test_predict_values_endpoint_reports_empty_transform_chain_on_1d_floats(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/benchmarks/predict-values",
+        data=json.dumps({"artifact_id": "fcn-gunpoint", "values": [0.1, 0.2, 0.3]}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    # JSON floats arrive as float64 1-D — no cast, no flatten. The strip
+    # should honestly report "0 transforms · identity".
+    assert payload["transforms"] == []
+    assert payload["model_input_length"] == 3
 
 
 def test_evidence_plausibility_endpoint_rejects_missing_dataset(tmp_path):
