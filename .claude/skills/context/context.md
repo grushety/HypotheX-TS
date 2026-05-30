@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-04 Evidence zone default view
+
+Assembled the EVIDENCE zone's calm-by-default view: `frontend/src/components/evidence/EvidenceZone.vue` composes four real-data plausibility gauges, a probe-toggle row (Saliency / Δ-sources / Min-flip — affordances real, behaviour deferred to REWORK-07/-08/-09), a fidelity-strip slot (REWORK-05), and caret-collapsed heavy panels (Warnings / Constraint budget / Audit log / Layers stub / Model stub). `PlausibilityGauges.vue` renders four SVG radial meters; `createPlausibilityGaugesState.js` is the pure derivation. WarningPanel + ConstraintBudgetBar + AuditLogPanel moved out of the page template and into the carets — only one direct mount remains: GuardrailsSidebar still floats (REWORK-06 will absorb it).
+
+**Backend (new endpoint, load-bearing).** `POST /api/benchmarks/evidence/plausibility` delegates to a new `EvidenceService` (`backend/app/services/evidence.py`) which orchestrates VAL-004 `native_guide_validate` + VAL-003 `YnnPlausibilityValidator`. Per-process LRU caches: native-guide thresholds JSON per dataset (loaded once, missing-cache returns None gracefully), and yNN validator per dataset (built from training set on first call; UCR-scale is sub-second). `DatasetNotFoundError` propagates so the route returns 404; everything else returns either real values or honest `None`. `target_class` is restricted to scalar str/int/float at the route to prevent yNN's `==` comparison from silently producing 0% on lists/dicts/bools.
+
+**Load-bearing honesty contract.** "No gauge shows a hardcoded/placeholder number" is enforced in two places: backend `EvidenceService` returns `None` (not 0) when calibration is unavailable or the validator can't build, and frontend `clamp01` returns `null` for non-finite OR out-of-range values so bad backend payloads surface as "—" rather than a fabricated 0%/100%. `displayValue` always derives from the clamped value, never the raw, so the percentage label cannot disagree with the gauge fill.
+
+**Pass rate ≠ VAL-012 (load-bearing).** The first gauge is labelled **"Pass rate"**, not "Validity". VAL-012's `validity_rate.py` defines validity as `predicted_class == target_class` per edit, which requires target-class semantics that the audit log doesn't yet carry through. The gauge instead computes constraint-engine PASS-rate from the local audit events, source-string honestly reads `"constraint engine · session audit (not VAL-012 yet)"`. Wiring real VAL-012 needs (a) per-edit target_class in the audit stream and (b) either a Flask route surfacing `ValidityRateTracker.rate()` or audit-replay client-side via `from_events`. Both are explicitly out of scope and flagged for a follow-up.
+
+**Series-version watcher (the timing rule).** EVIDENCE refresh is driven by the same `seriesVersion` counter REWORK-02 established for OUTPUT staleness. A watch on `seriesVersion` triggers `refreshPlausibilityGauges()` — proximity / sparsity / plausibility re-compute after every value-mutating operation, but not after structural-only edits (boundary moves, label changes, scope updates) because those don't bump `seriesVersion`. Race-guarded with monotonic `let plausibilityRequestId = 0` (same pattern as `compatibilityRequestId` / `semanticRequestId`).
+
+npm test 740/740 (+11 new); backend benchmark routes 14/14 (+3 new evidence-route tests).
+
+---
+
 ## REWORK-03 Uncertainty made visible
 
 Surfaced prediction uncertainty in the OUTPUT zone via three pure helpers in `frontend/src/lib/output/computeUncertainty.js`: `entropyNormalized` (Shannon 1948 / MacKay 2003), `topRunnerMargin` (Settles 2009), and `topPSet` — the smallest cumulative-probability cover set ≥ coverage. They are rolled into `assessUncertainty` which returns `{entropy, margin, nearTie, isUncertain, level, set, coverage}` with escalation when margin < 0.15 OR entropy > 0.60 (matches `designs/output.jsx`). The classification payload of `createOutputPanelState` now attaches the result. Visual escalation in `OutputPanel.vue`: Current block gains `.uncertain` (amber border + inset stripe), predicted-class bar gains `hedged` (diagonal stripe), entropy meter + level chip + cover-set chips render below the bars; tie-dot animation fires only on near-tie. Confident predictions stay quiet — no border, no icon, no animation.
