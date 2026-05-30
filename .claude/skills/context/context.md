@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-02 Output panel (Baseline / Current / Δ)
+
+Built the OUTPUT zone's centerpiece: `frontend/src/components/output/OutputPanel.vue` renders Baseline (locked at first prediction) + Current (rescored on demand) + a full-width Δ hero with an unmissable class-flip card. A pure state helper `frontend/src/lib/output/createOutputPanelState.js` derives one of five states (`empty` / `loading` / `normal` / `stale` / `error`) with precedence `error > loading > empty > stale > normal`, aligns baseline + current probabilities by label (preserving baseline order), and computes `predDelta` as the signed shift of the baseline class confidence. ModelComparisonPanel moved out of the OUTPUT zone — it's the segmentation suggestion UI, not a prediction view — and now lives in the INPUT z1-rail. **Load-bearing:** the page tracks `seriesVersion` (bumped only at the two value-mutation sites: inside `applyInvokeResponse` when values or aligned_segments actually change, and inside `handleChipUndo` on snapshot restore) and stamps `currentPredictionVersion` at the start of each `handleRerunPrediction` call. STALE is triggered iff the two versions disagree — segment/label/scope edits do not invalidate the prediction.
+
+**New backend endpoint (load-bearing):** `POST /api/benchmarks/predict-values` (`backend/app/routes/benchmarks.py`) scores an arbitrary `{artifact_id, values: [numbers]}` payload via `PredictionService.predict_values`, which skips dataset loading and compatibility validation — the caller has produced the edited series themselves. Input is hard-capped at 65 536 entries (DoS defense) and every entry must be a finite number. The existing `GET /api/benchmarks/prediction` response now also carries a `task: "classification"` field; the new `AdHocPredictionResponse` schema does the same. Regression mode is wired through the state machine for the day a regression adapter ships — the backend has no regression today.
+
+**Race-window caveat:** if the user fires two rapid re-runs and responses arrive out of order, the older response can overwrite Current and stamp the chip back to STALE. Not a correctness bug (user is never shown wrong-data-as-current), but the freshness chip will blip — a request-id guard is the planned fix.
+
+frontend 702/702 (11 new); backend routes 11/11; backend overall unaffected.
+
+---
+
 ## REWORK-01 Three-zone workspace frame
 
 Replaced the old `.viewport-body` (2-col) + `.bottom-strip` (collapsible warnings/audit pills) layout in `BenchmarkViewerPage.vue` with a CSS-grid three-zone frame: **INPUT** (left, ~1.35fr — selectors/palette/canvas) | **OUTPUT** (right-top, ~1.32fr — ModelComparisonPanel + session stats — the only accent-tinted zone) over **EVIDENCE** (right-bottom, ~1fr — WarningPanel + ConstraintBudgetBar + AuditLogPanel, flat/muted). New `frontend/src/zones.css` imported after `styles.css` in `main.js` ports the design tokens (`--ink`, `--bg-*`, `--accent`, `--st-*`, `--r-*`, `--font-mono`) and the zone rules. Foundation for all remaining REWORK-NN tickets.
