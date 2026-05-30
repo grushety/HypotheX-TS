@@ -65,6 +65,7 @@ import {
   fetchBenchmarkSuggestion,
   fetchBenchmarkUncertainty,
   fetchEvidencePlausibility,
+  fetchSaliency,
   predictBenchmarkValues,
   submitSuggestionDecision,
 } from "../services/api/benchmarkApi";
@@ -124,6 +125,12 @@ const validityRuns = ref([]);
 const minFlipResult = ref(null);
 const minFlipError = ref(null);
 let minFlipRequestId = 0;
+// REWORK-08: saliency overlay state. Cached per (sample, seriesVersion) by
+// recomputing on series mutation while the toggle is on.
+const saliencyResult = ref(null);
+const saliencyLoading = ref(false);
+const saliencyError = ref(null);
+let saliencyRequestId = 0;
 const probeFlags = ref({ saliency: false, deltaSources: false, minFlipSearching: false });
 const operationRegistry = ref(null);
 const proposalSegments = ref([]);
@@ -292,6 +299,9 @@ function clearPredictionState() {
   validityRuns.value = [];
   minFlipResult.value = null;
   minFlipError.value = null;
+  saliencyResult.value = null;
+  saliencyLoading.value = false;
+  saliencyError.value = null;
   probeFlags.value = { saliency: false, deltaSources: false, minFlipSearching: false };
 }
 
@@ -393,7 +403,47 @@ async function refreshPlausibilityGauges() {
 }
 
 function handleToggleSaliency() {
-  probeFlags.value = { ...probeFlags.value, saliency: !probeFlags.value.saliency };
+  const next = !probeFlags.value.saliency;
+  probeFlags.value = { ...probeFlags.value, saliency: next };
+  if (next) {
+    refreshSaliency();
+  } else {
+    // Toggle off → clean restore of the plain canvas.
+    saliencyResult.value = null;
+    saliencyError.value = null;
+    saliencyLoading.value = false;
+  }
+}
+
+async function refreshSaliency() {
+  if (!probeFlags.value.saliency) return;
+  const artifact = selectorState.value?.selectedArtifact;
+  const values = Array.isArray(sample.value?.values) ? sample.value.values : null;
+  if (!artifact || !values) {
+    saliencyError.value = "Load a sample and pick a model before computing saliency.";
+    saliencyLoading.value = false;
+    return;
+  }
+  const requestId = ++saliencyRequestId;
+  saliencyLoading.value = true;
+  saliencyError.value = null;
+  try {
+    const payload = await fetchSaliency({
+      artifactId: artifact.artifact_id,
+      values,
+    });
+    if (requestId !== saliencyRequestId) return;
+    saliencyResult.value = payload;
+  } catch (requestError) {
+    if (requestId !== saliencyRequestId) return;
+    saliencyResult.value = null;
+    saliencyError.value =
+      requestError instanceof Error ? requestError.message : "Saliency request failed.";
+  } finally {
+    if (requestId === saliencyRequestId) {
+      saliencyLoading.value = false;
+    }
+  }
 }
 
 function handleToggleDeltaSources() {
@@ -1574,6 +1624,9 @@ watch(seriesVersion, (version) => {
   // exactly when proximity / plausibility could change.
   if (version === 0) return;
   refreshPlausibilityGauges();
+  // REWORK-08: keep the saliency heatmap in lockstep with the series so it
+  // never displays stale attribution against a freshly-edited canvas.
+  if (probeFlags.value.saliency) refreshSaliency();
 });
 
 watch(
@@ -1817,6 +1870,11 @@ watch(
                 :segment-uncertainty="uncertaintyPayload?.segmentUncertainty ?? []"
                 :boundary-uncertainty="uncertaintyPayload?.boundaryUncertainty ?? []"
                 :ghost-values="minFlipGhostValues"
+                :saliency-attribution="probeFlags.saliency ? (saliencyResult?.attribution ?? null) : null"
+                :saliency-method="saliencyResult?.method ?? ''"
+                :saliency-reference="saliencyResult?.reference ?? ''"
+                :saliency-loading="probeFlags.saliency && saliencyLoading"
+                :saliency-error="probeFlags.saliency ? saliencyError : null"
                 @select-segment="handleSelectSegment"
                 @move-boundary="handleMoveBoundary"
               />

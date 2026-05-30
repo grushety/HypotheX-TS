@@ -4,6 +4,7 @@ import { computed } from "vue";
 import { createTimelineViewerModel } from "../../lib/viewer/createTimelineViewerModel";
 import SegmentationOverlay from "./SegmentationOverlay.vue";
 import TimeSeriesChart from "./TimeSeriesChart.vue";
+import SaliencyOverlay from "./SaliencyOverlay.vue";
 
 const props = defineProps({
   sample: {
@@ -24,6 +25,26 @@ const props = defineProps({
   },
   ghostValues: {
     type: Array,
+    default: null,
+  },
+  saliencyAttribution: {
+    type: Array,
+    default: null,
+  },
+  saliencyMethod: {
+    type: String,
+    default: "",
+  },
+  saliencyReference: {
+    type: String,
+    default: "",
+  },
+  saliencyLoading: {
+    type: Boolean,
+    default: false,
+  },
+  saliencyError: {
+    type: String,
     default: null,
   },
 });
@@ -63,6 +84,14 @@ const timelineModel = computed(() =>
         :boundary-uncertainty="props.boundaryUncertainty"
         @select-segment="emit('select-segment', $event)"
         @move-boundary="emit('move-boundary', $event)"
+      />
+      <SaliencyOverlay
+        v-if="saliencyAttribution || saliencyLoading || saliencyError"
+        :attribution="saliencyAttribution"
+        :method="saliencyMethod"
+        :reference="saliencyReference"
+        :loading="saliencyLoading"
+        :error="saliencyError"
       />
     </div>
     <div v-else class="chart-empty-state">Preparing chart data...</div>

@@ -11,6 +11,7 @@ from app.services.datasets import (
     DatasetSampleSelectionError,
 )
 from app.services.evidence import EvidenceService, EvidenceServiceError
+from app.services.saliency import SaliencyService, SaliencyServiceError
 from app.services.inference import InferenceAdapterError, InferenceServiceError, PredictionService, SampleSelectionError
 from app.services.models import ModelArtifactNotFoundError, ModelRegistry, ModelRegistryError
 from app.services.suggestion import build_default_support_segments
@@ -57,6 +58,12 @@ def _get_boundary_suggestion_service() -> BoundarySuggestionService:
 def _get_evidence_service() -> EvidenceService:
     return current_app.config.get("EVIDENCE_SERVICE") or EvidenceService(
         dataset_registry=_get_dataset_registry(),
+    )
+
+
+def _get_saliency_service() -> SaliencyService:
+    return current_app.config.get("SALIENCY_SERVICE") or SaliencyService(
+        model_registry=_get_model_registry(),
     )
 
 
@@ -204,6 +211,53 @@ def predict_values():
             "scores": _serialize_scores(prediction.scores),
             "transforms": _serialize_transforms(prediction.transforms),
             "model_input_length": prediction.model_input_length,
+        }
+    )
+
+
+@benchmarks_bp.post("/api/benchmarks/saliency")
+def saliency():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({"error": "Request body must be a JSON object."}), 400
+
+    artifact_id = body.get("artifact_id")
+    values = body.get("values")
+
+    if not isinstance(artifact_id, str) or not artifact_id:
+        return jsonify({"error": "Field 'artifact_id' is required and must be a non-empty string."}), 400
+    if not isinstance(values, list) or not values:
+        return jsonify({"error": "Field 'values' is required and must be a non-empty array."}), 400
+    if len(values) > _MAX_PREDICT_VALUES:
+        return (
+            jsonify({"error": f"Field 'values' must not exceed {_MAX_PREDICT_VALUES} entries."}),
+            400,
+        )
+    if not all(
+        isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+        for value in values
+    ):
+        return jsonify({"error": "Field 'values' must contain only finite numbers."}), 400
+
+    service = _get_saliency_service()
+    try:
+        result = service.compute_saliency(artifact_id=artifact_id, values=values)
+    except SaliencyServiceError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except ModelArtifactNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except (InferenceAdapterError, InferenceServiceError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    except ModelRegistryError as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify(
+        {
+            "artifact_id": result.artifact_id,
+            "baseline_class": result.baseline_class,
+            "attribution": list(result.attribution),
+            "method": result.method,
+            "reference": result.reference,
         }
     )
 
