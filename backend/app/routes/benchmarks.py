@@ -1,3 +1,5 @@
+import math
+
 from flask import Blueprint, current_app, jsonify, request
 
 from app.domain.operations_registry import build_operation_registry_catalog
@@ -16,6 +18,12 @@ from app.services.suggestion.uncertainty import score_uncertainty
 from app.services.suggestions import AdaptResult, BoundarySuggestionService, SuggestionServiceError
 
 benchmarks_bp = Blueprint("benchmarks", __name__)
+
+# Cap on POST /predict-values payload length. 65 536 comfortably exceeds any
+# realistic univariate time series the workbench will score (UCR benchmarks
+# top out around a few thousand points). Larger payloads are rejected as a
+# DoS defense rather than silently allocated.
+_MAX_PREDICT_VALUES = 65_536
 
 
 def _get_dataset_registry() -> DatasetRegistry:
@@ -140,14 +148,51 @@ def predict_sample():
             "sample_index": prediction.sample_index,
             "predicted_label": prediction.predicted_label,
             "true_label": prediction.true_label,
-            "scores": [
-                {
-                    "label": score.label,
-                    "score": score.score,
-                    "probability": score.probability,
-                }
-                for score in prediction.scores
-            ],
+            "task": prediction.task,
+            "scores": _serialize_scores(prediction.scores),
+        }
+    )
+
+
+@benchmarks_bp.post("/api/benchmarks/predict-values")
+def predict_values():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({"error": "Request body must be a JSON object."}), 400
+
+    artifact_id = body.get("artifact_id")
+    values = body.get("values")
+    if not isinstance(artifact_id, str) or not artifact_id:
+        return jsonify({"error": "Field 'artifact_id' is required and must be a non-empty string."}), 400
+    if not isinstance(values, list) or not values:
+        return jsonify({"error": "Field 'values' is required and must be a non-empty array."}), 400
+    if len(values) > _MAX_PREDICT_VALUES:
+        return (
+            jsonify({"error": f"Field 'values' must not exceed {_MAX_PREDICT_VALUES} entries."}),
+            400,
+        )
+    if not all(
+        isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+        for value in values
+    ):
+        return jsonify({"error": "Field 'values' must contain only finite numbers."}), 400
+
+    service = _get_prediction_service()
+    try:
+        prediction = service.predict_values(artifact_id=artifact_id, values=values)
+    except ModelArtifactNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except (InferenceAdapterError, SampleSelectionError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    except (InferenceServiceError, ModelRegistryError) as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify(
+        {
+            "artifact_id": prediction.artifact_id,
+            "predicted_label": prediction.predicted_label,
+            "task": prediction.task,
+            "scores": _serialize_scores(prediction.scores),
         }
     )
 
@@ -303,6 +348,17 @@ def fetch_uncertainty():
             "segment_uncertainty": list(uncertainty.segment_uncertainty),
         }
     )
+
+
+def _serialize_scores(scores):
+    return [
+        {
+            "label": score.label,
+            "score": score.score,
+            "probability": score.probability,
+        }
+        for score in scores
+    ]
 
 
 def _serialize_dataset_summary(summary):

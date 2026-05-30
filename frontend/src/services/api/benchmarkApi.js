@@ -116,6 +116,21 @@ export async function fetchBenchmarkPrediction(
   return payload;
 }
 
+export async function predictBenchmarkValues(artifactId, values, fetchImpl = fetch) {
+  const response = await fetchImpl("/api/benchmarks/predict-values", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artifact_id: artifactId, values }),
+  });
+  const payload = await readJsonResponse(response, "Predict values");
+
+  if (typeof payload.predicted_label !== "string" || !Array.isArray(payload.scores)) {
+    throw new Error("Predict values response must include predicted_label and scores.");
+  }
+
+  return payload;
+}
+
 export async function fetchBenchmarkSuggestion(datasetName, split, sampleIndex, labeler = "prototype", fetchImpl = fetch) {
   const params = new URLSearchParams({
     dataset: datasetName,

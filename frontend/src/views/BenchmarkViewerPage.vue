@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
+import OutputPanel from "../components/output/OutputPanel.vue";
 import AuditLogPanel from "../components/audit/AuditLogPanel.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
@@ -16,6 +17,7 @@ import DecompositionEditor from "../components/decomposition/DecompositionEditor
 import GapFillPicker from "../components/gaps/GapFillPicker.vue";
 import ScopeAttributeEditor from "../components/scope/ScopeAttributeEditor.vue";
 import GuardrailsSidebar from "../components/guardrails/GuardrailsSidebar.vue";
+import { createOutputPanelState } from "../lib/output/createOutputPanelState";
 import { updateSegmentScope } from "../services/api/segmentsApi";
 import { validationBus } from "../lib/audit/validationBus";
 import {
@@ -60,6 +62,7 @@ import {
   fetchBenchmarkSample,
   fetchBenchmarkSuggestion,
   fetchBenchmarkUncertainty,
+  predictBenchmarkValues,
   submitSuggestionDecision,
 } from "../services/api/benchmarkApi";
 import {
@@ -101,6 +104,10 @@ const auditEvents = ref([]);
 const predictionLoading = ref(false);
 const predictionError = ref("");
 const predictionResult = ref(null);
+const baselinePrediction = ref(null);
+const currentPrediction = ref(null);
+const seriesVersion = ref(0);
+const currentPredictionVersion = ref(null);
 const operationRegistry = ref(null);
 const proposalSegments = ref([]);
 const suggestionPayload = ref(null);
@@ -257,7 +264,32 @@ function clearPredictionState() {
   predictionLoading.value = false;
   predictionError.value = "";
   predictionResult.value = null;
+  baselinePrediction.value = null;
+  currentPrediction.value = null;
+  seriesVersion.value = 0;
+  currentPredictionVersion.value = null;
 }
+
+function bumpSeriesVersion() {
+  seriesVersion.value += 1;
+}
+
+const outputPanelState = computed(() =>
+  createOutputPanelState({
+    baseline: baselinePrediction.value,
+    current: currentPrediction.value,
+    loading: predictionLoading.value,
+    error: predictionError.value || null,
+    seriesVersion: seriesVersion.value,
+    currentVersion: currentPredictionVersion.value,
+  }),
+);
+
+const outputPanelArtifactLabel = computed(() => {
+  const artifact = selectorState.value?.selectedArtifact;
+  if (!artifact) return "";
+  return artifact.display_name ?? artifact.artifact_id ?? "";
+});
 
 function clearSuggestionState() {
   suggestionPayload.value = null;
@@ -459,16 +491,48 @@ async function handleRequestPrediction() {
   predictionError.value = "";
 
   try {
-    predictionResult.value = await fetchBenchmarkPrediction(
+    const result = await fetchBenchmarkPrediction(
       selectedDatasetName.value,
       selectorState.value.selectedArtifact.artifact_id,
       selectedSplit.value,
       selectedSampleIndex.value,
     );
+    predictionResult.value = result;
+    // Baseline is locked at the moment the user first scores this sample; the same
+    // result also seeds Current so the OUTPUT zone has something to render until
+    // an edit makes the series diverge.
+    baselinePrediction.value = result;
+    currentPrediction.value = result;
+    currentPredictionVersion.value = seriesVersion.value;
   } catch (requestError) {
     predictionResult.value = null;
     predictionError.value =
       requestError instanceof Error ? requestError.message : "Failed to fetch benchmark prediction.";
+  } finally {
+    predictionLoading.value = false;
+  }
+}
+
+async function handleRerunPrediction() {
+  // Empty-state path: no baseline yet → behave like Request prediction.
+  if (!baselinePrediction.value) {
+    await handleRequestPrediction();
+    return;
+  }
+  const artifact = selectorState.value?.selectedArtifact;
+  if (!artifact || !Array.isArray(sample.value?.values)) {
+    return;
+  }
+  const scoredVersion = seriesVersion.value;
+  predictionLoading.value = true;
+  predictionError.value = "";
+  try {
+    const result = await predictBenchmarkValues(artifact.artifact_id, sample.value.values);
+    currentPrediction.value = result;
+    currentPredictionVersion.value = scoredVersion;
+  } catch (requestError) {
+    predictionError.value =
+      requestError instanceof Error ? requestError.message : "Failed to re-score the current series.";
   } finally {
     predictionLoading.value = false;
   }
@@ -1030,6 +1094,7 @@ function handleChipUndo({ chipId, segmentId, opId }) {
     return;
   }
   sample.value = { ...sample.value, values: snapshot.values, segments: snapshot.segments };
+  bumpSeriesVersion();
   auditEvents.value = appendAuditEvent(
     auditEvents.value,
     createOperationAuditEvent(
@@ -1049,6 +1114,7 @@ function handleChipUndo({ chipId, segmentId, opId }) {
 
 function applyInvokeResponse({ tier, op_name, params, response }) {
   const alignedSegments = response.extra?.aligned_segments;
+  let valuesChanged = false;
   if (Array.isArray(alignedSegments) && alignedSegments.length > 0 && Array.isArray(sample.value?.values)) {
     const segById = new Map((sample.value.segments ?? []).map((s) => [s.id, s]));
     const next = sample.value.values.slice();
@@ -1059,13 +1125,16 @@ function applyInvokeResponse({ tier, op_name, params, response }) {
       for (let i = 0; i < len; i += 1) next[seg.start + i] = aligned.values[i];
     }
     sample.value = { ...sample.value, values: next };
+    valuesChanged = true;
   } else if (Array.isArray(response.values) && selectedSegment.value && Array.isArray(sample.value?.values)) {
     const seg = selectedSegment.value;
     const next = sample.value.values.slice();
     const len = Math.min(response.values.length, seg.end - seg.start + 1);
     for (let i = 0; i < len; i += 1) next[seg.start + i] = response.values[i];
     sample.value = { ...sample.value, values: next };
+    valuesChanged = true;
   }
+  if (valuesChanged) bumpSeriesVersion();
 
   if (response.label_chip) {
     labelChipBus.publish(response.label_chip);
@@ -1498,6 +1567,15 @@ watch(
                 @op-invoked="handleDecompositionEditorOp"
               />
             </div>
+
+            <ModelComparisonPanel
+              :state="comparisonState"
+              @request-suggestion="handleRequestSuggestion"
+              @accept-suggestion="handleAcceptSuggestion"
+              @override-suggestion="handleOverrideSuggestion"
+              @adapt-model="handleAdaptModel"
+              @update-labeler="handleUpdateLabeler"
+            />
           </div>
 
           <div class="z1-canvas" aria-label="Timeline and segments">
@@ -1597,13 +1675,11 @@ watch(
             <span class="zsub">what the model says</span>
           </div>
           <div class="zone-output-body">
-            <ModelComparisonPanel
-              :state="comparisonState"
-              @request-suggestion="handleRequestSuggestion"
-              @accept-suggestion="handleAcceptSuggestion"
-              @override-suggestion="handleOverrideSuggestion"
-              @adapt-model="handleAdaptModel"
-              @update-labeler="handleUpdateLabeler"
+            <OutputPanel
+              :state="outputPanelState"
+              :artifact-label="outputPanelArtifactLabel"
+              @request-prediction="handleRequestPrediction"
+              @rerun-prediction="handleRerunPrediction"
             />
 
             <div class="session-stats-panel">

@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 
-from app.schemas.prediction import PredictionResponse, PredictionScore
+from app.schemas.prediction import AdHocPredictionResponse, PredictionResponse, PredictionScore
 from app.services.compatibility import CompatibilityValidator
 from app.services.datasets import DatasetRegistry, LoadedDataset
 from app.services.models import ModelArtifactHandle, ModelRegistry
@@ -156,18 +156,73 @@ class PredictionService:
 
         dataset = self._dataset_registry.load_dataset(dataset_name)
         handle = self._model_registry.load_artifact(artifact_id)
-        adapter = self._ADAPTERS.get(handle.artifact.family)
-        if adapter is None:
-            raise InferenceAdapterError(f"No inference adapter is available for family '{handle.artifact.family}'.")
+        adapter = self._resolve_adapter(handle)
 
         sample, true_label = self._select_sample(dataset, split, sample_index)
+        score_entries, best_index = self._score(adapter, handle, sample, dataset_name=dataset_name)
+
+        return PredictionResponse(
+            dataset_name=dataset_name,
+            artifact_id=artifact_id,
+            split=split,
+            sample_index=sample_index,
+            predicted_label=score_entries[best_index].label,
+            true_label=true_label,
+            scores=score_entries,
+        )
+
+    def predict_values(
+        self,
+        artifact_id: str,
+        values: list[float] | np.ndarray,
+    ) -> AdHocPredictionResponse:
+        """Score an arbitrary value vector (e.g. an edited / counterfactual series).
+
+        Skips dataset loading and compatibility validation — the caller has produced
+        the values themselves and only needs the model artifact applied to them.
+        """
+        if values is None:
+            raise SampleSelectionError("Prediction values vector is required.")
+
+        sample = np.asarray(values, dtype=np.float64).reshape(-1)
+        if sample.size == 0:
+            raise SampleSelectionError("Prediction values vector must be non-empty.")
+
+        handle = self._model_registry.load_artifact(artifact_id)
+        adapter = self._resolve_adapter(handle)
+        score_entries, best_index = self._score(adapter, handle, sample, dataset_name=None)
+
+        return AdHocPredictionResponse(
+            artifact_id=artifact_id,
+            predicted_label=score_entries[best_index].label,
+            scores=score_entries,
+        )
+
+    def _resolve_adapter(self, handle: ModelArtifactHandle) -> InferenceAdapter:
+        adapter = self._ADAPTERS.get(handle.artifact.family)
+        if adapter is None:
+            raise InferenceAdapterError(
+                f"No inference adapter is available for family '{handle.artifact.family}'."
+            )
+        return adapter
+
+    def _score(
+        self,
+        adapter: InferenceAdapter,
+        handle: ModelArtifactHandle,
+        sample: np.ndarray,
+        *,
+        dataset_name: str | None,
+    ) -> tuple[tuple[PredictionScore, ...], int]:
+        artifact_id = handle.artifact.artifact_id
         try:
             scores, probabilities = adapter.predict(handle, sample)
         except InferenceAdapterError:
             raise
         except Exception as exc:
+            context = f" on dataset '{dataset_name}'" if dataset_name else ""
             raise InferenceAdapterError(
-                f"Prediction failed for artifact '{artifact_id}' on dataset '{dataset_name}'."
+                f"Prediction failed for artifact '{artifact_id}'{context}."
             ) from exc
 
         label_space = handle.artifact.label_space
@@ -186,16 +241,7 @@ class PredictionService:
             for index in range(len(label_space))
         )
         best_index = max(range(len(score_entries)), key=lambda index: score_entries[index].score)
-
-        return PredictionResponse(
-            dataset_name=dataset_name,
-            artifact_id=artifact_id,
-            split=split,
-            sample_index=sample_index,
-            predicted_label=score_entries[best_index].label,
-            true_label=true_label,
-            scores=score_entries,
-        )
+        return score_entries, best_index
 
     def _select_sample(
         self,

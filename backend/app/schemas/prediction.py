@@ -17,3 +17,14 @@ class PredictionResponse:
     predicted_label: str
     true_label: str | None
     scores: tuple[PredictionScore, ...]
+    task: str = "classification"
+
+
+@dataclass(frozen=True)
+class AdHocPredictionResponse:
+    """Prediction for an arbitrary value vector (counterfactual / edited series)."""
+
+    artifact_id: str
+    predicted_label: str
+    scores: tuple[PredictionScore, ...]
+    task: str = "classification"
