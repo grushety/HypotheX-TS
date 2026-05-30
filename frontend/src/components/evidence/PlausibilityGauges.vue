@@ -37,6 +37,19 @@ function toneColorVar(tone) {
     <header class="plaus-header">
       <span class="mlabel">Edit quality</span>
       <span v-if="!state.hasEdit" class="plaus-empty-hint">apply an edit to score</span>
+      <span
+        v-if="state.offDistribution"
+        class="plaus-offdist"
+        role="status"
+        :title="state.offDistributionReason"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </svg>
+        OFF-DISTRIBUTION
+      </span>
     </header>
 
     <div class="plaus-grid" role="group" aria-label="Plausibility gauges">
@@ -44,8 +57,10 @@ function toneColorVar(tone) {
         v-for="gauge in gauges"
         :key="gauge.key"
         class="plaus-card"
-        :class="{ inactive: gauge.value == null }"
-        :title="gauge.hint"
+        :class="{
+          inactive: gauge.value == null,
+          'tone-warn': gauge.tone === 'uncertain',
+        }"
       >
         <svg
           :width="GAUGE_SIZE"
@@ -58,6 +73,7 @@ function toneColorVar(tone) {
           :aria-valuemin="0"
           :aria-valuemax="100"
           :aria-valuenow="gauge.value == null ? undefined : Math.round(gauge.value * 100)"
+          :aria-describedby="`gauge-tip-${gauge.key}`"
         >
           <circle
             class="plaus-ring-track"
@@ -88,7 +104,11 @@ function toneColorVar(tone) {
           >{{ gauge.displayValue }}</text>
         </svg>
         <div class="plaus-name">{{ gauge.label }}</div>
-        <div class="plaus-source mlabel-sub">{{ gauge.source }}</div>
+        <div :id="`gauge-tip-${gauge.key}`" class="plaus-tip" role="tooltip">
+          <div class="plaus-tip-hint">{{ gauge.hint }}</div>
+          <div class="plaus-tip-source">{{ gauge.source }}</div>
+          <div v-if="gauge.reference" class="plaus-tip-ref">{{ gauge.reference }}</div>
+        </div>
       </div>
     </div>
   </section>
@@ -159,11 +179,71 @@ function toneColorVar(tone) {
   font-weight: 600;
   color: var(--ink-2);
 }
-.plaus-source {
+/* off-distribution badge in the header — fires only when yNN is below threshold */
+.plaus-offdist {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.03em;
-  color: var(--ink-4);
-  line-height: 1.2;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--st-warn);
+  background: var(--st-warn-bg);
+  border: 1px solid #e8c98f;
+  border-radius: 3px;
+  padding: 2px 7px;
+  animation: plaus-offdist-pulse 1.6s ease-in-out infinite;
+}
+.plaus-offdist svg { width: 12px; height: 12px; }
+@keyframes plaus-offdist-pulse {
+  50% { background: rgba(232, 135, 12, 0.18); }
+}
+
+/* warn-toned gauge card — only when its own tone is 'uncertain' */
+.plaus-card.tone-warn {
+  border-color: #e8c98f;
+  box-shadow: inset 0 -2px 0 var(--st-warn);
+}
+
+/* anchored tooltip — appears on hover/focus of the card. Naming the metric
+   + paper reference satisfies REWORK-06 AC. */
+.plaus-card { position: relative; }
+.plaus-tip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 240px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--r-sm);
+  padding: 7px 9px;
+  font-size: 11px;
+  line-height: 1.45;
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 5;
+}
+.plaus-card:hover .plaus-tip,
+.plaus-card:focus-within .plaus-tip { opacity: 1; }
+.plaus-tip-hint { font-weight: 600; }
+.plaus-tip-source {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 4px;
+}
+.plaus-tip-ref {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.62);
+  margin-top: 3px;
+  font-style: italic;
 }
 </style>

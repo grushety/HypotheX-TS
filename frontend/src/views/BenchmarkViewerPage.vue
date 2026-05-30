@@ -115,6 +115,10 @@ const plausibilityResult = ref(null);
 const plausibilityVersion = ref(null);
 const plausibilityError = ref(null);
 let plausibilityRequestId = 0;
+// REWORK-06: per-rerun validity log. Each entry is `{version, flipped}` —
+// "flipped" iff the rerun's predicted_label differs from the locked baseline.
+// VAL-012's session-cumulative rate is `flipped / total` over this list.
+const validityRuns = ref([]);
 const probeFlags = ref({ saliency: false, deltaSources: false, minFlipSearching: false });
 const operationRegistry = ref(null);
 const proposalSegments = ref([]);
@@ -280,6 +284,7 @@ function clearPredictionState() {
   plausibilityResult.value = null;
   plausibilityVersion.value = null;
   plausibilityError.value = null;
+  validityRuns.value = [];
   probeFlags.value = { saliency: false, deltaSources: false, minFlipSearching: false };
 }
 
@@ -306,7 +311,7 @@ const outputPanelArtifactLabel = computed(() => {
 
 const plausibilityGaugesState = computed(() =>
   createPlausibilityGaugesState({
-    events: auditEvents.value,
+    validityRuns: validityRuns.value,
     plausibility: plausibilityResult.value,
     hasEdit: seriesVersion.value > 0,
   }),
@@ -643,6 +648,17 @@ async function handleRerunPrediction() {
     const result = await predictBenchmarkValues(artifact.artifact_id, sample.value.values);
     currentPrediction.value = result;
     currentPredictionVersion.value = scoredVersion;
+    // REWORK-06: record VAL-012 validity outcome for this rerun. The edit is
+    // "valid" iff the rerun's prediction differs from the locked baseline.
+    // Same out-of-order-response window as currentPrediction itself — entries
+    // carry `version` so the list is reconstructable in arrival order if a
+    // future ticket adds a request-id guard.
+    const baselineLabel = baselinePrediction.value?.predicted_label ?? null;
+    const flipped = baselineLabel != null && result?.predicted_label !== baselineLabel;
+    validityRuns.value = [
+      ...validityRuns.value,
+      { version: scoredVersion, flipped: Boolean(flipped) },
+    ];
   } catch (requestError) {
     predictionError.value =
       requestError instanceof Error ? requestError.message : "Failed to re-score the current series.";

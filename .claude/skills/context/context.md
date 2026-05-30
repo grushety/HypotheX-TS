@@ -6,6 +6,20 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-06 Live plausibility meter
+
+Closed the two REWORK-04 gaps: the "Pass rate" placeholder gauge becomes real VAL-012 Validity, and every gauge now carries a paper reference. **Validity** is derived in `BenchmarkViewerPage` from a new `validityRuns = ref([])` log — every successful `handleRerunPrediction` appends `{version, flipped: result.predicted_label !== baselinePrediction.predicted_label}`. The gauge value is the session-cumulative rate. Resets in `clearPredictionState`. The lib helper `createPlausibilityGaugesState.js` now takes `validityRuns` instead of `events`. Tooltip per gauge (role=tooltip, aria-describedby) carries `hint + source + reference`; the always-visible source footer is removed. Cluster-level OFF-DISTRIBUTION badge fires only when yNN is finite AND below `OFF_DISTRIBUTION_THRESHOLD = 0.4` — null plausibility is no claim, not a low claim. Reason text corroborates with low sparsity ("touches more than half of the series"). Per-card `.tone-warn` modifier on uncertain-tone gauges.
+
+**Honest VAL-012 specialisation (load-bearing).** Strict VAL-012 is `predicted_class == target_class`. This prototype has no explicit target-class picker, so the gauge measures `predicted_class != baseline.predicted_class` — "any flip away from baseline". This is the canonical fallback in Mothilal §3.1 when no desired class is specified; the JSDoc says so explicitly. Citations on every gauge: Verma *ACM CSUR* 56:312 (2024) §3 + Mothilal DiCE FAccT 2020 §3.1 (validity); Delaney ICCBR 2021 §3.1/§3.2 (proximity, sparsity); Pawelczyk NeurIPS 2020 + Verma 2024 §4.4 (yNN plausibility).
+
+**probe_ir (VAL-002) is intentionally NOT a 5th gauge.** It's regression / binary-decision-rule and requires the model to expose `gradient` + `threshold`. The PrototypeInferenceAdapter exposes neither. Wiring it in would require analytic-adapter rework — separate ticket. The 4-gauge view is the AC.
+
+**Off-distribution threshold provenance.** `OFF_DISTRIBUTION_THRESHOLD = 0.4` is a presentation constant in the lib; `NativeGuideThresholds` (per-dataset NUN-distance calibration) live in JSON cache files (`backend/app/services/validation/cache/native_guide_thresholds_<dataset>.json`) — none ship today, so `proximity_pct` stays null until a calibration step lands.
+
+npm test 752/752 (+5 net after the gauge-state test file went 11 → 16).
+
+---
+
 ## REWORK-05 Fidelity "Model sees this" strip
 
 Added the EVIDENCE-zone trust feature: a collapsible strip showing the exact preprocessed series the model consumed, plus an ordered list of every input-side transform. `frontend/src/components/evidence/FidelityStrip.vue` collapses to a one-liner ("Model sees this · N transforms · ✓ compatible · L values") and expands to a numbered transform list + raw-vs-model SVG overlay + compatibility-warning block (`role="alert"`). For typical 1-D float input via `predict-values` the strip shows "identity (0 transforms)" with an "identical to edit" tag in the overlay legend. Mounted via EvidenceZone's `fidelity` slot — replaces the REWORK-04 placeholder stub.
