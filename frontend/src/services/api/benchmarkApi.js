@@ -116,6 +116,19 @@ export async function fetchBenchmarkPrediction(
   return payload;
 }
 
+export async function fetchSaliency({ artifactId, values }, fetchImpl = fetch) {
+  const response = await fetchImpl("/api/benchmarks/saliency", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artifact_id: artifactId, values }),
+  });
+  const payload = await readJsonResponse(response, "Saliency");
+  if (!Array.isArray(payload.attribution)) {
+    throw new Error("Saliency response must include an attribution array.");
+  }
+  return payload;
+}
+
 export async function fetchEvidencePlausibility(
   { datasetName, baselineValues, currentValues, targetClass },
   fetchImpl = fetch,

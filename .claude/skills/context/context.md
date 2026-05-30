@@ -6,6 +6,24 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-08 Saliency overlay
+
+Toggleable per-timestep attribution heatmap rendered BELOW the chart line in TimelineViewer. Backend `SaliencyService` (`backend/app/services/saliency.py`) implements **perturbation/occlusion** — for each timestep t, mask `x[t] = mean(x)`, re-score, attribution[t] = P(c*|x) − P(c*|x_masked). Sign is preserved so the UI distinguishes informative (amber) from counter-evidence (indigo) timesteps. Reuses `PrototypeInferenceAdapter` for scoring so saliency and prediction share the same softmax convention. Method dispatch is single-armed today (prototype → occlusion); a future differentiable family lands as another arm.
+
+**Method choice (load-bearing).** Only `PrototypeInferenceAdapter` ships today; it has no analytic gradient, so IG/TSR are blocked. Dynamic Masks (Crabbé & van der Schaar ICML 2021) is heavy compute. Mean-masked occlusion (Zeiler & Fergus ECCV 2014 §3.1) is the cheap, no-dependency baseline that's been the standard for ten years — our implementation is the uniform-per-timestep special case of Dynamic Masks. When a TCN/FCN gradient adapter lands, the dispatch routes to TSR over IG (Ismail et al. NeurIPS 2020) for that family.
+
+**Sign preservation (load-bearing).** Per-timestep attribution is positive when masking *hurt* the baseline-class probability (model relied on the point), negative when masking *helped* (the point argued against the prediction). Naive |attribution| would hide counter-evidence; surfacing both colors in the heatmap is intentional. `createSaliencyOverlayModel.js` square-root-scales opacity to peak magnitude; flat-zero attribution renders zero opacity (no fabricated heat).
+
+**Visual placement (load-bearing).** SaliencyOverlay renders BELOW the chart line, not as a chart-background fill. This prevents collision with shape-atom segment bands (which live IN the chart background). The legend names the method + paper reference via a `title` tooltip.
+
+**Auto-refresh on series mutation.** The `seriesVersion` watcher also fires `refreshSaliency()` when the toggle is on, so the heatmap stays in lockstep with edits. Race-guarded with module-scoped `let saliencyRequestId = 0` mirroring `plausibilityRequestId` / `minFlipRequestId`. Toggle-off clears state to null → SaliencyOverlay's `v-if` evaluates false → component unmounts → plain canvas restored.
+
+**No server-side cache yet.** Each toggle-on or post-edit refresh runs O(T) backend predictions. For UCR-scale (T ≤ 1000) sub-second. Larger benchmarks would benefit from `(artifact_id, sample_hash)` LRU caching; separate ticket.
+
+npm test 759/759 (+7 new); backend benchmark routes 22/22 (+3 new).
+
+---
+
 ## REWORK-07 Min-flip probe
 
 One-click "smallest edit that flips the model" probe. Backend `MinFlipService` (`backend/app/services/operations/min_flip.py`) implements the **closed-form L2-minimal flip in nearest-prototype geometry**: the decision boundary between classes c* and c′ is the perpendicular bisector of `p_{c*} ↔ p_{c′}`; pick `min over c′` of signed distance, edit = `x + (d + ε)·(−n/‖n‖)`. **Exact for binary classifiers**, lower-bound for ≥3 classes. For multi-class, the service re-classifies the resulting edit and downgrades to `found=False` with a Voronoi-containment reason rather than falsely claiming a flip. Reference: Wachter, Mittelstadt, Russell, *HJLT* 31:841 (2018), arXiv:1711.00399 §3.1 Eq. 3 — minimum-distance counterfactual, prototype-geometry simplification.

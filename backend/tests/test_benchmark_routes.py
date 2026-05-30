@@ -448,6 +448,62 @@ def test_evidence_plausibility_endpoint_returns_proximity_sparsity_and_null_plau
     assert payload["plausibility_k"] is None
 
 
+def test_saliency_endpoint_rejects_missing_values(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/benchmarks/saliency",
+        data=json.dumps({"artifact_id": "fcn-gunpoint"}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "values" in response.get_json()["error"].lower()
+
+
+def test_saliency_endpoint_rejects_non_finite_values(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/benchmarks/saliency",
+        data=json.dumps(
+            {"artifact_id": "fcn-gunpoint", "values": [0.1, float("inf"), 0.2]}
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "finite" in response.get_json()["error"].lower()
+
+
+def test_saliency_endpoint_returns_per_timestep_attribution_aligned_to_input(tmp_path):
+    client = create_benchmark_client(tmp_path)
+    # Asymmetric input so attribution isn't flat zero. Prototypes are
+    # [0,0,0] (class-0) and [1,1,1] (class-1); baseline [0.1, 0, 0.4]
+    # classifies as class-0 (sum = 0.5 < 1.5).
+    response = client.post(
+        "/api/benchmarks/saliency",
+        data=json.dumps(
+            {"artifact_id": "fcn-gunpoint", "values": [0.1, 0.0, 0.4]}
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["baseline_class"] == "class-0"
+    assert isinstance(payload["attribution"], list)
+    assert len(payload["attribution"]) == 3
+    assert all(isinstance(v, float) for v in payload["attribution"])
+    # Method label + reference are surfaced (REWORK-08 AC).
+    assert "occlusion" in payload["method"].lower()
+    assert payload["reference"]
+    # At least one timestep must have a non-zero attribution — masking
+    # something has to change the predicted-class probability for a real
+    # classifier with non-degenerate input.
+    assert any(abs(v) > 1e-9 for v in payload["attribution"])
+
+
 def test_min_flip_endpoint_rejects_missing_artifact_id(tmp_path):
     client = create_benchmark_client(tmp_path)
 
