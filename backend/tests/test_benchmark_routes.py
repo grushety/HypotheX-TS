@@ -334,3 +334,74 @@ def test_suggestion_endpoint_unknown_labeler_defaults_to_prototype(tmp_path):
 
     assert response.status_code == 200
     assert response.get_json()["labeler"] == "prototype"
+
+
+def test_evidence_plausibility_endpoint_rejects_missing_dataset(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/benchmarks/evidence/plausibility",
+        data=json.dumps(
+            {
+                "baseline_values": [0.0, 0.1],
+                "current_values": [0.0, 0.2],
+                "target_class": "class-0",
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "dataset" in response.get_json()["error"].lower()
+
+
+def test_evidence_plausibility_endpoint_rejects_mismatched_lengths(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/benchmarks/evidence/plausibility",
+        data=json.dumps(
+            {
+                "dataset": "GunPoint",
+                "baseline_values": [0.0, 0.1, 0.2],
+                "current_values": [0.0, 0.2],
+                "target_class": "class-0",
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    error = response.get_json()["error"].lower()
+    assert "length" in error or "match" in error
+
+
+def test_evidence_plausibility_endpoint_returns_proximity_sparsity_and_null_plausibility(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/benchmarks/evidence/plausibility",
+        data=json.dumps(
+            {
+                "dataset": "GunPoint",
+                "baseline_values": [0.0, 0.0, 0.0],
+                "current_values": [0.0, 0.5, 0.0],
+                "target_class": "class-0",
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    # proximity + sparsity always returned (no calibration required)
+    assert isinstance(payload["proximity"], float)
+    assert isinstance(payload["sparsity"], float)
+    assert 0.0 <= payload["sparsity"] <= 1.0
+    # proximity_pct is None — no calibration cache exists for "GunPoint".
+    assert payload["proximity_pct"] is None
+    assert payload["too_dense"] is False
+    # yNN index cannot be built from the (2, 1, 3) test fixture (ndim != 2);
+    # plausibility is honestly null rather than a fabricated number.
+    assert payload["plausibility"] is None
+    assert payload["plausibility_k"] is None

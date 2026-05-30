@@ -116,6 +116,28 @@ export async function fetchBenchmarkPrediction(
   return payload;
 }
 
+export async function fetchEvidencePlausibility(
+  { datasetName, baselineValues, currentValues, targetClass },
+  fetchImpl = fetch,
+) {
+  const response = await fetchImpl("/api/benchmarks/evidence/plausibility", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dataset: datasetName,
+      baseline_values: baselineValues,
+      current_values: currentValues,
+      target_class: targetClass,
+    }),
+  });
+  const payload = await readJsonResponse(response, "Evidence plausibility");
+
+  if (typeof payload !== "object") {
+    throw new Error("Evidence plausibility response must be an object.");
+  }
+  return payload;
+}
+
 export async function predictBenchmarkValues(artifactId, values, fetchImpl = fetch) {
   const response = await fetchImpl("/api/benchmarks/predict-values", {
     method: "POST",

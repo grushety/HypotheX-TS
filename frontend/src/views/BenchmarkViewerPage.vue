@@ -3,12 +3,10 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import ModelComparisonPanel from "../components/comparison/ModelComparisonPanel.vue";
 import OutputPanel from "../components/output/OutputPanel.vue";
-import AuditLogPanel from "../components/audit/AuditLogPanel.vue";
+import EvidenceZone from "../components/evidence/EvidenceZone.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
-import WarningPanel from "../components/warnings/WarningPanel.vue";
-import ConstraintBudgetBar from "../components/constraints/ConstraintBudgetBar.vue";
 import CompensationModeSelector from "../components/constraints/CompensationModeSelector.vue";
 import PredictedLabelChip from "../components/relabel/PredictedLabelChip.vue";
 import DonorPicker from "../components/donors/DonorPicker.vue";
@@ -18,6 +16,7 @@ import GapFillPicker from "../components/gaps/GapFillPicker.vue";
 import ScopeAttributeEditor from "../components/scope/ScopeAttributeEditor.vue";
 import GuardrailsSidebar from "../components/guardrails/GuardrailsSidebar.vue";
 import { createOutputPanelState } from "../lib/output/createOutputPanelState";
+import { createPlausibilityGaugesState } from "../lib/evidence/createPlausibilityGaugesState";
 import { updateSegmentScope } from "../services/api/segmentsApi";
 import { validationBus } from "../lib/audit/validationBus";
 import {
@@ -62,6 +61,7 @@ import {
   fetchBenchmarkSample,
   fetchBenchmarkSuggestion,
   fetchBenchmarkUncertainty,
+  fetchEvidencePlausibility,
   predictBenchmarkValues,
   submitSuggestionDecision,
 } from "../services/api/benchmarkApi";
@@ -108,6 +108,12 @@ const baselinePrediction = ref(null);
 const currentPrediction = ref(null);
 const seriesVersion = ref(0);
 const currentPredictionVersion = ref(null);
+const baselineValues = ref(null);
+const plausibilityResult = ref(null);
+const plausibilityVersion = ref(null);
+const plausibilityError = ref(null);
+let plausibilityRequestId = 0;
+const probeFlags = ref({ saliency: false, deltaSources: false, minFlipSearching: false });
 const operationRegistry = ref(null);
 const proposalSegments = ref([]);
 const suggestionPayload = ref(null);
@@ -268,6 +274,11 @@ function clearPredictionState() {
   currentPrediction.value = null;
   seriesVersion.value = 0;
   currentPredictionVersion.value = null;
+  baselineValues.value = null;
+  plausibilityResult.value = null;
+  plausibilityVersion.value = null;
+  plausibilityError.value = null;
+  probeFlags.value = { saliency: false, deltaSources: false, minFlipSearching: false };
 }
 
 function bumpSeriesVersion() {
@@ -290,6 +301,92 @@ const outputPanelArtifactLabel = computed(() => {
   if (!artifact) return "";
   return artifact.display_name ?? artifact.artifact_id ?? "";
 });
+
+const plausibilityGaugesState = computed(() =>
+  createPlausibilityGaugesState({
+    events: auditEvents.value,
+    plausibility: plausibilityResult.value,
+    hasEdit: seriesVersion.value > 0,
+  }),
+);
+
+async function refreshPlausibilityGauges() {
+  // Only run when there is a baseline series locked AND the user has touched
+  // the series at least once. seriesVersion === 0 is the "before any edit"
+  // state — no edit means nothing to compare, no point calling the backend.
+  if (
+    !sample.value ||
+    !Array.isArray(sample.value.values) ||
+    seriesVersion.value === 0 ||
+    !baselineValues.value
+  ) {
+    plausibilityResult.value = null;
+    plausibilityVersion.value = null;
+    return;
+  }
+  const datasetName = selectedDatasetName.value;
+  if (!datasetName) return;
+
+  const targetClass =
+    baselinePrediction.value?.predicted_label ??
+    sample.value?.label ??
+    sample.value?.classes?.[0] ??
+    null;
+  if (targetClass == null) return;
+
+  if (baselineValues.value.length !== sample.value.values.length) {
+    // Skip when shapes diverge — could happen mid-operation; the next stable
+    // version will retry.
+    return;
+  }
+
+  const requestId = ++plausibilityRequestId;
+  const scoredVersion = seriesVersion.value;
+  try {
+    const payload = await fetchEvidencePlausibility({
+      datasetName,
+      baselineValues: baselineValues.value,
+      currentValues: sample.value.values,
+      targetClass,
+    });
+    if (requestId === plausibilityRequestId) {
+      plausibilityResult.value = payload;
+      plausibilityVersion.value = scoredVersion;
+    }
+  } catch (requestError) {
+    if (requestId === plausibilityRequestId) {
+      // Surface no fabricated numbers — keep last good result and record the
+      // error on a dedicated ref so it does not appear in the operation
+      // feedback strip (the operation itself succeeded; only the diagnostic
+      // refresh failed).
+      plausibilityError.value =
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to refresh plausibility gauges.";
+    }
+  }
+}
+
+function handleToggleSaliency() {
+  probeFlags.value = { ...probeFlags.value, saliency: !probeFlags.value.saliency };
+}
+
+function handleToggleDeltaSources() {
+  probeFlags.value = {
+    ...probeFlags.value,
+    deltaSources: !probeFlags.value.deltaSources,
+  };
+}
+
+function handleProbeMinFlip() {
+  // REWORK-07 will wire the actual probe; for REWORK-04 the button is a
+  // discoverable affordance that confirms intent (briefly flips the spinner).
+  if (probeFlags.value.minFlipSearching) return;
+  probeFlags.value = { ...probeFlags.value, minFlipSearching: true };
+  setTimeout(() => {
+    probeFlags.value = { ...probeFlags.value, minFlipSearching: false };
+  }, 600);
+}
 
 function clearSuggestionState() {
   suggestionPayload.value = null;
@@ -316,6 +413,9 @@ async function loadSample() {
       selectedSampleIndex.value,
     );
     sample.value = createViewerSampleFromApi(payload);
+    baselineValues.value = Array.isArray(sample.value?.values)
+      ? [...sample.value.values]
+      : null;
     clearSuggestionState();
     editFeedback.value = "";
     operationFeedback.value = "";
@@ -1353,6 +1453,15 @@ watch(
   { immediate: true },
 );
 
+watch(seriesVersion, (version) => {
+  // Each time a value-changing operation lands, re-score the gauges from
+  // the backend. seriesVersion is bumped only at the two real mutation
+  // sites (applyInvokeResponse, handleChipUndo), so this watcher fires
+  // exactly when proximity / plausibility could change.
+  if (version === 0) return;
+  refreshPlausibilityGauges();
+});
+
 watch(
   [selectedDatasetName, selectedSplit, selectedSampleIndex],
   ([datasetName]) => {
@@ -1715,20 +1824,17 @@ watch(
             <span class="zsub">can I trust it</span>
           </div>
           <div class="ev-body">
-            <WarningPanel :warning="warningDisplay" />
-
-            <ConstraintBudgetBar
-              v-if="lastConstraintLaw"
-              :law="lastConstraintLaw"
-              :compensation-mode="operationConstraintResult?.compensation_mode ?? null"
-              :initial-residual="operationConstraintResult?.initial_residual ?? null"
-              :final-residual="operationConstraintResult?.final_residual ?? null"
-              :tolerance="operationConstraintResult?.tolerance ?? null"
-            />
-
-            <AuditLogPanel
-              :events="auditEvents"
-              :session="sessionPanelState"
+            <EvidenceZone
+              :gauges-state="plausibilityGaugesState"
+              :warning="warningDisplay"
+              :constraint-law="lastConstraintLaw"
+              :constraint-result="operationConstraintResult"
+              :audit-events="auditEvents"
+              :session-state="sessionPanelState"
+              :probe-flags="probeFlags"
+              @toggle-saliency="handleToggleSaliency"
+              @toggle-delta-sources="handleToggleDeltaSources"
+              @probe-min-flip="handleProbeMinFlip"
             />
           </div>
         </section>

@@ -10,6 +10,7 @@ from app.services.datasets import (
     DatasetRegistryError,
     DatasetSampleSelectionError,
 )
+from app.services.evidence import EvidenceService, EvidenceServiceError
 from app.services.inference import InferenceAdapterError, InferenceServiceError, PredictionService, SampleSelectionError
 from app.services.models import ModelArtifactNotFoundError, ModelRegistry, ModelRegistryError
 from app.services.suggestion import build_default_support_segments
@@ -51,6 +52,12 @@ def _get_prediction_service() -> PredictionService:
 
 def _get_boundary_suggestion_service() -> BoundarySuggestionService:
     return current_app.config.get("BOUNDARY_SUGGESTION_SERVICE") or BoundarySuggestionService()
+
+
+def _get_evidence_service() -> EvidenceService:
+    return current_app.config.get("EVIDENCE_SERVICE") or EvidenceService(
+        dataset_registry=_get_dataset_registry(),
+    )
 
 
 @benchmarks_bp.get("/api/benchmarks/datasets")
@@ -193,6 +200,67 @@ def predict_values():
             "predicted_label": prediction.predicted_label,
             "task": prediction.task,
             "scores": _serialize_scores(prediction.scores),
+        }
+    )
+
+
+@benchmarks_bp.post("/api/benchmarks/evidence/plausibility")
+def evidence_plausibility():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({"error": "Request body must be a JSON object."}), 400
+
+    dataset_name = body.get("dataset")
+    baseline_values = body.get("baseline_values")
+    current_values = body.get("current_values")
+    target_class = body.get("target_class")
+
+    if not isinstance(dataset_name, str) or not dataset_name:
+        return jsonify({"error": "Field 'dataset' is required and must be a non-empty string."}), 400
+    if not isinstance(baseline_values, list) or not baseline_values:
+        return jsonify({"error": "Field 'baseline_values' is required and must be a non-empty array."}), 400
+    if not isinstance(current_values, list) or not current_values:
+        return jsonify({"error": "Field 'current_values' is required and must be a non-empty array."}), 400
+    if len(baseline_values) > _MAX_PREDICT_VALUES or len(current_values) > _MAX_PREDICT_VALUES:
+        return (
+            jsonify({"error": f"value vectors must not exceed {_MAX_PREDICT_VALUES} entries."}),
+            400,
+        )
+    if not all(
+        isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+        for v in baseline_values + current_values
+    ):
+        return jsonify({"error": "Value vectors must contain only finite numbers."}), 400
+    if target_class is None:
+        return jsonify({"error": "Field 'target_class' is required."}), 400
+    # Restrict to hashable scalars — anything else (list, dict, bool) cannot
+    # equal a numpy label and would silently produce a 0% yNN reading.
+    if isinstance(target_class, bool) or not isinstance(target_class, (str, int, float)):
+        return jsonify({"error": "Field 'target_class' must be a string or number."}), 400
+
+    service = _get_evidence_service()
+    try:
+        gauges = service.plausibility_gauges(
+            dataset_name=dataset_name,
+            baseline_values=baseline_values,
+            current_values=current_values,
+            target_class=target_class,
+        )
+    except EvidenceServiceError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except DatasetNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except DatasetRegistryError as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify(
+        {
+            "proximity": gauges.proximity,
+            "sparsity": gauges.sparsity,
+            "proximity_pct": gauges.proximity_pct,
+            "too_dense": gauges.too_dense,
+            "plausibility": gauges.plausibility,
+            "plausibility_k": gauges.plausibility_k,
         }
     )
 
