@@ -5,7 +5,14 @@
  * possibly-edited series), loading/error flags, and a monotonic seriesVersion
  * counter into one flat structure that OutputPanel.vue renders without further
  * logic. State precedence: error > loading > empty > stale > normal.
+ *
+ * Uncertainty (REWORK-03): glance-level cues for the Current prediction are
+ * attached to `classification.uncertainty` via assessUncertainty(). The
+ * top-p set is an uncalibrated cover set today — see computeUncertainty.js
+ * for the conformal-calibration note.
  */
+
+import { DEFAULT_COVERAGE, assessUncertainty } from "./computeUncertainty.js";
 
 export const OUTPUT_STATE = Object.freeze({
   EMPTY: "empty",
@@ -70,7 +77,14 @@ function buildClassification(baseline, current) {
     : baselinePredBase;
   const predDelta = baselinePredCur - baselinePredBase;
 
-  return { classes, basePred, curPred, flip, predDelta };
+  const currentScoresForAssessment = Array.isArray(current?.scores) && current.scores.length > 0
+    ? current.scores
+    : baseline.scores;
+  const uncertainty = assessUncertainty(currentScoresForAssessment, {
+    coverage: DEFAULT_COVERAGE,
+  });
+
+  return { classes, basePred, curPred, flip, predDelta, uncertainty };
 }
 
 export function createOutputPanelState({

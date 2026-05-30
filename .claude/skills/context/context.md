@@ -6,6 +6,18 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-03 Uncertainty made visible
+
+Surfaced prediction uncertainty in the OUTPUT zone via three pure helpers in `frontend/src/lib/output/computeUncertainty.js`: `entropyNormalized` (Shannon 1948 / MacKay 2003), `topRunnerMargin` (Settles 2009), and `topPSet` — the smallest cumulative-probability cover set ≥ coverage. They are rolled into `assessUncertainty` which returns `{entropy, margin, nearTie, isUncertain, level, set, coverage}` with escalation when margin < 0.15 OR entropy > 0.60 (matches `designs/output.jsx`). The classification payload of `createOutputPanelState` now attaches the result. Visual escalation in `OutputPanel.vue`: Current block gains `.uncertain` (amber border + inset stripe), predicted-class bar gains `hedged` (diagonal stripe), entropy meter + level chip + cover-set chips render below the bars; tie-dot animation fires only on near-tie. Confident predictions stay quiet — no border, no icon, no animation.
+
+**Load-bearing calibration honesty.** The codebase has **no classification conformal calibrator**. `conformal_pid.py` (VAL-001) is regression/forecaster-only and unrelated to the classification PredictionService. The top-p cover set this ticket renders is therefore **not** a calibrated conformal set today; the `coverage: 0.9` label describes a *target*, not a finite-sample guarantee. The architecture is forward-compatible — a future classification calibrator can override `current.uncertainty.prediction_set` and the UI will switch from raw-softmax cover-set to the calibrated APS set with no UI changes. Do NOT silently relabel the cover set as "conformal" until a calibrator actually ships; the honest disclosure is the point.
+
+**Test discovery fix (latent bug from REWORK-02).** `frontend/package.json` test glob did not include `src/lib/output/*.test.js` — REWORK-02's 11 tests had been silently absent from `npm test` runs. Added the entry in this ticket. Count goes 702 → 729 (+11 REWORK-02 dormant + 14 new computeUncertainty + 2 new createOutputPanelState).
+
+npm test 729/729.
+
+---
+
 ## REWORK-02 Output panel (Baseline / Current / Δ)
 
 Built the OUTPUT zone's centerpiece: `frontend/src/components/output/OutputPanel.vue` renders Baseline (locked at first prediction) + Current (rescored on demand) + a full-width Δ hero with an unmissable class-flip card. A pure state helper `frontend/src/lib/output/createOutputPanelState.js` derives one of five states (`empty` / `loading` / `normal` / `stale` / `error`) with precedence `error > loading > empty > stale > normal`, aligns baseline + current probabilities by label (preserving baseline order), and computes `predDelta` as the signed shift of the baseline class confidence. ModelComparisonPanel moved out of the OUTPUT zone — it's the segmentation suggestion UI, not a prediction view — and now lives in the INPUT z1-rail. **Load-bearing:** the page tracks `seriesVersion` (bumped only at the two value-mutation sites: inside `applyInvokeResponse` when values or aligned_segments actually change, and inside `handleChipUndo` on snapshot restore) and stamps `currentPredictionVersion` at the start of each `handleRerunPrediction` call. STALE is triggered iff the two versions disagree — segment/label/scope edits do not invalidate the prediction.

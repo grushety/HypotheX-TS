@@ -179,6 +179,40 @@ test("probabilities are clamped to [0, 1] to defend against bad backend payloads
   assert.equal(state.classification.classes[1].base, 0);
 });
 
+test("classification carries an uncertainty assessment for the current prediction", () => {
+  const state = createOutputPanelState({
+    baseline: sampleBaseline,
+    current: sampleCurrentNoFlip, // [0.62, 0.38] — margin 0.24, not a tie
+    seriesVersion: 1,
+    currentVersion: 1,
+  });
+  assert.ok(state.classification.uncertainty);
+  assert.equal(state.classification.uncertainty.nearTie, false);
+  assert.ok(state.classification.uncertainty.entropy > 0);
+  assert.ok(Array.isArray(state.classification.uncertainty.set));
+  assert.equal(state.classification.uncertainty.coverage, 0.9);
+});
+
+test("uncertainty escalates when current probabilities tie", () => {
+  const tieCurrent = {
+    predicted_label: "Gun",
+    task: "classification",
+    scores: [
+      { label: "Gun", probability: 0.51, score: 0.1 },
+      { label: "Point", probability: 0.49, score: -0.1 },
+    ],
+  };
+  const state = createOutputPanelState({
+    baseline: sampleBaseline,
+    current: tieCurrent,
+    seriesVersion: 2,
+    currentVersion: 2,
+  });
+  assert.equal(state.classification.uncertainty.nearTie, true);
+  assert.equal(state.classification.uncertainty.isUncertain, true);
+  assert.equal(state.classification.uncertainty.set.length, 2);
+});
+
 test("mode follows the baseline task field", () => {
   const state = createOutputPanelState({
     baseline: { ...sampleBaseline, task: "regression" },
