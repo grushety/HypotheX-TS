@@ -2,6 +2,7 @@
 import { computed } from "vue";
 
 import { OUTPUT_STATE } from "../../lib/output/createOutputPanelState.js";
+import { UNCERTAINTY_LEVELS } from "../../lib/output/computeUncertainty.js";
 
 const props = defineProps({
   state: { type: Object, required: true },
@@ -44,6 +45,22 @@ function deltaBarWidthPct(rowDelta) {
 
 function deltaColorVar(delta) {
   return delta >= 0 ? "var(--st-pass)" : "var(--st-fail)";
+}
+
+const uncertainty = computed(() => classification.value?.uncertainty ?? null);
+const currentBlockUncertain = computed(() => uncertainty.value?.isUncertain ?? false);
+
+function uncertaintyColorVar(level) {
+  if (level === UNCERTAINTY_LEVELS.NEAR_TIE || level === UNCERTAINTY_LEVELS.UNCERTAIN) {
+    return "var(--st-warn)";
+  }
+  if (level === UNCERTAINTY_LEVELS.MODERATE) return "var(--ink-2)";
+  return "var(--st-pass)";
+}
+
+function ppFromUnitInterval(value) {
+  if (!Number.isFinite(value)) return "0";
+  return `${Math.round(value * 100)}`;
 }
 </script>
 
@@ -139,9 +156,13 @@ function deltaColorVar(delta) {
             </div>
 
             <!-- CURRENT -->
-            <div class="out-block">
+            <div class="out-block" :class="{ uncertain: currentBlockUncertain }">
               <div class="out-bhd">
                 <span class="mlabel">Current</span>
+                <span
+                  class="bdot"
+                  :style="{ background: uncertaintyColorVar(uncertainty?.level) }"
+                />
               </div>
               <div class="cls-rows">
                 <div
@@ -155,9 +176,60 @@ function deltaColorVar(delta) {
                     {{ row.name }}
                   </span>
                   <span class="cls-track">
-                    <span class="cls-fill" :style="{ width: pct(row.cur) }" />
+                    <span
+                      class="cls-fill"
+                      :class="{ hedged: currentBlockUncertain && row.name === classification.curPred }"
+                      :style="{ width: pct(row.cur) }"
+                    />
                   </span>
                   <span class="cls-pct">{{ pct(row.cur) }}</span>
+                </div>
+              </div>
+
+              <div v-if="uncertainty" class="uncert" :class="{ 'uncert-hot': uncertainty.isUncertain }">
+                <div class="uncert-hd">
+                  <svg
+                    v-if="uncertainty.isUncertain"
+                    class="uncert-warn"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                  <span class="mlabel">Uncertainty</span>
+                  <span
+                    class="uncert-lvl"
+                    :style="{ color: uncertaintyColorVar(uncertainty.level) }"
+                  >
+                    <span v-if="uncertainty.nearTie" class="tie-dot" aria-hidden="true" />
+                    {{ uncertainty.level }}
+                  </span>
+                </div>
+                <div class="uncert-track" role="meter" :aria-valuenow="ppFromUnitInterval(uncertainty.entropy)" aria-valuemin="0" aria-valuemax="100">
+                  <div
+                    class="uncert-fill"
+                    :style="{
+                      width: `${ppFromUnitInterval(uncertainty.entropy)}%`,
+                      background: uncertaintyColorVar(uncertainty.level),
+                    }"
+                  />
+                </div>
+                <div class="uncert-sub">
+                  top two within
+                  <b :style="{ color: uncertaintyColorVar(uncertainty.level) }">{{ ppFromUnitInterval(uncertainty.margin) }}pp</b>
+                  · entropy {{ uncertainty.entropy.toFixed(2) }}
+                  · {{ ppFromUnitInterval(uncertainty.coverage) }}% set
+                  <span
+                    v-for="label in uncertainty.set"
+                    :key="`unc-set-${label}`"
+                    class="uncert-chip"
+                  >{{ label }}</span>
                 </div>
               </div>
             </div>
@@ -613,4 +685,113 @@ function deltaColorVar(delta) {
   color: #fff;
 }
 .out-action.primary:hover { background: #2340c4; border-color: #2340c4; }
+
+/* ---- uncertainty (REWORK-03): quiet when confident, loud when shaky ---- */
+.out-block .bdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-left: auto;
+}
+.out-block.uncertain {
+  border-color: #e8c98f;
+  box-shadow: inset 3px 0 0 var(--st-warn);
+}
+.uncert {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--line-2);
+}
+.uncert.uncert-hot {
+  margin-top: 10px;
+  padding: 8px 9px;
+  border: 1px solid #e8c98f;
+  border-top: 1px solid #e8c98f;
+  border-radius: var(--r-sm);
+  background: var(--st-warn-bg);
+}
+.uncert-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.uncert-warn { width: 14px; height: 14px; color: var(--st-warn); }
+.uncert-hd .mlabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.uncert-lvl {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tie-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--st-warn);
+  animation: out-blink 1.1s ease infinite;
+}
+@keyframes out-blink {
+  50% { opacity: 0.35; }
+}
+.uncert-track {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.uncert-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s, background 0.3s;
+}
+.uncert-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  margin-top: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.uncert-sub b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.uncert-chip {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 2px;
+}
+.uncert-hot .uncert-chip {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #e8c98f;
+  color: var(--ink);
+}
+.cls-fill.hedged {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--st-warn),
+    var(--st-warn) 4px,
+    #f4c779 4px,
+    #f4c779 8px
+  );
+}
 </style>
