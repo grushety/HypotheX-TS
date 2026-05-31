@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-00 Design system tokens (out-of-order foundation)
+
+**Backfilled the foundation that should have shipped before REWORK-01.** Completed the design-token port in `frontend/src/zones.css`: added missing tokens (`--font-sans`, `--accent-2`, shape palette `--sh-*`), loaded IBM Plex Sans + Mono via Google Fonts `@import`, set body typography to `var(--font-sans) / 13px / 1.45 / var(--bg-app) / var(--ink)` per the design source. Removed legacy landing-page chrome from `frontend/src/styles.css`: the Aptos-font + beige→blue-gradient `:root`, `.app-shell`, `.hero`, `.eyebrow`, `.hero-copy`, the `clamp()` h1/h2 sizes. Re-tokenised survivors (`.section-label` — 17 live consumers; `.surface-copy` + `.viewer-meta` — ViewerShell; `.ghost-button` — BenchmarkSelectorPanel) so they consume the new ink/surface/line tokens instead of hardcoded hex.
+
+**Order-of-events gotcha (load-bearing).** REWORK-01..11 components were ALREADY built and ALREADY used `var(--…)` references correctly. The only reason the app looked old until this ticket was that the legacy `styles.css` `:root` still set `font-family: Aptos` + the beige-blue body gradient + a hardcoded `color`, which cascaded through every component that didn't override locally. Porting the tokens makes the new look appear at once with no component rewrites — exactly as the ticket predicted.
+
+**Font loading: Google Fonts `@import`, not self-hosted.** Trade-off: one-line port, zero deps, runtime CDN. A future ticket can promote to `@fontsource/ibm-plex-sans` + `@fontsource/ibm-plex-mono` if CSP or offline-install constraints land.
+
+**Component-scale h1/h2/h3 defaults (1.4 / 1.15 / 1rem at 13px base).** The legacy `clamp(2.4rem, 5vw, 4.4rem)` landing-page sizes were forcing giant titles on panel headers. New defaults read correctly for the "Prediction panel" / "Donor picker" / "Time-series timeline" h-tag usage pattern.
+
+**Out of scope.** ~1500 lines of component-specific rules below the touched block in `styles.css` still hold hardcoded hex values. They work because the design-aware components reference `var(--…)` directly; the legacy CSS is just inert under-styling for the rest. A "design polish" ticket can replace those hex values with token references.
+
+npm test 792/792 (unchanged — CSS-only); `npm run build` clean (90.86 kB CSS bundle).
+
+---
+
 ## REWORK-11 Shoebox pin + modal export
 
 Latent fourth zone: one-click pin captures any OUTPUT/EVIDENCE/Cohort result with provenance, accumulates in a topbar-icon-launched modal (reorderable cards + per-pin notes + free-notes + JSON/Markdown export). Pure helpers in `frontend/src/lib/shoebox/createShoeboxState.js` — no I/O, just immutable updates + export builders + schema-versioned persistence roundtrip. `BenchmarkViewerPage` owns `shoeboxState` / `shoeboxOpen` refs, rehydrates from localStorage `hypothex.shoebox.v1` on mount, and persists on every change via `watch(shoeboxState, ..., {deep:true})`. Four pin sites wired today (prediction Δ, min-flip, plausibility snapshot, cohort outcome); pattern is slot-based so adding more is a slot + handler.
