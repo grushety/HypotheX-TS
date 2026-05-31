@@ -238,6 +238,7 @@ function ppFromUnitInterval(value) {
             <div class="out-block delta">
               <div class="out-bhd">
                 <span class="mlabel" style="color: var(--accent-ink)">Δ Change</span>
+                <slot name="pin" />
               </div>
 
               <div v-if="classification.flip" class="flip" role="status">
@@ -416,6 +417,8 @@ function ppFromUnitInterval(value) {
   color: var(--ink-3);
 }
 .out-bhd .lock { color: var(--ink-4); }
+/* REWORK-11: pin slot sits at the right edge of any block header. */
+.out-bhd :slotted(*) { margin-left: auto; }
 
 /* classification bars */
 .cls-rows { display: flex; flex-direction: column; gap: 7px; }

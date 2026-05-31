@@ -69,6 +69,7 @@ const touchedLabel = computed(() => {
         </div>
       </div>
       <div class="actions">
+        <slot name="pin" />
         <button type="button" class="btn primary" @click="emit('apply')">Apply edit</button>
         <button type="button" class="btn" @click="emit('clear')">Clear</button>
       </div>

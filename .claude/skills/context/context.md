@@ -6,6 +6,24 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-11 Shoebox pin + modal export
+
+Latent fourth zone: one-click pin captures any OUTPUT/EVIDENCE/Cohort result with provenance, accumulates in a topbar-icon-launched modal (reorderable cards + per-pin notes + free-notes + JSON/Markdown export). Pure helpers in `frontend/src/lib/shoebox/createShoeboxState.js` — no I/O, just immutable updates + export builders + schema-versioned persistence roundtrip. `BenchmarkViewerPage` owns `shoeboxState` / `shoeboxOpen` refs, rehydrates from localStorage `hypothex.shoebox.v1` on mount, and persists on every change via `watch(shoeboxState, ..., {deep:true})`. Four pin sites wired today (prediction Δ, min-flip, plausibility snapshot, cohort outcome); pattern is slot-based so adding more is a slot + handler.
+
+**Provenance honesty (load-bearing).** `currentProvenance()` reads only from REAL session refs (`sample`, `selectedSplit`, `selectedSampleIndex`, `selectorState.selectedArtifact`, `baselinePrediction`, `currentPrediction`, `seriesVersion`, `auditEvents.length`). No fabricated fields. The ticket explicitly required this honesty; the reviewer pass verified no fabrication path.
+
+**Persistence: client-only via localStorage (load-bearing).** Matches the existing audit-log in-memory pattern + the semantic-layer `sessionStorage` pattern. `fromPersistedJson` refuses payloads from a different `SHOEBOX_SCHEMA_VERSION` (returns empty shoebox) — forward-compatible: a future schema bump can migrate explicitly or wipe gracefully. Cross-tab sync NOT wired (localStorage `storage` event listener is a follow-up).
+
+**Pinning is read-only — no AuditEvent (load-bearing).** Pinning snapshots state without mutating series / segments / predictions. Same pattern as `handleRequestPrediction` / `handleToggleSaliency` / `refreshPlausibilityGauges` (none audit). CLAUDE.md's "every user operation must produce an AuditEvent" is consistently applied in this codebase to mean "every series/segment-mutating op." Future code that turns "pin" into an audit event should preserve this distinction.
+
+**Export shape**: JSON wraps items in a meta envelope `{schema: "hypothex.shoebox", version, generatedAt, itemCount, items, freeNotes}` mirroring the existing HTS-103 audit-export wrapper. Markdown is paper-ready: one section per pin with provenance bullets + free-notes footer. Caller-side download via `URL.createObjectURL` + temporary `<a download>` — no new deps.
+
+**Topbar icon** carries a count badge; modal mounts on `v-if="shoeboxOpen"` so Escape listener doesn't fire when closed. Mobile @max-width:900px flips the modal to a bottom-sheet with slide-up animation.
+
+npm test 792/792 (+16 new); backend untouched.
+
+---
+
 ## REWORK-10 Cohort confirmation mode
 
 New top-level "Cohort" view reachable from the topbar Explore/Cohort toggle. Backend `CohortService.apply()` (`backend/app/services/cohort.py`) applies a scalar op (`amplify` ×α / `shift` +δ) across N samples from a chosen split, scores baseline + edit via `PredictionService.predict_values`, and returns per-series outcomes + aggregates with **iid percentile bootstrap CI** (B=1000, Efron 1979) on flip_rate + mean_delta. New blueprint `POST /api/cohort/apply` registered in `factory.py`. Cohort size capped at N=64 in both service and route. Reference: Efron *Ann. Statist.* 7:1 (1979) + Hall & Wilson *Biometrics* 47:2 (1991) — flow through into the response `reference` field and the UI tooltip.

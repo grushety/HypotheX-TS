@@ -8,6 +8,8 @@ import EvidenceZone from "../components/evidence/EvidenceZone.vue";
 import FidelityStrip from "../components/evidence/FidelityStrip.vue";
 import DeltaProvenancePanel from "../components/evidence/DeltaProvenancePanel.vue";
 import CohortViewerPage from "./CohortViewerPage.vue";
+import ShoeboxModal from "../components/shoebox/ShoeboxModal.vue";
+import PinButton from "../components/shoebox/PinButton.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
@@ -22,6 +24,19 @@ import GuardrailsSidebar from "../components/guardrails/GuardrailsSidebar.vue";
 import { createOutputPanelState } from "../lib/output/createOutputPanelState";
 import { createPlausibilityGaugesState } from "../lib/evidence/createPlausibilityGaugesState";
 import { createFidelityStripState } from "../lib/fidelity/createFidelityStripState";
+import {
+  SHOEBOX_STORAGE_KEY,
+  addPin,
+  buildPin,
+  clearShoebox,
+  emptyShoebox,
+  fromPersistedJson,
+  removePin,
+  reorderPin,
+  setFreeNotes,
+  setNote,
+  toPersistedJson,
+} from "../lib/shoebox/createShoeboxState";
 import { updateSegmentScope } from "../services/api/segmentsApi";
 import { validationBus } from "../lib/audit/validationBus";
 import {
@@ -135,6 +150,12 @@ const validityRuns = ref([]);
 const minFlipResult = ref(null);
 const minFlipError = ref(null);
 let minFlipRequestId = 0;
+// REWORK-11: shoebox state. Persisted to localStorage on every change;
+// rehydrated onMounted. Client-only by design (matches the existing audit-
+// log persistence pattern in this view).
+const shoeboxState = ref(emptyShoebox());
+const shoeboxOpen = ref(false);
+
 // REWORK-08: saliency overlay state. Cached per (sample, seriesVersion) by
 // recomputing on series mutation while the toggle is on.
 const saliencyResult = ref(null);
@@ -526,6 +547,127 @@ async function refreshDeltaProvenance() {
       deltaProvenanceLoading.value = false;
     }
   }
+}
+
+// REWORK-11: shoebox handlers + provenance assembly. Provenance is built
+// from REAL current session state — never fabricated — so the exported
+// pin is a faithful snapshot of what the user was looking at.
+
+function currentProvenance() {
+  return {
+    dataset: sample.value?.datasetName ?? null,
+    split: selectedSplit.value,
+    sampleIndex: selectedSampleIndex.value,
+    sampleId: sample.value?.sampleId ?? null,
+    artifactId: selectorState.value?.selectedArtifact?.artifact_id ?? null,
+    baselinePredictedLabel: baselinePrediction.value?.predicted_label ?? null,
+    currentPredictedLabel: currentPrediction.value?.predicted_label ?? null,
+    seriesVersion: seriesVersion.value,
+    auditEventCount: auditEvents.value.length,
+  };
+}
+
+function pin(pinDescriptor) {
+  const built = buildPin(pinDescriptor);
+  shoeboxState.value = addPin(shoeboxState.value, built);
+}
+
+function handlePinPrediction() {
+  if (!currentPrediction.value && !baselinePrediction.value) return;
+  const baseLabel = baselinePrediction.value?.predicted_label ?? "—";
+  const curLabel = currentPrediction.value?.predicted_label ?? baseLabel;
+  const flip = baseLabel !== curLabel;
+  pin({
+    kind: "prediction",
+    title: flip
+      ? `Class flip · ${baseLabel} → ${curLabel}`
+      : `Prediction · ${curLabel}`,
+    summary: `baseline ${baseLabel} / current ${curLabel} · series v${seriesVersion.value}`,
+    provenance: currentProvenance(),
+    payload: {
+      baseline: baselinePrediction.value,
+      current: currentPrediction.value,
+      flipped: flip,
+    },
+  });
+}
+
+function handlePinMinFlip() {
+  const result = minFlipResult.value;
+  if (!result || !result.found) return;
+  pin({
+    kind: "min-flip",
+    title: `Min-flip · ${result.baseline_class} → ${result.flipped_class}`,
+    summary: `distance ${typeof result.distance === "number" ? result.distance.toFixed(3) : "—"} (L2) · ${result.method}`,
+    provenance: { ...currentProvenance(), method: result.method, reference: result.reference },
+    payload: {
+      baseline_class: result.baseline_class,
+      flipped_class: result.flipped_class,
+      distance: result.distance,
+      edit_values: result.edit_values,
+    },
+  });
+}
+
+function handlePinPlausibility() {
+  const gauges = plausibilityGaugesState.value?.gauges ?? [];
+  if (gauges.length === 0) return;
+  const summaryParts = gauges
+    .map((g) => `${g.label.toLowerCase()} ${g.displayValue}`)
+    .join(" · ");
+  pin({
+    kind: "plausibility",
+    title: "Plausibility snapshot",
+    summary: summaryParts,
+    provenance: currentProvenance(),
+    payload: {
+      gauges: gauges.map((g) => ({
+        key: g.key,
+        label: g.label,
+        value: g.value,
+        tone: g.tone,
+        source: g.source,
+        reference: g.reference,
+      })),
+      offDistribution: plausibilityGaugesState.value?.offDistribution ?? false,
+    },
+  });
+}
+
+function handlePinCohort(payload) {
+  if (!payload || typeof payload !== "object") return;
+  pin({
+    kind: "cohort",
+    title: payload.title ?? "Cohort outcome",
+    summary: payload.summary ?? "",
+    provenance: {
+      ...currentProvenance(),
+      cohortDataset: payload.dataset ?? null,
+      cohortOp: payload.op_name ?? null,
+      cohortOpParams: payload.op_params ?? null,
+      method: payload.method ?? null,
+      reference: payload.reference ?? null,
+    },
+    payload: payload.aggregates ?? payload,
+  });
+}
+
+function handleShoeboxOpen() { shoeboxOpen.value = true; }
+function handleShoeboxClose() { shoeboxOpen.value = false; }
+function handleShoeboxRemove(id) {
+  shoeboxState.value = removePin(shoeboxState.value, id);
+}
+function handleShoeboxReorder({ id, direction }) {
+  shoeboxState.value = reorderPin(shoeboxState.value, id, direction);
+}
+function handleShoeboxUpdateNote({ id, note }) {
+  shoeboxState.value = setNote(shoeboxState.value, id, note);
+}
+function handleShoeboxUpdateFreeNotes(notes) {
+  shoeboxState.value = setFreeNotes(shoeboxState.value, notes);
+}
+function handleShoeboxClear() {
+  shoeboxState.value = clearShoebox();
 }
 
 function handleHoverProvenanceOp(opId) {
@@ -1797,7 +1939,33 @@ onMounted(() => {
       semanticCustomYamlText.value = restored.customYamlText;
     }
   }
+  // REWORK-11: rehydrate the shoebox from localStorage so pins survive
+  // a tab refresh. Safe-guarded — bad payloads are swallowed by
+  // fromPersistedJson and the user starts with an empty shoebox.
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(SHOEBOX_STORAGE_KEY);
+      if (raw) shoeboxState.value = fromPersistedJson(raw);
+    } catch {
+      // localStorage may throw in private-browsing mode; fall back to empty.
+    }
+  }
 });
+
+// REWORK-11: persist on every state change. Cheap — the shoebox is small
+// and this watcher only fires when the items array or free notes change.
+watch(
+  shoeboxState,
+  (next) => {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    try {
+      window.localStorage.setItem(SHOEBOX_STORAGE_KEY, toPersistedJson(next));
+    } catch {
+      // Quota exceeded / private mode — silently drop the persist write.
+    }
+  },
+  { deep: true },
+);
 
 watch(
   () => semanticPacks.value,
@@ -1923,6 +2091,23 @@ watch(
       >
         ▶ {{ predictionPanelState.buttonLabel }}
       </button>
+
+      <button
+        type="button"
+        class="topbar-shoebox-btn"
+        :aria-label="`Open shoebox (${shoeboxState.items.length} pinned)`"
+        @click="handleShoeboxOpen"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 9l2-5h14l2 5" />
+          <path d="M3 9v10a1 1 0 001 1h16a1 1 0 001-1V9" />
+          <path d="M9 13h6" />
+        </svg>
+        <span
+          v-if="shoeboxState.items.length > 0"
+          class="topbar-shoebox-badge"
+        >{{ shoeboxState.items.length }}</span>
+      </button>
     </header>
 
     <p v-if="error || selectorState.error" class="banner-error topbar-error">
@@ -1937,6 +2122,7 @@ watch(
         :artifact-id="selectorState.selectedArtifact?.artifact_id ?? ''"
         :split="selectedSplit"
         :max-sample-index="selectorState.maxSampleIndex"
+        @pin="handlePinCohort"
       />
     </div>
 
@@ -2135,6 +2321,13 @@ watch(
               @request-prediction="handleRequestPrediction"
               @rerun-prediction="handleRerunPrediction"
             >
+              <template #pin>
+                <PinButton
+                  aria-label="Pin prediction snapshot to shoebox"
+                  :disabled="!baselinePrediction && !currentPrediction"
+                  @pin="handlePinPrediction"
+                />
+              </template>
               <template #probe>
                 <MinFlipStrip
                   :result="minFlipResult"
@@ -2142,7 +2335,15 @@ watch(
                   :error="minFlipError"
                   @apply="handleApplyMinFlip"
                   @clear="handleClearMinFlip"
-                />
+                >
+                  <template #pin>
+                    <PinButton
+                      aria-label="Pin min-flip result to shoebox"
+                      :disabled="!minFlipResult || !minFlipResult.found"
+                      @pin="handlePinMinFlip"
+                    />
+                  </template>
+                </MinFlipStrip>
               </template>
             </OutputPanel>
 
@@ -2191,6 +2392,13 @@ watch(
               @toggle-delta-sources="handleToggleDeltaSources"
               @probe-min-flip="handleProbeMinFlip"
             >
+              <template #plausibility-pin>
+                <PinButton
+                  aria-label="Pin plausibility snapshot to shoebox"
+                  :disabled="!plausibilityGaugesState.hasEdit"
+                  @pin="handlePinPlausibility"
+                />
+              </template>
               <template #fidelity>
                 <FidelityStrip
                   :state="fidelityStripState"
@@ -2218,6 +2426,20 @@ watch(
       :event-bus="validationBus"
       initial-dock="bottom"
       :initial-collapsed="true"
+    />
+
+    <!-- REWORK-11: shoebox modal mounts at the page root (above the workspace
+         and beneath the topbar). v-if keeps the DOM clean when closed. -->
+    <ShoeboxModal
+      v-if="shoeboxOpen"
+      :state="shoeboxState"
+      :open="shoeboxOpen"
+      @close="handleShoeboxClose"
+      @remove-pin="handleShoeboxRemove"
+      @reorder-pin="handleShoeboxReorder"
+      @update-note="handleShoeboxUpdateNote"
+      @update-free-notes="handleShoeboxUpdateFreeNotes"
+      @clear="handleShoeboxClear"
     />
 
     <ScopeAttributeEditor
