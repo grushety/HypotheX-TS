@@ -7,6 +7,7 @@ import MinFlipStrip from "../components/output/MinFlipStrip.vue";
 import EvidenceZone from "../components/evidence/EvidenceZone.vue";
 import FidelityStrip from "../components/evidence/FidelityStrip.vue";
 import DeltaProvenancePanel from "../components/evidence/DeltaProvenancePanel.vue";
+import CohortViewerPage from "./CohortViewerPage.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
@@ -90,6 +91,10 @@ import {
   saveSemanticLayerSession,
 } from "../lib/semantic/sessionStorage";
 
+// REWORK-10: top-level view mode toggle. "explore" preserves the three-zone
+// per-sample workspace; "cohort" replaces the workspace body with the
+// cohort confirmation view while keeping the same topbar selectors.
+const viewMode = ref("explore");
 const sample = ref(null);
 const loading = ref(true);
 const error = ref("");
@@ -1895,6 +1900,21 @@ watch(
         {{ selectorState.compatibilityMessage }}
       </span>
 
+      <div class="topbar-mode-switch" role="group" aria-label="View mode">
+        <button
+          type="button"
+          class="topbar-mode-btn"
+          :class="{ on: viewMode === 'explore' }"
+          @click="viewMode = 'explore'"
+        >Explore</button>
+        <button
+          type="button"
+          class="topbar-mode-btn"
+          :class="{ on: viewMode === 'cohort' }"
+          @click="viewMode = 'cohort'"
+        >Cohort</button>
+      </div>
+
       <button
         class="topbar-run-button"
         type="button"
@@ -1909,8 +1929,19 @@ watch(
       {{ error || selectorState.error }}
     </p>
 
+    <!-- REWORK-10: cohort confirmation mode takes over the workspace area
+         when active. Same topbar, same selectors. -->
+    <div v-if="viewMode === 'cohort'" class="cohort-mode-wrapper">
+      <CohortViewerPage
+        :dataset="selectedDatasetName"
+        :artifact-id="selectorState.selectedArtifact?.artifact_id ?? ''"
+        :split="selectedSplit"
+        :max-sample-index="selectorState.maxSampleIndex"
+      />
+    </div>
+
     <!-- Three-zone workspace: INPUT (left) | OUTPUT over EVIDENCE (right) -->
-    <div class="workspace">
+    <div v-else class="workspace">
       <!-- ZONE 1 · INPUT — what I feed the model -->
       <section class="zone-input" aria-label="Input — what I feed the model">
         <div class="zlabel">
