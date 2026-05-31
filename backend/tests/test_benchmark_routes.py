@@ -448,6 +448,96 @@ def test_evidence_plausibility_endpoint_returns_proximity_sparsity_and_null_plau
     assert payload["plausibility_k"] is None
 
 
+def test_cohort_endpoint_rejects_missing_sample_indices(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/cohort/apply",
+        data=json.dumps(
+            {
+                "artifact_id": "fcn-gunpoint",
+                "dataset": "GunPoint",
+                "split": "test",
+                "op_name": "amplify",
+                "op_params": {"alpha": 2.0},
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "sample_indices" in response.get_json()["error"].lower()
+
+
+def test_cohort_endpoint_rejects_unsupported_op(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/cohort/apply",
+        data=json.dumps(
+            {
+                "artifact_id": "fcn-gunpoint",
+                "dataset": "GunPoint",
+                "split": "test",
+                "sample_indices": [0],
+                "op_name": "amplify_segment",
+                "op_params": {},
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "op_name" in response.get_json()["error"].lower()
+
+
+def test_cohort_endpoint_returns_per_series_results_and_aggregates(tmp_path):
+    client = create_benchmark_client(tmp_path)
+    # GunPoint fixture has 2 test samples [0.1, 0, 0.1] (class-0) and
+    # [0.9, 1, 0.8] (class-1). Apply amplify ×2 → outputs scaled accordingly.
+    response = client.post(
+        "/api/cohort/apply",
+        data=json.dumps(
+            {
+                "artifact_id": "fcn-gunpoint",
+                "dataset": "GunPoint",
+                "split": "test",
+                "sample_indices": [0, 1],
+                "op_name": "amplify",
+                "op_params": {"alpha": 2.0},
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["op_name"] == "amplify"
+    assert payload["op_params"] == {"alpha": 2.0}
+    assert len(payload["per_series"]) == 2
+    # Each row carries baseline + current class, delta, flipped flag.
+    for entry in payload["per_series"]:
+        assert "baseline_class" in entry and "current_class" in entry
+        assert isinstance(entry["delta"], float)
+        assert isinstance(entry["flipped"], bool)
+    aggregates = payload["aggregates"]
+    assert aggregates["total"] == 2
+    assert 0.0 <= aggregates["flip_rate"] <= 1.0
+    # CI bounds are real numbers and consistent (lower ≤ upper).
+    assert aggregates["flip_rate_ci"]["lower"] <= aggregates["flip_rate_ci"]["upper"]
+    assert aggregates["mean_delta_ci"]["lower"] <= aggregates["mean_delta_ci"]["upper"]
+    # Histogram present and self-consistent (counts.length = bin_edges.length - 1).
+    edges = aggregates["delta_histogram_bin_edges"]
+    counts = aggregates["delta_histogram_counts"]
+    assert len(counts) == len(edges) - 1
+    assert sum(counts) == 2  # all samples accounted for
+    # biggest_mover_index is one of the sample indices we requested.
+    assert aggregates["biggest_mover_index"] in (0, 1)
+    # Method label + reference surfaced for the panel caveat tooltip.
+    assert "bootstrap" in payload["method"].lower()
+    assert payload["reference"]
+
+
 def test_delta_provenance_endpoint_rejects_missing_ops(tmp_path):
     client = create_benchmark_client(tmp_path)
 

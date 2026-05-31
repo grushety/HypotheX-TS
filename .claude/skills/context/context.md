@@ -6,6 +6,24 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-10 Cohort confirmation mode
+
+New top-level "Cohort" view reachable from the topbar Explore/Cohort toggle. Backend `CohortService.apply()` (`backend/app/services/cohort.py`) applies a scalar op (`amplify` ×α / `shift` +δ) across N samples from a chosen split, scores baseline + edit via `PredictionService.predict_values`, and returns per-series outcomes + aggregates with **iid percentile bootstrap CI** (B=1000, Efron 1979) on flip_rate + mean_delta. New blueprint `POST /api/cohort/apply` registered in `factory.py`. Cohort size capped at N=64 in both service and route. Reference: Efron *Ann. Statist.* 7:1 (1979) + Hall & Wilson *Biometrics* 47:2 (1991) — flow through into the response `reference` field and the UI tooltip.
+
+**Why iid percentile, not MBB (load-bearing).** The repo's `mbb.py` (VAL-031) is moving-block bootstrap for **time-series-internal autocorrelation** — wrong tool here. Cohort samples are independent draws from the dataset split; the iid percentile bootstrap is the correct method. Docstring spells this out so a future maintainer doesn't switch to MBB thinking it's the SOTA upgrade.
+
+**Op vocabulary is intentionally small.** Only `amplify` and `shift` ship today — reproducing arbitrary tier-1/2/3 ops (with per-segment DecompositionBlob construction, constraint engine resolution, etc.) across N samples would be a separate ticket of `cf_coordinator` scale. The ticket text "User picks one operation + magnitude" matches the scalar phrasing. Extending requires `_apply_scalar_op` + route allowlist + UI op selector entries.
+
+**Cherry-picking caveat is client-side.** Backend returns raw CIs. `createCohortResultModel.js` derives a presentation-layer warning when (a) mean-Δ CI crosses zero OR (b) flip-rate CI is wider than 40pp. Wording stays honest ("the CI crosses zero" / "the CI is wide") — not dressed-up p-values.
+
+**Mode-switch state preservation.** `viewMode = ref("explore")` toggles only the workspace `<div>`. All explore-mode refs (sample, predictions, plausibility, saliency, provenance state) live at script-setup scope OUTSIDE the conditional, so they survive the Explore → Cohort → Explore round-trip. Topbar selectors drive both modes — switching to Cohort doesn't drop the dataset/model picks.
+
+**Race guard pattern unchanged.** `let cohortRequestId = 0` mirrors plausibility / min-flip / saliency / provenance request IDs. Same monotonic-counter discipline.
+
+backend benchmark routes 29/29 (+3 new); frontend 776/776 (+9 new).
+
+---
+
 ## REWORK-09 Δ-provenance attribution
 
 Per-op contribution attribution for the OUTPUT-zone Δ via leave-one-out over operations. Backend `DeltaProvenanceService` (`backend/app/services/operations/delta_provenance.py`): for each op_i with values-space perturbation Δ_i, predict on `(current − Δ_i)` and report `contribution_i = P(c*|current) − P(c*|leave_out)` where c* = baseline class (matches REWORK-02's predDelta sign convention). Reuses `PredictionService.predict_values` — same transform chain reported by the REWORK-05 fidelity strip, same softmax. `total_delta = Σ contributions + residual`; residual is **always returned** and surfaced in the UI as a tagged synthetic row when |residual| ≥ 0.5pp. References: Štrumbelj & Kononenko *JMLR* 11 (2010) §3 (LOO marginal contribution); SOTA upgrade is Lundberg & Lee NeurIPS 2017 KernelSHAP (flagged as future opt-in).
