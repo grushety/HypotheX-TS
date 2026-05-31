@@ -448,6 +448,107 @@ def test_evidence_plausibility_endpoint_returns_proximity_sparsity_and_null_plau
     assert payload["plausibility_k"] is None
 
 
+def test_delta_provenance_endpoint_rejects_missing_ops(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/operations/provenance",
+        data=json.dumps(
+            {
+                "artifact_id": "fcn-gunpoint",
+                "baseline_values": [0.0, 0.0, 0.0],
+                "current_values": [0.1, 0.0, 0.4],
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "ops" in response.get_json()["error"].lower()
+
+
+def test_delta_provenance_endpoint_rejects_op_delta_with_mismatched_length(tmp_path):
+    client = create_benchmark_client(tmp_path)
+
+    response = client.post(
+        "/api/operations/provenance",
+        data=json.dumps(
+            {
+                "artifact_id": "fcn-gunpoint",
+                "baseline_values": [0.0, 0.0, 0.0],
+                "current_values": [0.1, 0.0, 0.4],
+                "ops": [
+                    {"op_id": "op-1", "op_label": "amplify", "values_delta": [0.1, 0.0]},
+                ],
+            }
+        ),
+        content_type="application/json",
+    )
+
+    # 400 — the service validates per-op length matches series length.
+    assert response.status_code == 400
+
+
+def test_delta_provenance_endpoint_handles_empty_op_list(tmp_path):
+    client = create_benchmark_client(tmp_path)
+    # No ops means there's no decomposition to do; total_delta is still
+    # computed and the residual equals the full delta.
+    response = client.post(
+        "/api/operations/provenance",
+        data=json.dumps(
+            {
+                "artifact_id": "fcn-gunpoint",
+                "baseline_values": [0.0, 0.0, 0.0],
+                "current_values": [0.1, 0.0, 0.4],
+                "ops": [],
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["contributions"] == []
+    # No ops → residual equals total_delta (everything is unexplained).
+    assert abs(payload["residual"] - payload["total_delta"]) < 1e-9
+    assert payload["baseline_class"] == "class-0"
+
+
+def test_delta_provenance_endpoint_returns_contribution_per_op_with_reconciliation(tmp_path):
+    client = create_benchmark_client(tmp_path)
+    # Two ops whose deltas sum to the current series change.
+    # baseline [0,0,0] → current [0.1, 0.0, 0.4].
+    # op-1 adds [0.1, 0.0, 0.0]; op-2 adds [0.0, 0.0, 0.4].
+    response = client.post(
+        "/api/operations/provenance",
+        data=json.dumps(
+            {
+                "artifact_id": "fcn-gunpoint",
+                "baseline_values": [0.0, 0.0, 0.0],
+                "current_values": [0.1, 0.0, 0.4],
+                "ops": [
+                    {"op_id": "op-1", "op_label": "amplify", "values_delta": [0.1, 0.0, 0.0]},
+                    {"op_id": "op-2", "op_label": "stretch", "values_delta": [0.0, 0.0, 0.4]},
+                ],
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["baseline_class"] == "class-0"
+    assert len(payload["contributions"]) == 2
+    op_ids = [c["op_id"] for c in payload["contributions"]]
+    assert op_ids == ["op-1", "op-2"]
+    # Reconciliation: total_delta = Σ contributions + residual exactly.
+    sum_contribs = sum(c["contribution"] for c in payload["contributions"])
+    assert abs(payload["total_delta"] - sum_contribs - payload["residual"]) < 1e-9
+    # Method label + reference are exposed for the UI caveat tooltip.
+    assert "leave-one-out" in payload["method"].lower()
+    assert payload["reference"]
+
+
 def test_saliency_endpoint_rejects_missing_values(tmp_path):
     client = create_benchmark_client(tmp_path)
 

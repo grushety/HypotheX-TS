@@ -99,6 +99,8 @@ const warningOpen = computed(() => Boolean(props.warning));
           {{ probeFlags.minFlipSearching ? "Probing…" : "Min-flip" }}
         </button>
       </div>
+      <!-- REWORK-09: probe-detail slot for the Δ-sources / saliency panels -->
+      <slot name="probe-detail" />
     </section>
 
     <!-- 3. Fidelity strip slot — REWORK-05 -->
