@@ -6,6 +6,22 @@ Format: `## <PREFIX>-NNN <short title>` heading, followed by 1–4 sentences exp
 
 ---
 
+## REWORK-09 Δ-provenance attribution
+
+Per-op contribution attribution for the OUTPUT-zone Δ via leave-one-out over operations. Backend `DeltaProvenanceService` (`backend/app/services/operations/delta_provenance.py`): for each op_i with values-space perturbation Δ_i, predict on `(current − Δ_i)` and report `contribution_i = P(c*|current) − P(c*|leave_out)` where c* = baseline class (matches REWORK-02's predDelta sign convention). Reuses `PredictionService.predict_values` — same transform chain reported by the REWORK-05 fidelity strip, same softmax. `total_delta = Σ contributions + residual`; residual is **always returned** and surfaced in the UI as a tagged synthetic row when |residual| ≥ 0.5pp. References: Štrumbelj & Kononenko *JMLR* 11 (2010) §3 (LOO marginal contribution); SOTA upgrade is Lundberg & Lee NeurIPS 2017 KernelSHAP (flagged as future opt-in).
+
+**Causal-misattribution honesty (load-bearing).** "I changed X and it moved" ≠ "the model depends on X". LOO answers the first, not the second. The docstring, the response `method` field, and the UI caveat all say so explicitly so a future maintainer doesn't recharacterise the metric. Paired with the REWORK-08 saliency overlay for triangulation.
+
+**Frontend `valueOpHistory` tracking (load-bearing).** Audit events don't carry the full values vector (would bloat memory), so the page maintains a parallel `valueOpHistory = ref([])` of `{op_id, op_label, values_delta}`. Pushed by `recordOpDelta` at the two value-mutating sites: `applyInvokeResponse` (after the mutation, only when values actually changed — pure no-ops are skipped via 1e-12 epsilon) and `handleApplyMinFlip`. **`handleApplyMinFlip` also pushes an undo snapshot** so `handleChipUndo` reverses min-flip 1:1 — pop snapshot + pop valueOpHistory in lockstep. Op-IDs are stamped `${opName}-${opSequence}` via a session-stable monotonic counter.
+
+**Auto-refresh on series mutation.** `seriesVersion` watcher fires `refreshDeltaProvenance()` only when the toggle is on (same pattern as REWORK-08 saliency). Race-guarded with module-scoped `let deltaProvenanceRequestId = 0`. Toggle-off clears state + hovered op cleanly.
+
+**OUTPUT-highlight on hover is deferred.** The panel emits `hover-op` / `leave` and the page maintains `hoveredProvenanceOpId`. Wiring that into OutputPanel's class-bar rendering ("ideally" per AC, not "must") is a follow-up; the data path is already there.
+
+npm test 767/767 (+8 new); backend benchmark routes 26/26 (+4 new).
+
+---
+
 ## REWORK-08 Saliency overlay
 
 Toggleable per-timestep attribution heatmap rendered BELOW the chart line in TimelineViewer. Backend `SaliencyService` (`backend/app/services/saliency.py`) implements **perturbation/occlusion** — for each timestep t, mask `x[t] = mean(x)`, re-score, attribution[t] = P(c*|x) − P(c*|x_masked). Sign is preserved so the UI distinguishes informative (amber) from counter-evidence (indigo) timesteps. Reuses `PrototypeInferenceAdapter` for scoring so saliency and prediction share the same softmax convention. Method dispatch is single-armed today (prototype → occlusion); a future differentiable family lands as another arm.

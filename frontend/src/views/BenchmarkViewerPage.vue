@@ -6,6 +6,7 @@ import OutputPanel from "../components/output/OutputPanel.vue";
 import MinFlipStrip from "../components/output/MinFlipStrip.vue";
 import EvidenceZone from "../components/evidence/EvidenceZone.vue";
 import FidelityStrip from "../components/evidence/FidelityStrip.vue";
+import DeltaProvenancePanel from "../components/evidence/DeltaProvenancePanel.vue";
 import OperationPalette from "../components/palette/OperationPalette.vue";
 import SemanticLayerPanel from "../components/semantic/SemanticLayerPanel.vue";
 import TimelineViewer from "../components/viewer/TimelineViewer.vue";
@@ -42,7 +43,11 @@ import { createOperationPaletteState } from "../lib/operations/createOperationPa
 import { createTieredPaletteState } from "../lib/operations/createTieredPaletteState";
 import { executeOperationAction } from "../lib/operations/executeOperationAction";
 import { buildInvokeRequest, UnknownOpError } from "../lib/operations/buildInvokeRequest";
-import { findMinimalFlip, invokeOperation } from "../services/api/operationsApi";
+import {
+  fetchDeltaProvenance,
+  findMinimalFlip,
+  invokeOperation,
+} from "../services/api/operationsApi";
 import { labelChipBus } from "../lib/audit/labelChipBus";
 import { classifyGap } from "../lib/gaps/createGapGatingState";
 import {
@@ -131,6 +136,16 @@ const saliencyResult = ref(null);
 const saliencyLoading = ref(false);
 const saliencyError = ref(null);
 let saliencyRequestId = 0;
+// REWORK-09: Δ-provenance state. valueOpHistory tracks the per-op values
+// perturbation so the backend can leave-one-out attribute the prediction Δ.
+// Pushed at each value-mutating op site (applyInvokeResponse, apply-min-flip);
+// popped on chip-undo; cleared on sample reload.
+const valueOpHistory = ref([]);
+const deltaProvenanceResult = ref(null);
+const deltaProvenanceLoading = ref(false);
+const deltaProvenanceError = ref(null);
+const hoveredProvenanceOpId = ref(null);
+let deltaProvenanceRequestId = 0;
 const probeFlags = ref({ saliency: false, deltaSources: false, minFlipSearching: false });
 const operationRegistry = ref(null);
 const proposalSegments = ref([]);
@@ -302,6 +317,11 @@ function clearPredictionState() {
   saliencyResult.value = null;
   saliencyLoading.value = false;
   saliencyError.value = null;
+  valueOpHistory.value = [];
+  deltaProvenanceResult.value = null;
+  deltaProvenanceLoading.value = false;
+  deltaProvenanceError.value = null;
+  hoveredProvenanceOpId.value = null;
   probeFlags.value = { saliency: false, deltaSources: false, minFlipSearching: false };
 }
 
@@ -447,10 +467,93 @@ async function refreshSaliency() {
 }
 
 function handleToggleDeltaSources() {
-  probeFlags.value = {
-    ...probeFlags.value,
-    deltaSources: !probeFlags.value.deltaSources,
-  };
+  const next = !probeFlags.value.deltaSources;
+  probeFlags.value = { ...probeFlags.value, deltaSources: next };
+  if (next) {
+    refreshDeltaProvenance();
+  } else {
+    deltaProvenanceResult.value = null;
+    deltaProvenanceError.value = null;
+    deltaProvenanceLoading.value = false;
+    hoveredProvenanceOpId.value = null;
+  }
+}
+
+async function refreshDeltaProvenance() {
+  if (!probeFlags.value.deltaSources) return;
+  const artifact = selectorState.value?.selectedArtifact;
+  const baseline = Array.isArray(baselineValues.value) ? baselineValues.value : null;
+  const current = Array.isArray(sample.value?.values) ? sample.value.values : null;
+  if (!artifact || !baseline || !current) {
+    deltaProvenanceError.value = "Load a sample and pick a model before requesting Δ sources.";
+    deltaProvenanceLoading.value = false;
+    deltaProvenanceResult.value = null;
+    return;
+  }
+  // Op deltas are user-mutating ops only — chip-undo pops; no-op operations
+  // (label edits, scope changes) never get pushed in the first place.
+  const ops = valueOpHistory.value
+    .filter((entry) => Array.isArray(entry?.values_delta) && entry.values_delta.length === current.length)
+    .map((entry, index) => ({
+      op_id: entry.op_id ?? `op-${index + 1}`,
+      op_label: entry.op_label ?? entry.op_id ?? `op-${index + 1}`,
+      values_delta: entry.values_delta,
+    }));
+  const requestId = ++deltaProvenanceRequestId;
+  deltaProvenanceLoading.value = true;
+  deltaProvenanceError.value = null;
+  try {
+    const payload = await fetchDeltaProvenance({
+      artifactId: artifact.artifact_id,
+      baselineValues: baseline,
+      currentValues: current,
+      ops,
+    });
+    if (requestId !== deltaProvenanceRequestId) return;
+    deltaProvenanceResult.value = payload;
+  } catch (requestError) {
+    if (requestId !== deltaProvenanceRequestId) return;
+    deltaProvenanceResult.value = null;
+    deltaProvenanceError.value =
+      requestError instanceof Error ? requestError.message : "Δ-provenance request failed.";
+  } finally {
+    if (requestId === deltaProvenanceRequestId) {
+      deltaProvenanceLoading.value = false;
+    }
+  }
+}
+
+function handleHoverProvenanceOp(opId) {
+  hoveredProvenanceOpId.value = opId;
+}
+
+function handleLeaveProvenanceOp() {
+  hoveredProvenanceOpId.value = null;
+}
+
+let opSequence = 0;
+
+function recordOpDelta({ opName, tier, valuesBefore, valuesAfter }) {
+  if (!Array.isArray(valuesBefore) || !Array.isArray(valuesAfter)) return;
+  if (valuesBefore.length !== valuesAfter.length) return;
+  const delta = new Array(valuesAfter.length);
+  let anyChange = false;
+  for (let i = 0; i < valuesAfter.length; i += 1) {
+    const d = valuesAfter[i] - valuesBefore[i];
+    delta[i] = d;
+    if (Math.abs(d) > 1e-12) anyChange = true;
+  }
+  if (!anyChange) return; // pure no-op (e.g. identity transform); skip
+  opSequence += 1;
+  const label = tier != null ? `${opName} (tier ${tier})` : opName;
+  valueOpHistory.value = [
+    ...valueOpHistory.value,
+    {
+      op_id: `${opName}-${opSequence}`,
+      op_label: label,
+      values_delta: delta,
+    },
+  ];
 }
 
 async function handleProbeMinFlip() {
@@ -496,10 +599,27 @@ function handleApplyMinFlip() {
   const edit = result?.edit_values;
   if (!Array.isArray(edit) || edit.length === 0 || !sample.value) return;
   if (!Array.isArray(sample.value.values) || sample.value.values.length !== edit.length) return;
+  const valuesBefore = [...sample.value.values];
+  // Push a snapshot to the undo stack BEFORE mutating so chip-undo can
+  // reverse the min-flip 1:1 against valueOpHistory (REWORK-09): undo pops
+  // the snapshot (restoring pre-min-flip values) AND pops the last op from
+  // valueOpHistory (which now correctly contains the min-flip entry).
+  pushUndoSnapshot({
+    values: valuesBefore,
+    segments: (sample.value.segments ?? []).map((s) => ({ ...s })),
+  });
   // Mutating the series via the same channel as applyInvokeResponse keeps the
   // downstream state machine (OUTPUT staleness, EVIDENCE refresh) honest.
   sample.value = { ...sample.value, values: [...edit] };
   bumpSeriesVersion();
+  // REWORK-09: record the min-flip's values delta so Δ-provenance can
+  // attribute its contribution to the total Δ.
+  recordOpDelta({
+    opName: "min-flip",
+    tier: null,
+    valuesBefore,
+    valuesAfter: sample.value.values,
+  });
   // CLAUDE.md: every user operation produces an AuditEvent. Apply-min-flip
   // mutates the series, so it must be logged with the probe's provenance
   // (method + paper reference + distance + flipped class).
@@ -1359,6 +1479,13 @@ function handleChipUndo({ chipId, segmentId, opId }) {
   }
   sample.value = { ...sample.value, values: snapshot.values, segments: snapshot.segments };
   bumpSeriesVersion();
+  // REWORK-09: chip-undo reverts the last value-mutating op, so pop the most
+  // recent entry off the provenance log to keep the leave-one-out attribution
+  // honest. (Op deltas are stored relative to the state at the time of the
+  // op; reverting via snapshot removes that delta cleanly.)
+  if (valueOpHistory.value.length > 0) {
+    valueOpHistory.value = valueOpHistory.value.slice(0, -1);
+  }
   auditEvents.value = appendAuditEvent(
     auditEvents.value,
     createOperationAuditEvent(
@@ -1379,6 +1506,9 @@ function handleChipUndo({ chipId, segmentId, opId }) {
 function applyInvokeResponse({ tier, op_name, params, response }) {
   const alignedSegments = response.extra?.aligned_segments;
   let valuesChanged = false;
+  // REWORK-09: snapshot the pre-mutation series so we can compute the
+  // values-space op delta after the mutation lands.
+  const valuesBefore = Array.isArray(sample.value?.values) ? [...sample.value.values] : null;
   if (Array.isArray(alignedSegments) && alignedSegments.length > 0 && Array.isArray(sample.value?.values)) {
     const segById = new Map((sample.value.segments ?? []).map((s) => [s.id, s]));
     const next = sample.value.values.slice();
@@ -1398,7 +1528,15 @@ function applyInvokeResponse({ tier, op_name, params, response }) {
     sample.value = { ...sample.value, values: next };
     valuesChanged = true;
   }
-  if (valuesChanged) bumpSeriesVersion();
+  if (valuesChanged) {
+    bumpSeriesVersion();
+    recordOpDelta({
+      opName: op_name,
+      tier,
+      valuesBefore,
+      valuesAfter: sample.value?.values,
+    });
+  }
 
   if (response.label_chip) {
     labelChipBus.publish(response.label_chip);
@@ -1627,6 +1765,9 @@ watch(seriesVersion, (version) => {
   // REWORK-08: keep the saliency heatmap in lockstep with the series so it
   // never displays stale attribution against a freshly-edited canvas.
   if (probeFlags.value.saliency) refreshSaliency();
+  // REWORK-09: re-attribute the Δ when the series mutates, but only while
+  // the Δ-sources affordance is open.
+  if (probeFlags.value.deltaSources) refreshDeltaProvenance();
 });
 
 watch(
@@ -2023,6 +2164,17 @@ watch(
                 <FidelityStrip
                   :state="fidelityStripState"
                   :raw-values="sample?.values ?? null"
+                />
+              </template>
+              <template #probe-detail>
+                <DeltaProvenancePanel
+                  v-if="probeFlags.deltaSources"
+                  :provenance="deltaProvenanceResult"
+                  :loading="deltaProvenanceLoading"
+                  :error="deltaProvenanceError"
+                  :hovered-op-id="hoveredProvenanceOpId"
+                  @hover-op="handleHoverProvenanceOp"
+                  @leave="handleLeaveProvenanceOp"
                 />
               </template>
             </EvidenceZone>

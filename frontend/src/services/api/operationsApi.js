@@ -54,6 +54,32 @@ export async function invokeOperation(request, fetchImpl = fetch) {
  * and provenance (method + paper reference). When no flip is reachable
  * (degenerate prototypes), `found` is false with a `reason` string.
  */
+/**
+ * REWORK-09. Attribute the prediction Δ to each op in the session via
+ * leave-one-out over op_deltas. Returns per-op signed contribution +
+ * residual + method/reference for the caveat tooltip.
+ */
+export async function fetchDeltaProvenance(
+  { artifactId, baselineValues, currentValues, ops },
+  fetchImpl = fetch,
+) {
+  const response = await fetchImpl('/api/operations/provenance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      artifact_id: artifactId,
+      baseline_values: baselineValues,
+      current_values: currentValues,
+      ops,
+    }),
+  });
+  const payload = await readJsonResponse(response, 'Δ provenance');
+  if (!Array.isArray(payload.contributions)) {
+    throw new Error('Δ provenance response must include a contributions array.');
+  }
+  return payload;
+}
+
 export async function findMinimalFlip({ artifactId, baselineValues }, fetchImpl = fetch) {
   const response = await fetchImpl('/api/operations/min-flip', {
     method: 'POST',
