@@ -43,7 +43,11 @@ const warningOpen = computed(() => Boolean(props.warning));
 <template>
   <div class="evz-body">
     <!-- 1. Default-visible: plausibility gauges -->
-    <PlausibilityGauges :state="gaugesState" />
+    <PlausibilityGauges :state="gaugesState">
+      <template #pin>
+        <slot name="plausibility-pin" />
+      </template>
+    </PlausibilityGauges>
 
     <!-- 2. Probe toggle row — REWORK-07/08/09 wire the behaviour -->
     <section class="evz-probes" aria-label="Probes">

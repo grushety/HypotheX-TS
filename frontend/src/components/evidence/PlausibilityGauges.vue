@@ -37,6 +37,7 @@ function toneColorVar(tone) {
     <header class="plaus-header">
       <span class="mlabel">Edit quality</span>
       <span v-if="!state.hasEdit" class="plaus-empty-hint">apply an edit to score</span>
+      <slot name="pin" />
       <span
         v-if="state.offDistribution"
         class="plaus-offdist"

@@ -11,6 +11,30 @@ const props = defineProps({
   maxSampleIndex: { type: Number, default: 0 },
 });
 
+const emit = defineEmits(["pin"]);
+
+function buildPinPayload() {
+  const summary = cohortResult.value
+    ? `flip rate ${model.value.summary.flipRateLabel} · mean Δ ${model.value.summary.meanDeltaLabel}pp · ${model.value.summary.total} samples`
+    : "";
+  return {
+    title: `Cohort · ${opName.value} on ${cohortResult.value?.dataset_name ?? props.dataset}`,
+    summary,
+    dataset: cohortResult.value?.dataset_name ?? props.dataset,
+    op_name: cohortResult.value?.op_name ?? opName.value,
+    op_params: cohortResult.value?.op_params ?? null,
+    method: cohortResult.value?.method ?? null,
+    reference: cohortResult.value?.reference ?? null,
+    aggregates: cohortResult.value?.aggregates ?? null,
+    per_series: cohortResult.value?.per_series ?? [],
+  };
+}
+
+function handlePinClick() {
+  if (!cohortResult.value) return;
+  emit("pin", buildPinPayload());
+}
+
 const cohortSize = ref(Math.min(8, Math.max(1, props.maxSampleIndex + 1)));
 const opName = ref("amplify");
 const alpha = ref(2.0);
@@ -146,6 +170,22 @@ const dumbbell = computed(() => {
 
     <!-- Results -->
     <template v-if="model.hasData">
+      <div class="cohort-results-head">
+        <span class="mlabel">Outcome</span>
+        <button
+          type="button"
+          class="cohort-pin-btn"
+          aria-label="Pin cohort outcome to shoebox"
+          @click="handlePinClick"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 17v5" />
+            <path d="M9 2h6" />
+            <path d="M10 2v6l-3 4v3h10v-3l-3-4V2" />
+          </svg>
+          Pin outcome
+        </button>
+      </div>
       <!-- Summary cards -->
       <div class="cohort-cards">
         <div class="cohort-card">
@@ -344,6 +384,34 @@ const dumbbell = computed(() => {
   color: var(--st-fail);
   font-size: 12px;
 }
+
+/* Outcome header + pin button */
+.cohort-results-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.cohort-pin-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-panel);
+  color: var(--ink-2);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cohort-pin-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--ink-3);
+  color: var(--ink);
+}
+.cohort-pin-btn svg { width: 12px; height: 12px; }
 
 /* Summary cards */
 .cohort-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
