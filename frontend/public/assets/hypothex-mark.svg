@@ -1,0 +1,30 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HypotheX-TS mark">
+  <defs>
+    <linearGradient id="hxPlay" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#42c878"></stop>
+      <stop offset="0.55" stop-color="#15a08e"></stop>
+      <stop offset="1" stop-color="#0a7391"></stop>
+    </linearGradient>
+  </defs>
+
+  
+  <g stroke="#16a497" stroke-opacity="0.42" stroke-width="2.2" stroke-linecap="round">
+    <line x1="24" y1="52" x2="49" y2="57"></line>
+    <line x1="24" y1="84" x2="49" y2="79"></line>
+  </g>
+  <circle cx="24" cy="52" r="3.8" fill="#34c06a"></circle>
+  <circle cx="24" cy="84" r="3.8" fill="#34c06a"></circle>
+
+  
+  <g stroke="#0c8fb1" stroke-width="2.3" stroke-linecap="round" stroke-dasharray="3.5 4.5" stroke-opacity="0.9" fill="none">
+    <line x1="80" y1="68" x2="103" y2="44"></line>
+    <line x1="80" y1="68" x2="109" y2="68"></line>
+    <line x1="80" y1="68" x2="103" y2="92"></line>
+  </g>
+  <circle cx="104" cy="43" r="4" fill="#0c8fb1"></circle>
+  <circle cx="110" cy="68" r="4" fill="#0c8fb1"></circle>
+  <circle cx="104" cy="93" r="4" fill="#0c8fb1"></circle>
+
+  
+  <path d="M48 47 L48 89 L80 68 Z" fill="url(#hxPlay)" stroke="url(#hxPlay)" stroke-width="7" stroke-linejoin="round"></path>
+</svg>
