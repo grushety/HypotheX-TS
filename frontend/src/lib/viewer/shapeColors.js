@@ -4,13 +4,13 @@
  */
 
 export const SHAPE_COLORS = {
-  plateau:   '#9e9e9e',
-  trend:     '#1565c0',
-  step:      '#e65100',
-  spike:     '#c62828',
-  cycle:     '#00695c',
-  transient: '#6a1b9a',
-  noise:     '#bdbdbd',
+  plateau:   '#e8870c',
+  trend:     '#1f6fd6',
+  step:      '#0c8599',
+  spike:     '#e03131',
+  cycle:     '#2f9e44',
+  transient: '#7048e8',
+  noise:     '#939db0',
 };
 
 /** Ordered list of all 7 shape primitive names. */

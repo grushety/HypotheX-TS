@@ -47,6 +47,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  showAtoms: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(["select-segment", "move-boundary"]);
@@ -82,6 +86,7 @@ const timelineModel = computed(() =>
         :selected-segment-id="selectedSegmentId"
         :segment-uncertainty="props.segmentUncertainty"
         :boundary-uncertainty="props.boundaryUncertainty"
+        :show-atoms="showAtoms"
         @select-segment="emit('select-segment', $event)"
         @move-boundary="emit('move-boundary', $event)"
       />

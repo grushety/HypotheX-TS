@@ -247,27 +247,104 @@ h3 { font-size: 1rem; font-weight: 600; line-height: 1.35; }
   gap: 11px;
 }
 
-/* REWORK-10: top-bar mode switch — Explore | Cohort */
+/* Topbar brand mark (HypotheX-TS) — design refinement, sits at far-left of the topbar */
+.research-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-right: 12px;
+  border-right: 1px solid var(--line);
+  height: 28px;
+}
+.research-brand-img {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+.research-brand-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.research-brand-name b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Pushes compat + run + shoebox to the right of the topbar */
+.topbar-spacer { flex: 1 1 auto; }
+
+/* REWORK-10 + design refinement: top-bar mode switch — Explore | Cohort, now with SVG glyphs */
 .topbar-mode-switch {
   display: inline-flex;
+  background: var(--bg-sunken);
   border: 1px solid var(--line-2);
-  border-radius: var(--r-sm);
-  overflow: hidden;
-  background: var(--bg-panel);
+  border-radius: var(--r-md);
+  padding: 2px;
+  gap: 2px;
 }
 .topbar-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: none;
   background: transparent;
-  padding: 5px 11px;
+  padding: 4px 10px;
   font: inherit;
   font-size: 11.5px;
   font-weight: 600;
   color: var(--ink-3);
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
-.topbar-mode-btn:not(:last-child) { border-right: 1px solid var(--line-2); }
+.topbar-mode-btn svg { width: 13px; height: 13px; flex: none; }
 .topbar-mode-btn:hover { background: var(--bg-hover); color: var(--ink-2); }
-.topbar-mode-btn.on { background: var(--ink); color: #fff; }
+.topbar-mode-btn.on {
+  background: var(--bg-panel);
+  color: var(--ink);
+  box-shadow: var(--shadow-rail);
+}
+
+/* Atoms toggle: pill in the chart-panel header that controls ShapeLegend visibility */
+.atoms-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 3px 9px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.atoms-toggle:hover { background: var(--bg-hover); color: var(--ink-2); }
+.atoms-toggle.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+/* z1-config strip: dataset / model / split / sample, relocated from the topbar into the Input zone */
+.z1-config {
+  display: flex;
+  align-items: flex-end;
+  gap: 11px;
+  background: var(--bg-bar);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 7px 11px;
+  flex: none;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-rail);
+}
 
 /* REWORK-11: shoebox icon + badge in the top-bar */
 .topbar-shoebox-btn {

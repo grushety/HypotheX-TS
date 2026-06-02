@@ -110,6 +110,7 @@ import {
 // per-sample workspace; "cohort" replaces the workspace body with the
 // cohort confirmation view while keeping the same topbar selectors.
 const viewMode = ref("explore");
+const showAtoms = ref(true);
 const sample = ref(null);
 const loading = ref(true);
 const error = ref("");
@@ -1991,70 +1992,49 @@ watch(
 
 <template>
   <div class="research-viewport zones-frame">
-    <!-- Topbar: selectors + compatibility indicator + Run Prediction button -->
+    <!-- Topbar: brand + mode switch + compat + Run Prediction + shoebox.
+         Selectors moved to .z1-config inside the Input zone (REWORK design refinements). -->
     <header class="research-topbar">
-      <div class="topbar-selectors">
-        <label class="topbar-field">
-          <span class="topbar-label">Dataset</span>
-          <select
-            class="topbar-input"
-            :value="selectorState.selectedDataset?.name ?? ''"
-            :disabled="selectorState.loading || !selectorState.datasetOptions.length"
-            @change="handleUpdateDataset($event.target.value)"
-          >
-            <option value="" disabled>Select dataset</option>
-            <option v-for="option in selectorState.datasetOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
-
-        <label class="topbar-field">
-          <span class="topbar-label">Model</span>
-          <select
-            class="topbar-input"
-            :value="selectorState.selectedArtifact?.artifact_id ?? ''"
-            :disabled="selectorState.loading || !selectorState.modelOptions.length"
-            @change="handleUpdateArtifact($event.target.value)"
-          >
-            <option value="" disabled>Select model</option>
-            <option
-              v-for="option in selectorState.modelOptions"
-              :key="option.value"
-              :value="option.value"
-              :disabled="option.disabled"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
-
-        <label class="topbar-field">
-          <span class="topbar-label">Split</span>
-          <select
-            class="topbar-input"
-            :value="selectorState.selectedSplit"
-            :disabled="selectorState.loading || !selectorState.selectedDataset"
-            @change="handleUpdateSplit($event.target.value)"
-          >
-            <option value="train">Train</option>
-            <option value="test">Test</option>
-          </select>
-        </label>
-
-        <label class="topbar-field">
-          <span class="topbar-label">Sample</span>
-          <input
-            class="topbar-input topbar-input-number"
-            type="number"
-            min="0"
-            :max="selectorState.maxSampleIndex"
-            :value="selectorState.sampleIndex"
-            :disabled="selectorState.loading || !selectorState.selectedDataset"
-            @input="handleUpdateSampleIndex($event.target.value)"
-          />
-        </label>
+      <div class="research-brand" aria-label="HypotheX-TS">
+        <img
+          class="research-brand-img"
+          src="/assets/hypothex-mark-chart.svg"
+          width="28"
+          height="28"
+          alt=""
+        />
+        <div class="research-brand-name">Hypothe<b>X</b>-TS</div>
       </div>
+
+      <div class="topbar-mode-switch" role="group" aria-label="View mode">
+        <button
+          type="button"
+          class="topbar-mode-btn"
+          :class="{ on: viewMode === 'explore' }"
+          @click="viewMode = 'explore'"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12h4l3-8 4 16 3-8h4" />
+          </svg>
+          Explore
+        </button>
+        <button
+          type="button"
+          class="topbar-mode-btn"
+          :class="{ on: viewMode === 'cohort' }"
+          @click="viewMode = 'cohort'"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 3v18h18" />
+            <rect x="7" y="12" width="3" height="6" />
+            <rect x="12" y="8" width="3" height="10" />
+            <rect x="17" y="5" width="3" height="13" />
+          </svg>
+          Cohort
+        </button>
+      </div>
+
+      <span class="topbar-spacer" />
 
       <span
         class="topbar-compat"
@@ -2067,21 +2047,6 @@ watch(
       >
         {{ selectorState.compatibilityMessage }}
       </span>
-
-      <div class="topbar-mode-switch" role="group" aria-label="View mode">
-        <button
-          type="button"
-          class="topbar-mode-btn"
-          :class="{ on: viewMode === 'explore' }"
-          @click="viewMode = 'explore'"
-        >Explore</button>
-        <button
-          type="button"
-          class="topbar-mode-btn"
-          :class="{ on: viewMode === 'cohort' }"
-          @click="viewMode = 'cohort'"
-        >Cohort</button>
-      </div>
 
       <button
         class="topbar-run-button"
@@ -2139,6 +2104,70 @@ watch(
           </span>
           <span class="zt">Input</span>
           <span class="zsub">what I feed the model</span>
+        </div>
+
+        <!-- z1-config: dataset / model / split / sample selectors live inside the Input zone -->
+        <div class="z1-config">
+          <label class="topbar-field">
+            <span class="topbar-label">Dataset</span>
+            <select
+              class="topbar-input"
+              :value="selectorState.selectedDataset?.name ?? ''"
+              :disabled="selectorState.loading || !selectorState.datasetOptions.length"
+              @change="handleUpdateDataset($event.target.value)"
+            >
+              <option value="" disabled>Select dataset</option>
+              <option v-for="option in selectorState.datasetOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
+          <label class="topbar-field">
+            <span class="topbar-label">Model</span>
+            <select
+              class="topbar-input"
+              :value="selectorState.selectedArtifact?.artifact_id ?? ''"
+              :disabled="selectorState.loading || !selectorState.modelOptions.length"
+              @change="handleUpdateArtifact($event.target.value)"
+            >
+              <option value="" disabled>Select model</option>
+              <option
+                v-for="option in selectorState.modelOptions"
+                :key="option.value"
+                :value="option.value"
+                :disabled="option.disabled"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
+          <label class="topbar-field">
+            <span class="topbar-label">Split</span>
+            <select
+              class="topbar-input"
+              :value="selectorState.selectedSplit"
+              :disabled="selectorState.loading || !selectorState.selectedDataset"
+              @change="handleUpdateSplit($event.target.value)"
+            >
+              <option value="train">Train</option>
+              <option value="test">Test</option>
+            </select>
+          </label>
+
+          <label class="topbar-field">
+            <span class="topbar-label">Sample</span>
+            <input
+              class="topbar-input topbar-input-number"
+              type="number"
+              min="0"
+              :max="selectorState.maxSampleIndex"
+              :value="selectorState.sampleIndex"
+              :disabled="selectorState.loading || !selectorState.selectedDataset"
+              @input="handleUpdateSampleIndex($event.target.value)"
+            />
+          </label>
         </div>
 
         <div class="z1-main">
@@ -2220,11 +2249,20 @@ watch(
                   <span v-if="sample"> · Sample {{ sample.sampleId }}</span>
                 </span>
                 <span class="surface-tag">{{ sample?.seriesLength ?? "--" }} pts</span>
+                <button
+                  type="button"
+                  class="atoms-toggle"
+                  :class="{ on: showAtoms }"
+                  :aria-pressed="showAtoms"
+                  title="Show the shape-atom vocabulary that colours the bands"
+                  @click="showAtoms = !showAtoms"
+                >Atoms</button>
               </div>
 
               <TimelineViewer
                 :sample="enrichedSample"
                 :selected-segment-id="selectedSegmentId"
+                :show-atoms="showAtoms"
                 :segment-uncertainty="uncertaintyPayload?.segmentUncertainty ?? []"
                 :boundary-uncertainty="uncertaintyPayload?.boundaryUncertainty ?? []"
                 :ghost-values="minFlipGhostValues"

@@ -27,6 +27,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  showAtoms: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(["select-segment", "move-boundary"]);
@@ -123,6 +127,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <ShapeLegend />
+    <ShapeLegend v-if="showAtoms" />
   </div>
 </template>
